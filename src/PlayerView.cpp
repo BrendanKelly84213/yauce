@@ -176,7 +176,7 @@ void PlayerView::close_sdl()
 
 bool PlayerView::no_others_dragged(int this_board_piece_idx) 
 {
-    for(int i=0; i<NUM_PIECES; ++i) {
+    for(int i=0; i<MAX_PIECES; ++i) {
         if(board_pieces[i].dragging && i != this_board_piece_idx) {
             return false;
         } 
