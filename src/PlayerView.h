@@ -14,7 +14,7 @@ class PlayerView
 {
     public: 
         void game_loop();
-        void init_pieces(std::string fen);
+        void init_pieces(std::string fen); // Instead of direcly from fen, init from a BoardState class 
         void init_piece_clips();
         void init_texture();
         void close_sdl();
@@ -43,7 +43,7 @@ class PlayerView
         void snap(BoardPiece & piece);
         void handle_dragging();
         bool is_piece_ch(char ch);
-        Piece fen_to_piece(char ch);
+        Piece fen_to_piece(char ch); 
         char piece_to_char(Piece p);
 };
 

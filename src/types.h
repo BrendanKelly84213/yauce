@@ -8,8 +8,6 @@ enum Piece {
     BQ, BK, BR, BN, BB, BP, None=-1
 };
 
-enum Rank { a, b, c, d, e, f, g, h};
-
 enum Square : int
 {
 	a1, b1, c1, d1, e1, f1, g1, h1,
@@ -30,18 +28,6 @@ struct BoardPiece
     bool dragging = false; 
     Square s;
     Piece p = None;
-};
-
-struct BoardState
-{
-    BoardPiece piece_placement[64];
-    Colour side_to_move; 
-    bool w_castle_ks = false; 
-    bool w_castle_qs = false; 
-    bool b_castle_ks = false; 
-    bool b_castle_qs = false; 
-    int ep_file;
-    int ply_count; 
 };
 
 #endif
