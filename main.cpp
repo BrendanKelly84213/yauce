@@ -5,7 +5,6 @@
 #include <iostream>
 
 #include "environment.h"
-/* #include "drag.h" */
 
 //TODO: 
 // Pieces should have reference to what square they're on  
