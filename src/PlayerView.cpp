@@ -91,15 +91,14 @@ void PlayerView::handle_events()
             }
             break; 
         case SDL_MOUSEBUTTONUP :
-            mousedown = false;
             mousedown_on_piece = false;
             for(int i=0; i<MAX_PIECES; ++i) {
-                if(board_pieces[i].dragging)
+                if(board_pieces[i].dragging) {
                     snap(board_pieces[i]);
+                }
             }
             break;
         case SDL_MOUSEBUTTONDOWN :
-            mousedown = true;
             for(int i=0; i<MAX_PIECES; ++i) {
                 if(in_board_piece(board_pieces[i])) {
                     mousedown_on_piece = true;
@@ -205,13 +204,13 @@ void PlayerView::handle_dragging()
 {
 
     for(int i=0; i<MAX_PIECES; ++i) {
-        if ( mousedown
+        if ( mousedown_on_piece
             && in_board_piece(board_pieces[i])
             && no_others_dragged(i) ) {
             board_pieces[i].dragging = true;
         }
 
-        if(!mousedown) {
+        if(!mousedown_on_piece) {
             board_pieces[i].dragging = false;
         }
 
