@@ -1,4 +1,29 @@
 #include "PlayerView.h"
+        
+void PlayerView::init_all()
+{
+    board_state.init(fen);
+    init_piece_clips();
+    init_pieces();
+    init_window_and_renderer();
+    init_texture();
+}
+
+void PlayerView::init_pieces()
+{
+    for(int r=0; r<NUM_ROWS; ++r) {
+        for(int f=0; f<NUM_ROWS; ++f) {
+            const int s = r*8 + f;
+            const Piece p = board_state.squares[s];
+
+            board_pieces[s].p = p;
+            board_pieces[s].rect.w = rect_w; 
+            board_pieces[s].rect.h = rect_w; 
+            board_pieces[s].rect.x = f*rect_w; 
+            board_pieces[s].rect.y = r*rect_w; 
+        }
+    }
+}
 
 void PlayerView::init_piece_clips() 
 {
@@ -45,43 +70,6 @@ void PlayerView::init_piece_clips()
     piece_clips[WP].y = 60;
 }
 
-void PlayerView::init_pieces(std::string fen) 
-{
-    // Parse out pieces 
-    int rank=8;
-    int file=0;
-    int i=0;
-    int j=0;
-
-    while(fen[i] != ' ') {
-        int sq = rank * file;
-
-        if(fen[i] == '/') {
-            rank--;
-            file=0;
-        }
-
-        if(fen[i] >= '0' && fen[i] <= '8') {
-            file += (fen[i] - '0');
-        }
-
-        if(is_piece_ch(fen[i])) {
-            const Piece piece = fen_to_piece(fen[i]);
-
-            board_pieces[j].p = piece;
-            board_pieces[j].rect.w = rect_w;
-            board_pieces[j].rect.h = rect_w;
-            
-            board_pieces[j].rect.x = (file)*rect_w ;
-            board_pieces[j].rect.y = (8-rank)*rect_w ;
-
-            file++;
-            j++;
-        }
-        i++;
-    }
-}
-
 void PlayerView::handle_events()
 {
     switch( e.type ) {
@@ -92,15 +80,15 @@ void PlayerView::handle_events()
             break; 
         case SDL_MOUSEBUTTONUP :
             mousedown_on_piece = false;
-            for(int i=0; i<MAX_PIECES; ++i) {
-                if(board_pieces[i].dragging) {
+            for(int i=0; i<NUM_SQUARES; ++i) {
+                if(board_pieces[i].dragging && board_pieces[i].p != -1) {
                     snap(board_pieces[i]);
                 }
             }
             break;
         case SDL_MOUSEBUTTONDOWN :
-            for(int i=0; i<MAX_PIECES; ++i) {
-                if(in_board_piece(board_pieces[i])) {
+            for(int i=0; i<NUM_SQUARES; ++i) {
+                if(in_board_piece(board_pieces[i]) && board_pieces[i].p != -1) {
                     mousedown_on_piece = true;
                 }
             }
@@ -131,9 +119,10 @@ void PlayerView::draw_grid()
 
 void PlayerView::draw_pieces() 
 {
-    for(int i=0; i<MAX_PIECES; ++i) {
+    for(int i=0; i<NUM_SQUARES; ++i) {
         const Piece p = board_pieces[i].p;
-        SDL_RenderCopy(renderer, texture, &piece_clips[p], &board_pieces[i].rect);	
+        if( p != None ) 
+            SDL_RenderCopy(renderer, texture, &piece_clips[p], & board_pieces[i].rect);	
     }
 }
 
@@ -176,8 +165,10 @@ void PlayerView::close_sdl()
 
 bool PlayerView::no_others_dragged(int this_board_piece_idx) 
 {
-    for(int i=0; i<MAX_PIECES; ++i) {
-        if(board_pieces[i].dragging && i != this_board_piece_idx) {
+    for(int i=0; i<NUM_SQUARES; ++i) {
+        if(board_pieces[i].p != -1 
+                && board_pieces[i].dragging 
+                && i != this_board_piece_idx) {
             return false;
         } 
     }
@@ -203,8 +194,9 @@ void PlayerView::snap(BoardPiece & piece)
 void PlayerView::handle_dragging() 
 {
 
-    for(int i=0; i<MAX_PIECES; ++i) {
-        if ( mousedown_on_piece
+    for(int i=0; i<NUM_SQUARES; ++i) {
+        if ( board_pieces[i].p != -1
+            && mousedown_on_piece
             && in_board_piece(board_pieces[i])
             && no_others_dragged(i) ) {
             board_pieces[i].dragging = true;
@@ -225,87 +217,3 @@ void PlayerView::handle_dragging()
 }
 
 
-bool PlayerView::is_piece_ch(char ch) 
-{
-    return (
-            ch == 'p'
-         || ch == 'r'
-         || ch == 'q'
-         || ch == 'k'
-         || ch == 'n'
-         || ch == 'b'
-         || ch == 'P'
-         || ch == 'R'
-         || ch == 'Q'
-         || ch == 'K'
-         || ch == 'N'
-         || ch == 'B'
-    );
-}
-
-Piece PlayerView::fen_to_piece(char ch) 
-{
-    switch(ch) {
-        case 'p': 
-            return BP;
-        case 'r':
-            return BR;
-        case 'q':
-            return BQ;
-        case 'k':
-            return BK;
-        case 'n':
-            return BN;
-        case 'b':
-            return BB;
-        case 'P':
-            return WP;
-        case 'R':    
-            return WR;
-        case 'Q':    
-            return WQ;
-        case 'K':    
-            return WK;
-        case 'N':    
-            return WN;
-        case 'B':    
-            return WB;
-        default: break;
-    }
-    return None;
-}
-    
-char PlayerView::piece_to_char(Piece p) 
-{
-    switch(p) {
-        case BQ:
-            return 'q';
-        case BK:
-            return 'k';
-        case BR:
-            return 'r';
-        case BN:
-            return 'n';
-        case BB:
-            return 'b';
-        case BP:
-            return 'p';
-
-        case WQ:
-            return 'Q';
-        case WK:
-            return 'K';
-        case WR:
-            return 'R';
-        case WN:
-            return 'N';
-        case WB:
-            return 'B';
-        case WP:
-            return 'P';
-
-        default: break;
-
-    }
-    return ' ';
-}
