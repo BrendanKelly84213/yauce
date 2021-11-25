@@ -43,7 +43,8 @@ void BoardState::init(std::string fen)
             file++;
         } 
 
-        squares[sq] = fen_to_piece(fen[i]);
+        if(fen_to_piece(fen[i]) != WQ)
+            squares[sq] = fen_to_piece(fen[i]);
 
         i++;
     }
