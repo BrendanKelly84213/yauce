@@ -4,6 +4,7 @@
 #include <string> 
 
 #include "types.h"
+#include <iostream>
 
 
 class BoardState
@@ -16,14 +17,10 @@ class BoardState
         bool b_castle_ks = false; 
         bool b_castle_qs = false; 
         int ep_file;
+        int halfmove_clock;
         int ply_count; 
 
         void init(std::string fen);
-
-    private:
-        bool is_piece_ch(char ch);
-        Piece fen_to_piece(char ch); 
-        char piece_to_char(Piece p);
 };
 
 #endif

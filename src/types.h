@@ -26,7 +26,6 @@ struct BoardPiece
 {
     SDL_Rect rect;
     bool dragging = false; 
-    Square s;
     Piece p = None;
 };
 
