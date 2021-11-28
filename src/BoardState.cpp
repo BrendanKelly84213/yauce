@@ -18,7 +18,7 @@ Piece fen_to_piece(char ch);
 void BoardState::init(std::string fen)
 {
     // Parse out pieces 
-    int rank=8;
+    int rank=7;
     int file=0;
     int i=0;
     int section=0;
@@ -28,7 +28,7 @@ void BoardState::init(std::string fen)
     }
 
     while(fen[i] != ' ') {
-        int sq = (8-rank)*8 + file;
+        int sq = (rank)*8 + file;
 
         if(fen[i] == '/') {
             rank--;
@@ -103,6 +103,13 @@ void BoardState::init(std::string fen)
                 break;
             default: break;
         }
+    }
+}
+
+void BoardState::update(BoardPiece * pieces)
+{
+    for(int s=0; s<64; ++s) {
+        squares[s] = pieces[s].p;
     }
 }
 
