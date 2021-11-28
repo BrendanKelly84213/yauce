@@ -20,7 +20,7 @@ bool init( SDL_Window** window, SDL_Renderer** renderer )
 		return false;	
 	} 
 
-	*renderer = SDL_CreateRenderer( *window, -1, SDL_RENDERER_ACCELERATED );
+	*renderer = SDL_CreateRenderer( *window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if( *renderer == NULL ) {
 		printf( "Could not create renderer: %s\n" );
 		return false;
@@ -36,10 +36,8 @@ bool init( SDL_Window** window, SDL_Renderer** renderer )
 	return true;
 }
 
-void close( SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** texture )
+void close(SDL_Window** window, SDL_Renderer** renderer)
 {          
-	free( texture );
-
 	SDL_DestroyWindow( *window );
 	*window = NULL;
 
@@ -48,45 +46,7 @@ void close( SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** texture 
 	
 	IMG_Quit();
 	SDL_Quit();
+    TTF_Quit();
 }
 
-//Free a texture
-void free( SDL_Texture** texture ) 
-{
-	if( *texture != NULL ) {
-		SDL_DestroyTexture( *texture );
-		*texture = NULL;
-	}
-}
-
-//Make an image into an SDL_Texture
-SDL_Texture* loadFromFile( std::string path, 
-		SDL_Renderer* renderer, SDL_Texture* prevTexture )
-{
-	free( & prevTexture );
-	
-	SDL_Texture* newTexture = NULL;
-
-	//Load image at specified path
-	SDL_Surface* loadedSurface = IMG_Load( path.c_str() );
-	if( loadedSurface == NULL ) {
-		printf( "Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError() );
-		return NULL;
-	} 
-
-	//Color key image
-	SDL_SetColorKey( loadedSurface, SDL_TRUE, SDL_MapRGB( loadedSurface->format, 0, 0xFF, 0xFF ) );
-
-	//Create texture from surface pixels
-	newTexture = SDL_CreateTextureFromSurface( renderer, loadedSurface );
-	if( newTexture == NULL ) {
-		printf( "Unable to create texture from %s! SDL Error: %s\n", path.c_str(), SDL_GetError() );
-		return NULL;
-	}
-
-	//Get rid of old loaded surface
-	SDL_FreeSurface( loadedSurface );
-
-	return newTexture;
-}
 
