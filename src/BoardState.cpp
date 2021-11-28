@@ -23,12 +23,12 @@ void BoardState::init(std::string fen)
     int i=0;
     int section=0;
     
-    for(int i=0; i<64; ++i) {
+    for(int i=a1; i<=h8; ++i) {
         squares[i] = None;
     }
 
     while(fen[i] != ' ') {
-        int sq = (rank)*8 + file;
+        int sq = rank*8 + file;
 
         if(fen[i] == '/') {
             rank--;
@@ -40,10 +40,9 @@ void BoardState::init(std::string fen)
         }
 
         if(is_piece_ch(fen[i])) {
+            squares[sq] = fen_to_piece(fen[i]);
             file++;
         } 
-
-        squares[sq] = fen_to_piece(fen[i]);
 
         i++;
     }

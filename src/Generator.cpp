@@ -35,7 +35,7 @@ constexpr Bitboard get_bit(Bitboard bb, int square)
     return (bb >> square & 1ULL);
 }
 
-constexpr Bitboard get_bit(uint64_t bb, int x, int y) 
+constexpr Bitboard get_bit(Bitboard bb, int x, int y) 
 { 
     return (bb >> y*8 + x) & 1ULL;
 }
@@ -54,7 +54,6 @@ constexpr Bitboard bit(Square s)
     return 1ULL << s;
 }
 
-
 Bitboard king_mask(Square origin)
 {
     return (bit(origin + N) & ~Rank1BB)
@@ -72,10 +71,11 @@ Bitboard king_squares(
         BoardState board_state, 
         Square origin)
 {
+    //TODO: Check for checks 
     return king_mask(origin) & ~friend_occ;
 }
 
-constexpr void set_bit(uint64_t &bb, int square) 
+constexpr void set_bit(Bitboard &bb, int square) 
 { 
     bb |= 1ULL << square; 
 }
@@ -100,14 +100,13 @@ Bitboard friendly_occ_squares(Piece* pieces, Colour colour)
 int main()
 {
     BoardState board_state;
-    std::string fen = "1K6/8/4B2r/P1p3pr/6P1/Qb1Pb3/2k1pB2/3R4 w - - 0 1";
+    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     board_state.init(fen);
 
     Bitboard friend_occ = friendly_occ_squares(board_state.squares, Black);
 
     print(friend_occ);
-    std::cout << board_state.squares[1] << '\n';
-    std::cout << a1 << '\n';
-    print(king_squares(friend_occ, board_state, c2));
+    std::cout << board_state.squares[56] << '\n';
+    print(king_squares(friend_occ, board_state, a1));
     return 0;
 }
