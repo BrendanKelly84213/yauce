@@ -3,76 +3,97 @@
 void PlayerView::init_all()
 {
     board_state.init(fen);
+    init_window_and_renderer();
+    init_viewports();
+    pieces_texture.loadFromFile("../assets/ChessPiecesArray.png", renderer);
     init_piece_clips();
     init_pieces();
-    init_window_and_renderer();
-    init_texture();
-}
-
-void PlayerView::init_pieces()
-{
-    for(int r=0; r<NUM_ROWS; ++r) {
-        for(int f=0; f<NUM_ROWS; ++f) {
-            const int s = r*8 + f;
-            const Piece p = board_state.squares[s];
-
-            board_pieces[s].p = p;
-            board_pieces[s].rect.w = rect_w; 
-            board_pieces[s].rect.h = rect_w; 
-            board_pieces[s].rect.x = f*rect_w; 
-            board_pieces[s].rect.y = r*rect_w; 
-        }
-    }
+    TTF_Init();
+    font = TTF_OpenFont("../assets/OpenSans-Regular.ttf", 16);
 }
 
 void PlayerView::init_piece_clips() 
 {
-    for(int i=0; i<NUM_PIECES; ++i) {
-        piece_clips[i].w = 60;
-        piece_clips[i].h = 60;
+    for(int p=0; p<12; ++p) {
+        piece_clips[p].w = 60;
+        piece_clips[p].h = 60;
+
+        if(p >=0 && p < 6) {
+            piece_clips[p].x = p*60;
+            piece_clips[p].y = 60;
+        } else {
+            piece_clips[p].x = (p-6)*60;
+            piece_clips[p].y = 0;
+        }
+    }
+}
+
+bool PlayerView::update_info()
+{
+    SDL_Color white = { 255, 255, 255 }; 
+
+    std::string side_to_move_ch = (board_state.side_to_move == White) ? " White " : " Black ";
+    std::string side_to_move_str = "side to move: "; 
+    std::string side_to_move = side_to_move_str + side_to_move_ch;
+    if(!side_to_move_texture.loadText(font, side_to_move, white, renderer)) {
+       return false;
     }
 
-    piece_clips[BQ].x = 0;
-    piece_clips[BQ].y = 0;
+    std::string can_w_castle_ks = board_state.w_castle_ks ? " Yes " : " No ";
+    std::string w_castle_ks_str = "white castle kingside: ";
+    std::string w_castle_ks = w_castle_ks_str + can_w_castle_ks;
+    if(!w_castling_ks_texture.loadText(font, w_castle_ks, white, renderer)) {
+        return false;
+    }
 
-    piece_clips[BK].x = 60;
-    piece_clips[BK].y = 0;
+    std::string can_w_castle_qs = board_state.w_castle_qs ? " Yes " : " No ";
+    std::string w_castle_qs_str = "white castle queenside: ";
+    std::string w_castle_qs = w_castle_qs_str + can_w_castle_qs;
+    if(!w_castling_qs_texture.loadText(font, w_castle_qs, white, renderer)) {
+        return false;
+    }
+    
+    std::string can_b_castle_ks = board_state.b_castle_ks ? " Yes " : " No ";
+    std::string b_castle_ks_str = "black castle kingside: ";
+    std::string b_castle_ks = b_castle_ks_str + can_b_castle_ks;
+    if(!b_castling_ks_texture.loadText(font, b_castle_ks, white, renderer)) {
+        return false;
+    }
 
-    piece_clips[BR].x = 120;
-    piece_clips[BR].y = 0;
+    std::string can_b_castle_qs = board_state.b_castle_qs ? " Yes " : " No ";
+    std::string b_castle_qs_str = "black castle queenside: ";
+    std::string b_castle_qs = b_castle_qs_str + can_b_castle_qs;
+    if(!b_castling_qs_texture.loadText(font, b_castle_qs, white, renderer)) {
+        return false;
+    }
 
-    piece_clips[BN].x = 180;
-    piece_clips[BN].y = 0;
+    std::string ep_file_str = "ep file: ";
+    std::string ep_file_data = board_state.ep_file > 0 ? std::to_string(board_state.ep_file) : "None";
+    std::string ep_file = ep_file_str + ep_file_data;
+    if(!ep_file_texture.loadText(font, ep_file, white, renderer)) {
+        return false;
+    }
 
-    piece_clips[BB].x = 240;
-    piece_clips[BB].y = 0;
+    std::string halfmove_clock_str = "halfmove clock: "; 
+    std::string halfmove_clock_data = std::to_string(board_state.halfmove_clock);
+    std::string halfmove_clock = halfmove_clock_str + halfmove_clock_data;
+    if(!halfmove_clock_texture.loadText(font, halfmove_clock, white, renderer)) {
+        return false;
+    }
 
-    piece_clips[BP].x = 300;
-    piece_clips[BP].y = 0;
+    std::string ply_count_str = "ply count: "; 
+    std::string ply_count_data = std::to_string(board_state.ply_count);
+    std::string ply_count = ply_count_str + ply_count_data;
+    if(!ply_count_texture.loadText(font, ply_count, white, renderer)) {
+        return false;
+    }
 
-
-    piece_clips[WQ].x = 0;
-    piece_clips[WQ].y = 60;
-
-    piece_clips[WK].x = 60;
-    piece_clips[WK].y = 60;
-
-    piece_clips[WR].x = 120;
-    piece_clips[WR].y = 60;
-
-    piece_clips[WN].x = 180;
-    piece_clips[WN].y = 60;
-
-    piece_clips[WB].x = 240;
-    piece_clips[WB].y = 60;
-
-    piece_clips[WP].x = 300;
-    piece_clips[WP].y = 60;
+    return true;
 }
 
 void PlayerView::handle_events()
 {
-    switch( e.type ) {
+    switch(e.type) {
         case SDL_KEYDOWN : 
             if( e.key.keysym.sym == SDLK_q ) {
                 running = false;
@@ -117,13 +138,41 @@ void PlayerView::draw_grid()
     }
 }
 
+void PlayerView::init_pieces()
+{
+    for(int s=0; s<NUM_SQUARES; ++s) {
+        Piece p = board_state.squares[s];
+        if(p != None) {
+            board_pieces[s].p = p;
+            board_pieces[s].x = (s % 8)*rect_w;
+            board_pieces[s].y = (7 - (s / 8))*rect_w;
+            board_pieces[s].w = rect_w;
+            board_pieces[s].h = rect_w;
+        }
+    }
+}
+
 void PlayerView::draw_pieces() 
 {
-    for(int i=0; i<NUM_SQUARES; ++i) {
-        const Piece p = board_pieces[i].p;
-        if( p != None ) 
-            SDL_RenderCopy(renderer, texture, &piece_clips[p], & board_pieces[i].rect);	
+    for(int s=0; s<NUM_SQUARES; ++s) {
+        Piece p = board_state.squares[s];
+        int x = board_pieces[s].x;
+        int y = board_pieces[s].y;
+        if(p != None)
+            pieces_texture.render(x, y, rect_w, rect_w, renderer, &piece_clips[p]);
     }
+}
+
+void PlayerView::draw_info()
+{
+    side_to_move_texture.render(10,0, renderer);
+    w_castling_ks_texture.render(10, 30, renderer);
+    w_castling_qs_texture.render(10, 60, renderer);
+    b_castling_ks_texture.render(10, 90, renderer);
+    b_castling_qs_texture.render(10, 120, renderer);
+    ep_file_texture.render(10, 150, renderer);
+    halfmove_clock_texture.render(10, 180, renderer);
+    ply_count_texture.render(10, 210, renderer);
 }
 
 void PlayerView::game_loop()
@@ -134,23 +183,26 @@ void PlayerView::game_loop()
 		}
 
         SDL_GetMouseState(&mx, &my);
+		SDL_GetWindowSize(window, &scr_w, &scr_w);
 
 		// Clear screen
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 		SDL_RenderClear(renderer);
-		SDL_GetWindowSize(window, &scr_w, &scr_w);
 
+        SDL_RenderSetViewport(renderer, &board_viewport);
         draw_grid();
         draw_pieces();
+        board_state.update(board_pieces);
         handle_dragging();
+
+        SDL_RenderSetViewport(renderer, &info_viewport);
+        update_info();
+        draw_info();
 
 		SDL_RenderPresent(renderer);
 	}
-}
-
-void PlayerView::init_texture()
-{
-	texture = loadFromFile("../assets/ChessPiecesArray.png", renderer, texture);
+    close_sdl();
+    free_textures();
 }
 
 int PlayerView::init_window_and_renderer()
@@ -160,7 +212,7 @@ int PlayerView::init_window_and_renderer()
 
 void PlayerView::close_sdl() 
 {
-	close(&window,&renderer );
+	close(&window, &renderer);
 }
 
 bool PlayerView::no_others_dragged(int this_board_piece_idx) 
@@ -177,43 +229,70 @@ bool PlayerView::no_others_dragged(int this_board_piece_idx)
 
 bool PlayerView::in_board_piece(BoardPiece todrag) 
 {
-    return mx >= todrag.rect.x 
-            && mx <= todrag.rect.x + todrag.rect.w
-            && my >= todrag.rect.y 
-            && my <= todrag.rect.y + todrag.rect.h ;
+    return mx >= todrag.x 
+            && mx <= todrag.x + todrag.w
+            && my >= todrag.y 
+            && my <= todrag.y + todrag.h ;
 }
 
 void PlayerView::snap(BoardPiece & piece)
 {
-    int file = (piece.rect.x + piece.rect.w/2) / rect_w;
-    int rank = 8-((piece.rect.y + piece.rect.h/2)/ rect_w);
-    piece.rect.x = file*rect_w;
-    piece.rect.y = (8-rank)*rect_w;
+    int file = (piece.x + piece.w/2) / rect_w;
+    int rank = 8-((piece.y + piece.h/2)/ rect_w);
+    piece.x = file*rect_w;
+    piece.y = (8-rank)*rect_w;
 }
 
 void PlayerView::handle_dragging() 
 {
-
-    for(int i=0; i<NUM_SQUARES; ++i) {
-        if ( board_pieces[i].p != -1
+    for(int s=0; s<NUM_SQUARES; ++s) {
+        if ( board_pieces[s].p != None
             && mousedown_on_piece
-            && in_board_piece(board_pieces[i])
-            && no_others_dragged(i) ) {
-            board_pieces[i].dragging = true;
+            && in_board_piece(board_pieces[s])
+            && no_others_dragged(s) ) {
+            board_pieces[s].dragging = true;
         }
 
         if(!mousedown_on_piece) {
-            board_pieces[i].dragging = false;
+            board_pieces[s].dragging = false;
         }
 
-        if(board_pieces[i].dragging) {
-            int cx = board_pieces[i].rect.w / 2;
-            int cy = board_pieces[i].rect.h / 2;
+        if(board_pieces[s].dragging && mx < board_viewport.w) {
+            int cx = board_pieces[s].w / 2;
+            int cy = board_pieces[s].h / 2;
 
-            board_pieces[i].rect.x = mx - cx;
-            board_pieces[i].rect.y = my - cy; 
+            board_pieces[s].x = mx - cx;
+            board_pieces[s].y = my - cy; 
         }
     }
 }
 
+void PlayerView::init_viewports()
+{
+    // board viewport
+    board_viewport.x = 0;
+    board_viewport.y = 0;
+    board_viewport.w = (0.6666)*scr_w;
+    board_viewport.h = scr_h;
+
+    // info viewport
+    info_viewport.x = board_viewport.w; 
+    info_viewport.y = 0; 
+    info_viewport.w = scr_w/3;
+    info_viewport.h = scr_h;
+
+    rect_w = board_viewport.w / NUM_ROWS;
+}
+
+void PlayerView::free_textures()
+{
+    side_to_move_texture.free();
+    w_castling_ks_texture.free();
+    w_castling_qs_texture.free();
+    b_castling_ks_texture.free();
+    b_castling_qs_texture.free();
+    ep_file_texture.free();
+    halfmove_clock_texture.free();
+    ply_count_texture.free();
+}
 
