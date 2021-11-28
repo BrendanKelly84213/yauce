@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 
+
 enum Piece { 
     WQ, WK, WR, WN, WB, WP,
     BQ, BK, BR, BN, BB, BP, None=-1
@@ -24,9 +25,18 @@ enum Colour { White, Black };
 
 struct BoardPiece 
 {
-    SDL_Rect rect;
+    int x=0,y=0;
+    int w=0,h=0;
     bool dragging = false; 
     Piece p = None;
 };
+
+enum Direction : int 
+{ 
+    N   =    8, S   =   -8, E   =    1,  W   =   -1, //Basic compass rose 
+    NE  =  N+E, NW  =  N+W, SE  =  S+E,  SW  =  S+W, 
+    NEE = NE+E, NNE = N+NE, NNW =  N+NW, NWW = NW+W, //Knight Compass rose		
+    SWW = SW+W, SSW = S+SW, SSE =  S+SE, SEE = SE+E
+}; 
 
 #endif
