@@ -4,9 +4,15 @@
 #include <SDL2/SDL.h>
 
 
-enum Piece { 
+enum Piece 
+{ 
     WQ, WK, WR, WN, WB, WP,
     BQ, BK, BR, BN, BB, BP, None=-1
+};
+
+enum PieceType 
+{
+    Pawn, Knight, Bishop, Rook, Queen, King
 };
 
 enum Square : int
@@ -23,6 +29,15 @@ enum Square : int
 
 enum Colour { White, Black };
 
+enum Direction : int 
+{ 
+    N   =    8, S   =   -8, E   =    1,  W   =   -1, //Basic compass rose 
+    NE  =  N+E, NW  =  N+W, SE  =  S+E,  SW  =  S+W, 
+    NEE = NE+E, NNE = N+NE, NNW =  N+NW, NWW = NW+W, //Knight Compass rose		
+    SWW = SW+W, SSW = S+SW, SSE =  S+SE, SEE = SE+E
+}; 
+
+
 struct BoardPiece 
 {
     int x=0,y=0;
@@ -31,12 +46,11 @@ struct BoardPiece
     Piece p = None;
 };
 
-enum Direction : int 
-{ 
-    N   =    8, S   =   -8, E   =    1,  W   =   -1, //Basic compass rose 
-    NE  =  N+E, NW  =  N+W, SE  =  S+E,  SW  =  S+W, 
-    NEE = NE+E, NNE = N+NE, NNW =  N+NW, NWW = NW+W, //Knight Compass rose		
-    SWW = SW+W, SSW = S+SW, SSE =  S+SE, SEE = SE+E
-}; 
+struct Move 
+{
+    Square from, to;
+};
+
+
 
 #endif
