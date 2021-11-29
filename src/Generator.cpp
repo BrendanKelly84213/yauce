@@ -3,7 +3,14 @@
 //TODO: 
 //  Check for checks 
 //  Sliding pieces
-//  piece bitboards array
+//  Organize code 
+
+typedef uint16_t BMove;
+
+// BMove:
+// Bits 0 - 5: from 
+// Bits 6 - 11: to
+// Bits 11 - 16: empty for now
 
 //Ranks and files. 
 constexpr Bitboard FileABB = 0x0101010101010101ULL;
@@ -30,9 +37,10 @@ constexpr Square operator+(Square a, T b)
     return static_cast<Square>(int(a) + int(b)); 
 }
 
-constexpr Square operator++(Square s) 
+Square& operator++(Square& s) 
 { 
-    return static_cast<Square>(int(s) + int(s)); 
+    s = static_cast<Square>(int(s) + 1); 
+    return s;
 }
 
 constexpr Bitboard get_bit(Bitboard bb, int square) 
@@ -71,16 +79,16 @@ inline Square pop_bit(Bitboard &bb)
 	return index;
 } 
 
-Bitboard occ_squares(Piece* pieces, Colour colour)
+Bitboard occ_squares(Piece* squares, Colour colour)
 {
     Bitboard occ = 0x00;
     for(int s=0; s<64; ++s) {
         if(colour == White) {
-            if(pieces[s] >= WQ && pieces[s] <= WP) {
+            if(squares[s] >= WQ && squares[s] <= WP) {
                 set_bit(occ, s);
             }
         } else {
-            if(pieces[s] >= BQ && pieces[s] <= BP) {
+            if(squares[s] >= BQ && squares[s] <= BP) {
                 set_bit(occ, s);
             }
         }
@@ -134,11 +142,14 @@ Bitboard pawn_squares(
 {
     Colour us = board_state.side_to_move;
     Direction push_dir = us == White ? N : S;  
+
     Bitboard ratt = bit(origin + push_dir + E);
     Bitboard latt = bit(origin + push_dir + W);
     Bitboard single_push = bit(origin + push_dir);
     Bitboard double_push = bit(origin + push_dir + push_dir);
-    Bitboard squares; 
+
+    Bitboard mask = ratt | latt | single_push | double_push;
+    Bitboard squares = 0; 
 
     if(op_occ & ratt) {
         squares |= ratt;
@@ -158,32 +169,53 @@ Bitboard pawn_squares(
     }
 
     if((us == Black && origin >= a7 && origin <= h7) 
-    || (us == White && origin >= a2 && origin <= h2)
-    && !(double_push & op_occ)) {
-        squares |= double_push;
-    } else {
-        if(!single_push & op_occ) {
+    || (us == White && origin >= a2 && origin <= h2)) {
+        if(!(double_push & op_occ)) {
+            squares |= double_push;
+        }
+        if(!(single_push & op_occ)) {
             squares |= single_push;
         }
     }
 
-    return squares & ~friend_occ;
+    return squares & mask & ~friend_occ;
 }
 
-#if 1
-Move* generator(Bitboard * piece_bbs, 
+
+std::string square_to_str[64] = {  
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", 
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2", 
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3", 
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4", 
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5", 
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6", 
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", 
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
+};
+
+constexpr Square orig_bm(BMove m)  
+{
+    return static_cast<Square>((m >> 6) & 0x3f);
+}
+
+constexpr Square dest_bm(BMove m) 
+{
+    return static_cast<Square>(m & 0x3f);
+}
+
+BMove* generator(Bitboard * piece_bbs, 
         BoardState board_state, 
         Bitboard friend_occ, 
         Bitboard op_occ)
 {   
-    static Move moves[128];
+    static BMove moves[128];
     int i = 0;
     for(int p = Pawn; p < King; ++p) {
         Bitboard occ = piece_bbs[p];
         while(occ) {
-            Square origin = pop_bit(piece_bbs[p]);
-            moves[i].from = origin;
-            Bitboard to_squares;
+            Square origin = pop_bit(occ);
+            moves[i] = 0;
+            Bitboard to_squares = 0;
             switch(p) {
                 case Pawn:
                     to_squares = pawn_squares(friend_occ, op_occ, board_state, origin);
@@ -196,20 +228,66 @@ Move* generator(Bitboard * piece_bbs,
                     break;
                 default: break;
             }
+
             while(to_squares) {
-                moves[i].to = pop_bit(to_squares);
+                Square dest = pop_bit(to_squares);
+                moves[i] |= static_cast<BMove>((origin << 6) & 0xfc0);
+                moves[i] |= static_cast<BMove>(dest & 0x3f);
+                ++i;
             }
-            ++i;
         }
     }
     return moves;
 }
-#endif 
+
+PieceType piece_to_piecetype(Piece piece) 
+{
+    switch(piece) {
+        case WP:
+        case BP:
+            return Pawn;
+        case WN:
+        case BN:
+            return Knight;
+        case WB:
+        case BB:
+            return Bishop;
+        case WR:
+        case BR:
+            return Rook;
+        case WQ:
+        case BQ:
+            return Queen;
+        case WK:
+        case BK:
+            return King;
+        default: break;
+    }
+    return Null;
+}
 
 int main()
 {
     BoardState board_state;
-    std::string fen = "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2";
+    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     board_state.init(fen);
+    Bitboard piece_bbs[6];
+    Colour us = board_state.side_to_move;
+    Bitboard friend_occ = occ_squares(board_state.squares, us);
+    Bitboard op_occ = occ_squares(board_state.squares, (us == White ? Black : White));
+
+    for(Square s = a1; s <= h8; ++s) {
+        Piece piece = board_state.squares[s];
+        PieceType pt = piece_to_piecetype(piece); 
+        if(pt != Null) {
+            if((us == White && piece >= WQ && piece <= WP)
+            || (us == Black && piece >= BQ && piece <= BP))
+               piece_bbs[pt] |= bit(s);
+        }
+    }
+
+    BMove * moves;
+    moves = generator(piece_bbs, board_state, friend_occ, op_occ);
+
     return 0;
 }
