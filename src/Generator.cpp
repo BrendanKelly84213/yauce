@@ -30,6 +30,35 @@ constexpr Bitboard Rank6BB = Rank1BB << (8 * 5);
 constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 
+// Sliding piece lookup tables 
+const Bitboard maindia = 0x8040201008040201ULL;
+const Bitboard nort = 0x0101010101010100;
+const Bitboard noea = 0x8040201008040200;
+const Bitboard sout = 0x0080808080808080;
+
+// For debugging
+std::string square_to_str[64] = {  
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", 
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2", 
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3", 
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4", 
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5", 
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6", 
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", 
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
+};
+
+#if 0
+static Bitboard diag_attacks[64];
+static Bitboard anti_diag_attacks[64];
+static Bitboard rank_attacks[64];
+static Bitboard file_attacks[64];
+#endif
+
+static Bitboard queen_attacks[64];
+static Bitboard rook_attacks[64];
+static Bitboard bishop_attacks[64];
+
 template<typename T>
 constexpr Square operator+(Square a, T b) 
 { 
@@ -105,6 +134,107 @@ Bitboard occ_squares(Piece* squares, Colour colour)
     return occ;
 }
 
+// Naive sliding piece lookup table initialization
+void init_sliding()
+{
+    //NOTE: Following to loops could be joined into one 
+    Bitboard west = Rank1BB ^ 0x080ULL;
+    Bitboard west_attacks[64];
+    for(int r8=0; r8 < 64; r8+=8) {
+        for(int f=0; f<8; ++f) {
+            Square sq = static_cast<Square>(r8 + (7-f));
+            west_attacks[sq] = ((west << r8) >> f) & (Rank1BB << r8);
+        }
+    }
+
+    Bitboard east = Rank8BB ^ 0x0100000000000000ULL;
+    Bitboard east_attacks[64];
+    for(int mr8=0; mr8 < 64; mr8+=8) {
+        int r8 = 63 - mr8;
+        for(int f=0; f<8; ++f) {
+            Square sq = static_cast<Square>(r8 - (7-f));
+            east_attacks[sq] = ((east >> mr8) << f) & (Rank8BB >> mr8);
+            /* print(east_attacks[sq]); */
+        }
+    }
+
+    //NOTE: Following to loops could be joined into one 
+    Bitboard north = FileABB ^ 0x01ULL; 
+    Bitboard north_attacks[64]; 
+    for(int s=0; s < 64; ++s) {
+        north_attacks[s] = north << s;
+    }
+
+    Bitboard south = FileHBB ^ 0x8000000000000000ULL;
+    Bitboard south_attacks[64];
+    for(int i=0; i < 64; ++i) {
+        Square sq = static_cast<Square>(63-i);
+        south_attacks[sq] = south >> i;
+    }
+
+    //NOTE: Following to loops could be joined into one 
+    Bitboard northeast = 0x8040201008040200ULL;
+    Bitboard ne_attacks[64];
+    for(int s=0; s<64; ++s) {
+        int file = s % 8;  
+        Bitboard file_mask = 0;
+        for(int f=file; f < 8; ++f) {
+            file_mask |= (FileABB << f);
+        }
+        ne_attacks[s] = (northeast << s) & file_mask;
+    }
+    
+    Bitboard southwest = 0x8040201008040201ULL ^ 0x8000000000000000ULL;
+    Bitboard sw_attacks[64];
+    for(int s=0; s<64; ++s) {
+        Square sq = static_cast<Square>(63-s);
+        int file = sq % 8;  
+        Bitboard file_mask = 0;
+        for(int f=file; f >=0 ; --f) {
+            file_mask |= (FileABB << f);
+        }
+        sw_attacks[sq] = (southwest >> s) & file_mask;
+    }
+
+    // NOTE: Same loop as west attacks
+    Bitboard northwest = 0x0102040810204080ULL ^ 0x080ULL;
+    Bitboard nw_attacks[64];
+    for(int r8=0; r8 < 64; r8+=8) {
+        for(int f=0; f<8; ++f) {
+            int file = 7-f;
+            Bitboard file_mask = 0;
+            for(int f=file; f >=0 ; --f) {
+                file_mask |= (FileABB << f);
+            }
+
+            Square sq = static_cast<Square>(r8 + file);
+            nw_attacks[sq] = ((northwest << r8) >> f) & file_mask;
+        }
+    }
+
+    // NOTE: Same loop as east attacks
+    Bitboard southeast = 0x0102040810204080ULL ^ 0x0100000000000000ULL;
+    Bitboard se_attacks[64];
+    for(int mr8=0; mr8<64; mr8+=8) {
+        int r8 = 63 - mr8;
+        for(int f=0; f<8; ++f) {
+            Bitboard file_mask = 0;
+            for(int file = f; file < 8; ++file) {
+                file_mask |= (FileABB << file);
+            }
+
+            Square sq = static_cast<Square>(r8 - (7-f));
+            se_attacks[sq] = ((southeast << f) >> mr8) & file_mask;
+        }
+    }
+
+    for(int s = 0; s < 64; ++s) {
+        rook_attacks[s] = north_attacks[s] | south_attacks[s] | west_attacks[s] | east_attacks[s];
+        bishop_attacks[s] = nw_attacks[s] | se_attacks[s] | ne_attacks[s] | sw_attacks[s];
+        queen_attacks[s] = rook_attacks[s] | bishop_attacks[s];
+    }
+}
+
 constexpr Bitboard king_mask(Square origin)
 {
     return (bit(origin + N) & ~Rank1BB)
@@ -117,6 +247,13 @@ constexpr Bitboard king_mask(Square origin)
         | (bit(origin + NW) & ~(FileHBB | Rank1BB));
 }
 
+Bitboard king_squares(
+        Bitboard friend_occ, 
+        Square origin)
+{
+    return king_mask(origin) & ~friend_occ;
+}
+
 constexpr Bitboard knight_mask(Square origin)
 {
     return (bit(origin + NEE) & ~(FileABB | FileBBB | Rank1BB))
@@ -127,13 +264,6 @@ constexpr Bitboard knight_mask(Square origin)
         | (bit(origin + SSW) & ~(FileHBB | Rank8BB | Rank7BB))
         | (bit(origin + SSE) & ~(FileABB | Rank8BB | Rank7BB))
         | (bit(origin + SEE) & ~(FileABB | FileBBB | Rank8BB));
-}
-
-Bitboard king_squares(
-        Bitboard friend_occ, 
-        Square origin)
-{
-    return king_mask(origin) & ~friend_occ;
 }
 
 Bitboard knight_squares(
@@ -192,18 +322,6 @@ Bitboard pawn_squares(
 
     return squares & mask & ~friend_occ;
 }
-
-
-std::string square_to_str[64] = {  
-    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", 
-    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2", 
-    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3", 
-    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4", 
-    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5", 
-    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6", 
-    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", 
-    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
-};
 
 
 BMove* generator(Bitboard * piece_bbs, 
@@ -270,6 +388,7 @@ PieceType piece_to_piecetype(Piece piece)
     return Null;
 }
 
+// For GUI 
 std::vector<Move> boardstate_to_move_vec(BoardState board_state)
 {
     std::vector<Move> move_vec;
@@ -306,17 +425,14 @@ std::vector<Move> boardstate_to_move_vec(BoardState board_state)
     return move_vec;
 }
 
-#if 0
+#if 1
 int main()
 {
     BoardState board_state;
     std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    board_state.init(fen);
 
-    std::vector<Move> move_vec = boardstate_to_move_vec(board_state);
-   
-    for(auto &m : move_vec) {
-        std::cout << m.from << " " << m.to << '\n';
+    init_sliding();
+    for(int s=a1; s<=h8; ++s) {
     }
 
     return 0;
