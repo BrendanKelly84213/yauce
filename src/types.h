@@ -3,7 +3,6 @@
 
 #include <SDL2/SDL.h>
 
-
 enum Piece 
 { 
     WQ, WK, WR, WN, WB, WP,
@@ -12,7 +11,7 @@ enum Piece
 
 enum PieceType 
 {
-    Pawn, Knight, Bishop, Rook, Queen, King
+    Pawn, Knight, Bishop, Rook, Queen, King, Null=-1
 };
 
 enum Square : int
@@ -37,7 +36,6 @@ enum Direction : int
     SWW = SW+W, SSW = S+SW, SSE =  S+SE, SEE = SE+E
 }; 
 
-
 struct BoardPiece 
 {
     int x=0,y=0;
@@ -48,9 +46,7 @@ struct BoardPiece
 
 struct Move 
 {
-    Square from, to;
+    Square from=a1, to=a1;
 };
-
-
 
 #endif
