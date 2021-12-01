@@ -5,7 +5,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <string>
 #include "environment.h"
-#include "BoardState.h"
+#include "Generator.h"
 #include "Texture.h"
 
 // TODO: Add sidebar with info 
@@ -35,6 +35,9 @@ private:
     BoardPiece board_pieces[NUM_SQUARES]; 
     BoardState board_state;
     std::string fen;
+
+    std::vector<Move> move_vec;
+    Move current_move;
 
     TTF_Font* font;
 
@@ -73,7 +76,9 @@ private:
     int init_window_and_renderer();
     void init_pieces();
     bool update_info();
-    void update();
+    void update_moves();
+    bool valid_move(Square from, Square to);
+    void on_player_make_move(Piece piece);
 
     void free_textures();
 };

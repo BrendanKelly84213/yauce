@@ -10,6 +10,7 @@ void PlayerView::init_all()
     init_pieces();
     TTF_Init();
     font = TTF_OpenFont("../assets/OpenSans-Regular.ttf", 16);
+    update_moves();
 }
 
 void PlayerView::init_piece_clips() 
@@ -20,10 +21,10 @@ void PlayerView::init_piece_clips()
 
         if(p >=0 && p < 6) {
             piece_clips[p].x = p*60;
-            piece_clips[p].y = 60;
+            piece_clips[p].y = 0;
         } else {
             piece_clips[p].x = (p-6)*60;
-            piece_clips[p].y = 0;
+            piece_clips[p].y = 60;
         }
     }
 }
@@ -91,6 +92,61 @@ bool PlayerView::update_info()
     return true;
 }
 
+bool PlayerView::valid_move(Square from, Square to)
+{ 
+    for(auto &m : move_vec) {
+        if(m.from == from && m.to == to
+            && m.from != m.to) {
+            return true;
+        }
+    }
+    return false;
+}
+
+Colour operator!(Colour c)
+{
+    return static_cast<Colour>(!static_cast<bool>(c));
+}
+
+inline bool did_pawn_double_push(Colour side, Square from, Square to)
+{
+    if(side == White)
+        return from >= a2 && from <= h2 && to == from + N + N; 
+    return from >= a7 && from <= h7 && to == from + S + S; 
+}
+
+inline bool correct_colour(Colour side, Square s)
+{
+    if(side == White)
+        return s >= a2 && s <= h2 ; 
+    return s >= a7 && s <= h7; 
+}
+
+void PlayerView::on_player_make_move(Piece piece)
+{
+    // Update game state  
+    if(did_pawn_double_push(board_state.side_to_move, current_move.from, current_move.to)) {
+        board_state.ep_file = current_move.to % 8;
+    } else {
+        board_state.ep_file = -1;
+    }
+    std::cout << piece << '\n';
+    // TODO: castling rights, halfmove_clock
+    board_state.ply_count++;
+    board_state.side_to_move = !board_state.side_to_move;
+    board_state.squares[current_move.from] = None;
+    board_state.squares[current_move.to] = piece;
+    current_move.from = current_move.to;
+    update_moves();
+}
+
+Square xy_to_square(int x, int y, int rect_w, int rect_h)
+{
+    int file = ((x + rect_w/2) / rect_w);
+    int rank = 7-((y + rect_w/2) / rect_w);
+    return static_cast<Square>(8*rank + file);
+}
+
 void PlayerView::handle_events()
 {
     switch(e.type) {
@@ -101,16 +157,32 @@ void PlayerView::handle_events()
             break; 
         case SDL_MOUSEBUTTONUP :
             mousedown_on_piece = false;
-            for(int i=0; i<NUM_SQUARES; ++i) {
-                if(board_pieces[i].dragging && board_pieces[i].p != -1) {
-                    snap(board_pieces[i]);
+            for(int s=0; s<NUM_SQUARES; ++s) {
+                if(board_pieces[s].dragging && board_pieces[s].p != -1) {
+                    Square from = current_move.from;
+                    Square to = xy_to_square(board_pieces[s].x, board_pieces[s].y, rect_w, rect_w);
+                    current_move.to = to;
+                    
+                    if(valid_move(from, to)) {
+                        snap(board_pieces[s]);
+                        on_player_make_move(board_pieces[s].p);
+                    } else {
+                        board_pieces[s].x = rect_w*(from % 8);
+                        board_pieces[s].y = rect_w*(floor(7-(from / 8)));
+                    }
                 }
             }
             break;
         case SDL_MOUSEBUTTONDOWN :
-            for(int i=0; i<NUM_SQUARES; ++i) {
-                if(in_board_piece(board_pieces[i]) && board_pieces[i].p != -1) {
+            for(int s=0; s<NUM_SQUARES; ++s) {
+                if(in_board_piece(board_pieces[s]) && board_pieces[s].p != -1) {
                     mousedown_on_piece = true;
+                    Square sq = xy_to_square(board_pieces[s].x, board_pieces[s].y, rect_w, rect_w);
+                    // Correct colour
+                    if(correct_colour) {
+                        current_move.from = sq;
+                        /* std::cout << current_move.from << '\n'; */
+                    }
                 }
             }
             break;
@@ -155,7 +227,7 @@ void PlayerView::init_pieces()
 void PlayerView::draw_pieces() 
 {
     for(int s=0; s<NUM_SQUARES; ++s) {
-        Piece p = board_state.squares[s];
+        Piece p = board_pieces[s].p;
         int x = board_pieces[s].x;
         int y = board_pieces[s].y;
         if(p != None)
@@ -192,7 +264,6 @@ void PlayerView::game_loop()
         SDL_RenderSetViewport(renderer, &board_viewport);
         draw_grid();
         draw_pieces();
-        board_state.update(board_pieces);
         handle_dragging();
 
         SDL_RenderSetViewport(renderer, &info_viewport);
@@ -294,5 +365,10 @@ void PlayerView::free_textures()
     ep_file_texture.free();
     halfmove_clock_texture.free();
     ply_count_texture.free();
+}
+
+void PlayerView::update_moves()
+{
+    move_vec = boardstate_to_move_vec(board_state);
 }
 
