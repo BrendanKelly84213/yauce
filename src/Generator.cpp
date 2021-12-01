@@ -5,7 +5,6 @@
 //  Sliding pieces
 //  Organize code 
 
-typedef uint16_t BMove;
 
 // BMove:
 // Bits 0 - 5: from 
@@ -72,6 +71,16 @@ constexpr void set_bit(Bitboard &bb, int square)
     bb |= 1ULL << square; 
 }
 
+constexpr Square orig_bm(BMove m)  
+{
+    return static_cast<Square>((m >> 6) & 0x3f);
+}
+
+constexpr Square dest_bm(BMove m) 
+{
+    return static_cast<Square>(m & 0x3f);
+}
+
 inline Square pop_bit(Bitboard &bb)
 {
 	Square index = Square(__builtin_ctzll(bb));
@@ -84,11 +93,11 @@ Bitboard occ_squares(Piece* squares, Colour colour)
     Bitboard occ = 0x00;
     for(int s=0; s<64; ++s) {
         if(colour == White) {
-            if(squares[s] >= WQ && squares[s] <= WP) {
+            if(squares[s] >= 6 && squares[s] <= 11) {
                 set_bit(occ, s);
             }
         } else {
-            if(squares[s] >= BQ && squares[s] <= BP) {
+            if(squares[s] >= 0 && squares[s] <= 5) {
                 set_bit(occ, s);
             }
         }
@@ -151,14 +160,15 @@ Bitboard pawn_squares(
     Bitboard mask = ratt | latt | single_push | double_push;
     Bitboard squares = 0; 
 
+    // Attacks 
     if(op_occ & ratt) {
         squares |= ratt;
     }
-    
     if(op_occ & latt) {
         squares |= latt;
     }
 
+    //En Passant
     if(board_state.ep_file != -1) {
         int rank = floor(origin * 0.125);
         int file = origin % 8;
@@ -168,14 +178,16 @@ Bitboard pawn_squares(
         } 
     }
 
+    // Double push 
     if((us == Black && origin >= a7 && origin <= h7) 
     || (us == White && origin >= a2 && origin <= h2)) {
         if(!(double_push & op_occ)) {
             squares |= double_push;
         }
-        if(!(single_push & op_occ)) {
-            squares |= single_push;
-        }
+    }
+
+    if(!(single_push & op_occ)) {
+        squares |= single_push;
     }
 
     return squares & mask & ~friend_occ;
@@ -193,15 +205,6 @@ std::string square_to_str[64] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
 };
 
-constexpr Square orig_bm(BMove m)  
-{
-    return static_cast<Square>((m >> 6) & 0x3f);
-}
-
-constexpr Square dest_bm(BMove m) 
-{
-    return static_cast<Square>(m & 0x3f);
-}
 
 BMove* generator(Bitboard * piece_bbs, 
         BoardState board_state, 
@@ -210,7 +213,7 @@ BMove* generator(Bitboard * piece_bbs,
 {   
     static BMove moves[128];
     int i = 0;
-    for(int p = Pawn; p < King; ++p) {
+    for(int p = Pawn; p <= King; ++p) {
         Bitboard occ = piece_bbs[p];
         while(occ) {
             Square origin = pop_bit(occ);
@@ -229,10 +232,11 @@ BMove* generator(Bitboard * piece_bbs,
                 default: break;
             }
 
+            BMove from = static_cast<BMove>((origin << 6) & 0xfc0);
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
-                moves[i] |= static_cast<BMove>((origin << 6) & 0xfc0);
-                moves[i] |= static_cast<BMove>(dest & 0x3f);
+                BMove to = static_cast<BMove>(dest & 0x3f);
+                moves[i] = from | to;
                 ++i;
             }
         }
@@ -266,28 +270,55 @@ PieceType piece_to_piecetype(Piece piece)
     return Null;
 }
 
-int main()
+std::vector<Move> boardstate_to_move_vec(BoardState board_state)
 {
-    BoardState board_state;
-    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    board_state.init(fen);
+    std::vector<Move> move_vec;
+
     Bitboard piece_bbs[6];
     Colour us = board_state.side_to_move;
     Bitboard friend_occ = occ_squares(board_state.squares, us);
     Bitboard op_occ = occ_squares(board_state.squares, (us == White ? Black : White));
+    BMove * moves;
+
+    for(int p = Pawn; p <= King; ++p) {
+        piece_bbs[p] = 0;
+    }
 
     for(Square s = a1; s <= h8; ++s) {
         Piece piece = board_state.squares[s];
         PieceType pt = piece_to_piecetype(piece); 
         if(pt != Null) {
-            if((us == White && piece >= WQ && piece <= WP)
-            || (us == Black && piece >= BQ && piece <= BP))
-               piece_bbs[pt] |= bit(s);
+            if((us == White && piece >= 6 && piece <= 11)
+            || (us == Black && piece >= 0 && piece <= 5)) {
+                piece_bbs[pt] |= bit(s);
+            }
         }
     }
 
-    BMove * moves;
     moves = generator(piece_bbs, board_state, friend_occ, op_occ);
+    while(*moves != 0x00) {
+        BMove bmove = *moves++;
+        Move move;
+        move.from = orig_bm(bmove);
+        move.to = dest_bm(bmove);
+            move_vec.push_back(move);
+    }
+    return move_vec;
+}
+
+#if 0
+int main()
+{
+    BoardState board_state;
+    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    board_state.init(fen);
+
+    std::vector<Move> move_vec = boardstate_to_move_vec(board_state);
+   
+    for(auto &m : move_vec) {
+        std::cout << m.from << " " << m.to << '\n';
+    }
 
     return 0;
 }
+#endif
