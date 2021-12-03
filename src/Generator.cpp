@@ -1,9 +1,13 @@
 #include "Generator.h"
 
-//TODO: 
+// TODO: 
 //  Check for checks 
 //  Castling
 //  Organize code 
+//
+// FIX:
+//  White can only make pawn moves on the first turn
+
 
 
 // BMove:
@@ -31,11 +35,9 @@ constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 
 // Sliding piece lookup tables 
-static Bitboard queen_attacks[64];
-static Bitboard rook_attacks[64];
-static Bitboard bishop_attacks[64];
-static Bitboard behind[64][64];
 static Bitboard piece_attacks[6][64];
+static Bitboard behind[64][64];
+
 const Direction directions[] = { N, S, E, W, NE, NW, SE, SW };
 
 // For debugging
@@ -49,6 +51,32 @@ std::string square_to_str[64] = {
     "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", 
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
 };
+
+PieceType piece_to_piecetype(Piece piece) 
+{
+    switch(piece) {
+        case WP:
+        case BP:
+            return Pawn;
+        case WN:
+        case BN:
+            return Knight;
+        case WB:
+        case BB:
+            return Bishop;
+        case WR:
+        case BR:
+            return Rook;
+        case WQ:
+        case BQ:
+            return Queen;
+        case WK:
+        case BK:
+            return King;
+        default: break;
+    }
+    return Null;
+}
 
 template<typename T>
 constexpr Square operator+(Square a, T b) 
@@ -70,16 +98,6 @@ constexpr Bitboard get_bit(Bitboard bb, int square)
 constexpr Bitboard get_bit(Bitboard bb, int x, int y) 
 { 
     return (bb >> y*8 + x) & 1ULL;
-}
-
-void print(Bitboard bb) 
-{
-    for(int y=7; y >=0; --y){
-        std::cout << '\n';
-        for(int x=0; x < 8; ++x)
-            std::cout << get_bit(bb, x,y) << " ";
-    }
-    std::cout << '\n';
 }
 
 constexpr Bitboard bit(int s)
@@ -114,12 +132,23 @@ inline Square pop_bit(Bitboard &bb)
     return index;
 } 
 
+// For debugging
+void print(Bitboard bb) 
+{
+    for(int y=7; y >=0; --y){
+        std::cout << '\n';
+        for(int x=0; x < 8; ++x)
+            std::cout << get_bit(bb, x,y) << " ";
+    }
+    std::cout << '\n';
+}
+
 Bitboard occ_squares(Piece* squares, Colour colour)
 {
     Bitboard occ = 0x00;
     for(int s=0; s<64; ++s) {
         if(colour == White && squares[s] >= 6 && squares[s] <= 11
-        || colour == White && squares[s] >= 0 && squares[s] <= 5) {
+        || colour == Black && squares[s] >= 0 && squares[s] <= 5) {
                 set_bit(occ, s);
         }
     } 
@@ -151,7 +180,7 @@ constexpr Bitboard knight_mask(Square origin)
         | (bit(origin + SEE) & ~(FileABB | FileBBB | Rank8BB));
 }
 
-int distance(int origin, int dest)
+constexpr int distance(int origin, int dest)
 {
     int r2 = dest >> 3;
     int r1 = origin >> 3;
@@ -229,20 +258,6 @@ Bitboard get_piece_moves(PieceType p, Square from, Bitboard occ)
     return ts;
 }
 
-Bitboard knight_squares(
-        Bitboard friend_occ, 
-        Square origin)
-{
-    return knight_mask(origin) & ~friend_occ;
-}
-
-Bitboard king_squares(
-        Bitboard friend_occ, 
-        Square origin)
-{
-    return king_mask(origin) & ~friend_occ;
-}
-
 Bitboard pawn_squares(
         Bitboard friend_occ, 
         Bitboard op_occ, 
@@ -293,7 +308,6 @@ Bitboard pawn_squares(
     return squares & mask & ~friend_occ;
 }
 
-
 BMove* generator(Bitboard * piece_bbs, 
         BoardState board_state, 
         Bitboard friend_occ, 
@@ -324,32 +338,6 @@ BMove* generator(Bitboard * piece_bbs,
         }
     }
     return moves;
-}
-
-PieceType piece_to_piecetype(Piece piece) 
-{
-    switch(piece) {
-        case WP:
-        case BP:
-            return Pawn;
-        case WN:
-        case BN:
-            return Knight;
-        case WB:
-        case BB:
-            return Bishop;
-        case WR:
-        case BR:
-            return Rook;
-        case WQ:
-        case BQ:
-            return Queen;
-        case WK:
-        case BK:
-            return King;
-        default: break;
-    }
-    return Null;
 }
 
 // For GUI 
@@ -399,22 +387,6 @@ int main()
 
     init_behind();
     init_piece_attacks();
-
-    print(behind[e1][e2]);
-    /* print(trace_ray(e2, N)); */
-
-    /* for(Square f=a1; f<h8; ++f) { */
-    /*     for(Square t=a1; t<h8; ++t) { */
-    /*         if(behind[f][t]) { */
-    /*             std::cout << "Origin and blocker: " << '\n'; */
-    /*             print(bit(f) | bit(t)); */
-
-    /*             std::cout << "'\n'behind: " << '\n'; */
-    /*             print(behind[f][t]); */
-    /*         } */
-    /*     } */
-    /* } */
-
 
     return 0;
 }
