@@ -2,7 +2,7 @@
 
 //TODO: 
 //  Check for checks 
-//  Sliding pieces
+//  Castling
 //  Organize code 
 
 
@@ -50,14 +50,6 @@ std::string square_to_str[64] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
 };
 
-#if 0
-static Bitboard diag_attacks[64];
-static Bitboard anti_diag_attacks[64];
-static Bitboard rank_attacks[64];
-static Bitboard file_attacks[64];
-#endif
-
-
 template<typename T>
 constexpr Square operator+(Square a, T b) 
 { 
@@ -82,12 +74,12 @@ constexpr Bitboard get_bit(Bitboard bb, int x, int y)
 
 void print(Bitboard bb) 
 {
-	for(int y=7; y >=0; --y){
-		std::cout << '\n';
-		for(int x=0; x < 8; ++x)
-			std::cout << get_bit(bb, x,y) << " ";
-	}
-	std::cout << '\n';
+    for(int y=7; y >=0; --y){
+        std::cout << '\n';
+        for(int x=0; x < 8; ++x)
+            std::cout << get_bit(bb, x,y) << " ";
+    }
+    std::cout << '\n';
 }
 
 constexpr Bitboard bit(int s)
@@ -117,23 +109,18 @@ Bitboard get_behind(Square from, Square to)
 
 inline Square pop_bit(Bitboard &bb)
 {
-	Square index = Square(__builtin_ctzll(bb));
+    Square index = Square(__builtin_ctzll(bb));
     bb &= ~(1ULL << index);
-	return index;
+    return index;
 } 
 
 Bitboard occ_squares(Piece* squares, Colour colour)
 {
     Bitboard occ = 0x00;
     for(int s=0; s<64; ++s) {
-        if(colour == White) {
-            if(squares[s] >= 6 && squares[s] <= 11) {
+        if(colour == White && squares[s] >= 6 && squares[s] <= 11
+        || colour == White && squares[s] >= 0 && squares[s] <= 5) {
                 set_bit(occ, s);
-            }
-        } else {
-            if(squares[s] >= 0 && squares[s] <= 5) {
-                set_bit(occ, s);
-            }
         }
     } 
     return occ;
@@ -190,19 +177,6 @@ Bitboard trace_ray(int origin, Direction d)
     return ray;
 }
 
-Direction get_direction(int from, int to)
-{
-    int dst = to-from;
-    if(!(dst % 9)) {
-        return dst > 0 ? NE : SW;
-    } else if(!(dst % 8)) {
-        return dst > 0 ? N : S;
-    } else if(!(dst % 7)) {
-        return dst > 0 ? NW : SE;
-    } 
-    return dst > 0 ? E : W;
-}
-
 void init_behind()
 {
     for(Square f=a1; f<=h8; ++f) {
@@ -247,8 +221,7 @@ Bitboard get_piece_moves(PieceType p, Square from, Bitboard occ)
 {
     Bitboard ts = piece_attacks[p][from];
     Bitboard edges = FileABB | FileHBB | Rank1BB | Rank8BB; 
-    /* Bitboard bb = p == Knight || p == King ? occ : occ & ~edges; */
-    Bitboard bb =occ;
+    Bitboard bb = p == Knight || p == King ? occ : occ & ~edges;
     while(bb) {
         Square to = pop_bit(bb);
         ts &= ~behind[from][to];
