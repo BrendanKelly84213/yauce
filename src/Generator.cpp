@@ -31,10 +31,12 @@ constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 
 // Sliding piece lookup tables 
-const Bitboard maindia = 0x8040201008040201ULL;
-const Bitboard nort = 0x0101010101010100;
-const Bitboard noea = 0x8040201008040200;
-const Bitboard sout = 0x0080808080808080;
+static Bitboard queen_attacks[64];
+static Bitboard rook_attacks[64];
+static Bitboard bishop_attacks[64];
+static Bitboard behind[64][64];
+static Bitboard piece_attacks[6][64];
+const Direction directions[] = { N, S, E, W, NE, NW, SE, SW };
 
 // For debugging
 std::string square_to_str[64] = {  
@@ -55,9 +57,6 @@ static Bitboard rank_attacks[64];
 static Bitboard file_attacks[64];
 #endif
 
-static Bitboard queen_attacks[64];
-static Bitboard rook_attacks[64];
-static Bitboard bishop_attacks[64];
 
 template<typename T>
 constexpr Square operator+(Square a, T b) 
@@ -81,7 +80,8 @@ constexpr Bitboard get_bit(Bitboard bb, int x, int y)
     return (bb >> y*8 + x) & 1ULL;
 }
 
-void print(Bitboard bb) {
+void print(Bitboard bb) 
+{
 	for(int y=7; y >=0; --y){
 		std::cout << '\n';
 		for(int x=0; x < 8; ++x)
@@ -90,7 +90,7 @@ void print(Bitboard bb) {
 	std::cout << '\n';
 }
 
-constexpr Bitboard bit(Square s)
+constexpr Bitboard bit(int s)
 {
     return 1ULL << s;
 }
@@ -108,6 +108,11 @@ constexpr Square orig_bm(BMove m)
 constexpr Square dest_bm(BMove m) 
 {
     return static_cast<Square>(m & 0x3f);
+}
+
+Bitboard get_behind(Square from, Square to)
+{
+    return behind[from][to];
 }
 
 inline Square pop_bit(Bitboard &bb)
@@ -134,107 +139,6 @@ Bitboard occ_squares(Piece* squares, Colour colour)
     return occ;
 }
 
-// Naive sliding piece lookup table initialization
-void init_sliding()
-{
-    //NOTE: Following to loops could be joined into one 
-    Bitboard west = Rank1BB ^ 0x080ULL;
-    Bitboard west_attacks[64];
-    for(int r8=0; r8 < 64; r8+=8) {
-        for(int f=0; f<8; ++f) {
-            Square sq = static_cast<Square>(r8 + (7-f));
-            west_attacks[sq] = ((west << r8) >> f) & (Rank1BB << r8);
-        }
-    }
-
-    Bitboard east = Rank8BB ^ 0x0100000000000000ULL;
-    Bitboard east_attacks[64];
-    for(int mr8=0; mr8 < 64; mr8+=8) {
-        int r8 = 63 - mr8;
-        for(int f=0; f<8; ++f) {
-            Square sq = static_cast<Square>(r8 - (7-f));
-            east_attacks[sq] = ((east >> mr8) << f) & (Rank8BB >> mr8);
-            /* print(east_attacks[sq]); */
-        }
-    }
-
-    //NOTE: Following to loops could be joined into one 
-    Bitboard north = FileABB ^ 0x01ULL; 
-    Bitboard north_attacks[64]; 
-    for(int s=0; s < 64; ++s) {
-        north_attacks[s] = north << s;
-    }
-
-    Bitboard south = FileHBB ^ 0x8000000000000000ULL;
-    Bitboard south_attacks[64];
-    for(int i=0; i < 64; ++i) {
-        Square sq = static_cast<Square>(63-i);
-        south_attacks[sq] = south >> i;
-    }
-
-    //NOTE: Following to loops could be joined into one 
-    Bitboard northeast = 0x8040201008040200ULL;
-    Bitboard ne_attacks[64];
-    for(int s=0; s<64; ++s) {
-        int file = s % 8;  
-        Bitboard file_mask = 0;
-        for(int f=file; f < 8; ++f) {
-            file_mask |= (FileABB << f);
-        }
-        ne_attacks[s] = (northeast << s) & file_mask;
-    }
-    
-    Bitboard southwest = 0x8040201008040201ULL ^ 0x8000000000000000ULL;
-    Bitboard sw_attacks[64];
-    for(int s=0; s<64; ++s) {
-        Square sq = static_cast<Square>(63-s);
-        int file = sq % 8;  
-        Bitboard file_mask = 0;
-        for(int f=file; f >=0 ; --f) {
-            file_mask |= (FileABB << f);
-        }
-        sw_attacks[sq] = (southwest >> s) & file_mask;
-    }
-
-    // NOTE: Same loop as west attacks
-    Bitboard northwest = 0x0102040810204080ULL ^ 0x080ULL;
-    Bitboard nw_attacks[64];
-    for(int r8=0; r8 < 64; r8+=8) {
-        for(int f=0; f<8; ++f) {
-            int file = 7-f;
-            Bitboard file_mask = 0;
-            for(int f=file; f >=0 ; --f) {
-                file_mask |= (FileABB << f);
-            }
-
-            Square sq = static_cast<Square>(r8 + file);
-            nw_attacks[sq] = ((northwest << r8) >> f) & file_mask;
-        }
-    }
-
-    // NOTE: Same loop as east attacks
-    Bitboard southeast = 0x0102040810204080ULL ^ 0x0100000000000000ULL;
-    Bitboard se_attacks[64];
-    for(int mr8=0; mr8<64; mr8+=8) {
-        int r8 = 63 - mr8;
-        for(int f=0; f<8; ++f) {
-            Bitboard file_mask = 0;
-            for(int file = f; file < 8; ++file) {
-                file_mask |= (FileABB << file);
-            }
-
-            Square sq = static_cast<Square>(r8 - (7-f));
-            se_attacks[sq] = ((southeast << f) >> mr8) & file_mask;
-        }
-    }
-
-    for(int s = 0; s < 64; ++s) {
-        rook_attacks[s] = north_attacks[s] | south_attacks[s] | west_attacks[s] | east_attacks[s];
-        bishop_attacks[s] = nw_attacks[s] | se_attacks[s] | ne_attacks[s] | sw_attacks[s];
-        queen_attacks[s] = rook_attacks[s] | bishop_attacks[s];
-    }
-}
-
 constexpr Bitboard king_mask(Square origin)
 {
     return (bit(origin + N) & ~Rank1BB)
@@ -247,12 +151,6 @@ constexpr Bitboard king_mask(Square origin)
         | (bit(origin + NW) & ~(FileHBB | Rank1BB));
 }
 
-Bitboard king_squares(
-        Bitboard friend_occ, 
-        Square origin)
-{
-    return king_mask(origin) & ~friend_occ;
-}
 
 constexpr Bitboard knight_mask(Square origin)
 {
@@ -266,11 +164,110 @@ constexpr Bitboard knight_mask(Square origin)
         | (bit(origin + SEE) & ~(FileABB | FileBBB | Rank8BB));
 }
 
+int distance(int origin, int dest)
+{
+    int r2 = dest >> 3;
+    int r1 = origin >> 3;
+    int f2 = dest % 8;
+    int f1 = origin % 8; 
+    int r1r2 = std::abs(r2 - r1); 
+    int f1f2 = std::abs(f2 - f1);
+
+    return std::max(f1f2, r1r2);
+}
+
+constexpr bool in_bounds(int s, Direction d)
+{
+     return s >= a1 && s <= h8 && distance(s, s-d) == 1;
+}
+
+Bitboard trace_ray(int origin, Direction d)
+{
+    Bitboard ray = 0ULL;
+    for(int s=origin + d; in_bounds(s,d); s += d) {
+        ray |= bit(s);  
+    }
+    return ray;
+}
+
+Direction get_direction(int from, int to)
+{
+    int dst = to-from;
+    if(!(dst % 9)) {
+        return dst > 0 ? NE : SW;
+    } else if(!(dst % 8)) {
+        return dst > 0 ? N : S;
+    } else if(!(dst % 7)) {
+        return dst > 0 ? NW : SE;
+    } 
+    return dst > 0 ? E : W;
+}
+
+void init_behind()
+{
+    for(Square f=a1; f<=h8; ++f) {
+        for(int di=0; di<8; ++di) { 
+            Direction d = directions[di];
+            for(int t=f+d; in_bounds(t, d); t+=d) {
+                behind[f][t] = trace_ray(t,d);
+            }
+        }
+    }
+}
+
+void init_piece_attacks()
+{
+    for(Square sq=a1; sq<=h8; ++sq) {
+        Bitboard ne = trace_ray(sq, NE);
+        Bitboard sw = trace_ray(sq, SW);
+        Bitboard nw = trace_ray(sq, NW);
+        Bitboard se = trace_ray(sq, SE);
+
+        Bitboard n = trace_ray(sq, N);
+        Bitboard s = trace_ray(sq, S);
+        Bitboard e = trace_ray(sq, E);
+        Bitboard w = trace_ray(sq, W);
+
+        piece_attacks[Bishop][sq] = ne | sw | nw | se; 
+        piece_attacks[Rook][sq] = n | w | e | s; 
+        piece_attacks[Queen][sq] = piece_attacks[Bishop][sq] | piece_attacks[Rook][sq];
+
+        piece_attacks[Knight][sq] = knight_mask(sq);
+        piece_attacks[King][sq] = king_mask(sq);
+    }
+}
+
+void init_generator() 
+{
+    init_behind();
+    init_piece_attacks();
+}
+
+Bitboard get_piece_moves(PieceType p, Square from, Bitboard occ)
+{
+    Bitboard ts = piece_attacks[p][from];
+    Bitboard edges = FileABB | FileHBB | Rank1BB | Rank8BB; 
+    /* Bitboard bb = p == Knight || p == King ? occ : occ & ~edges; */
+    Bitboard bb =occ;
+    while(bb) {
+        Square to = pop_bit(bb);
+        ts &= ~behind[from][to];
+    }
+    return ts;
+}
+
 Bitboard knight_squares(
         Bitboard friend_occ, 
         Square origin)
 {
     return knight_mask(origin) & ~friend_occ;
+}
+
+Bitboard king_squares(
+        Bitboard friend_occ, 
+        Square origin)
+{
+    return king_mask(origin) & ~friend_occ;
 }
 
 Bitboard pawn_squares(
@@ -337,17 +334,11 @@ BMove* generator(Bitboard * piece_bbs,
             Square origin = pop_bit(occ);
             moves[i] = 0;
             Bitboard to_squares = 0;
-            switch(p) {
-                case Pawn:
-                    to_squares = pawn_squares(friend_occ, op_occ, board_state, origin);
-                    break;
-                case King: 
-                    to_squares = king_squares(friend_occ, origin);
-                    break;
-                case Knight: 
-                    to_squares = knight_squares(friend_occ, origin);
-                    break;
-                default: break;
+            if(p == Pawn) {
+                to_squares = pawn_squares(friend_occ, op_occ, board_state, origin);
+            } else {
+                Pieceype pt = static_cast<PieceType>(p);
+                to_squares = get_piece_moves(pt, origin, friend_occ | op_occ) & ~friend_occ; 
             }
 
             BMove from = static_cast<BMove>((origin << 6) & 0xfc0);
@@ -420,20 +411,37 @@ std::vector<Move> boardstate_to_move_vec(BoardState board_state)
         Move move;
         move.from = orig_bm(bmove);
         move.to = dest_bm(bmove);
-            move_vec.push_back(move);
+        move_vec.push_back(move);
     }
     return move_vec;
 }
 
-#if 1
+#if 0
 int main()
 {
     BoardState board_state;
-    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    std::string fen = "8/4kP1r/n4p2/2P1N1b1/4KQ1R/P6q/R3p3/2r5 w - - 0 1";
+    board_state.init(fen);
+    Bitboard occ = occ_squares(board_state.squares, Black) ;
 
-    init_sliding();
-    for(int s=a1; s<=h8; ++s) {
-    }
+    init_behind();
+    init_piece_attacks();
+
+    print(behind[e1][e2]);
+    /* print(trace_ray(e2, N)); */
+
+    /* for(Square f=a1; f<h8; ++f) { */
+    /*     for(Square t=a1; t<h8; ++t) { */
+    /*         if(behind[f][t]) { */
+    /*             std::cout << "Origin and blocker: " << '\n'; */
+    /*             print(bit(f) | bit(t)); */
+
+    /*             std::cout << "'\n'behind: " << '\n'; */
+    /*             print(behind[f][t]); */
+    /*         } */
+    /*     } */
+    /* } */
+
 
     return 0;
 }
