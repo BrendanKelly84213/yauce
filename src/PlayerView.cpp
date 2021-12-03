@@ -203,9 +203,9 @@ void PlayerView::draw_grid()
             square.y = j*rect_w;
 
             if(((i+j)%2)){ 
-                SDL_SetRenderDrawColor(renderer, 200,200,255,0);
-            } else {
                 SDL_SetRenderDrawColor(renderer, 15,50,20,0);
+            } else {
+                SDL_SetRenderDrawColor(renderer, 200,200,255,0);
             }
             SDL_RenderFillRect(renderer, &square);
         }
