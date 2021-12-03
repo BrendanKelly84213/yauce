@@ -337,7 +337,7 @@ BMove* generator(Bitboard * piece_bbs,
             if(p == Pawn) {
                 to_squares = pawn_squares(friend_occ, op_occ, board_state, origin);
             } else {
-                Pieceype pt = static_cast<PieceType>(p);
+                PieceType pt = static_cast<PieceType>(p);
                 to_squares = get_piece_moves(pt, origin, friend_occ | op_occ) & ~friend_occ; 
             }
 
