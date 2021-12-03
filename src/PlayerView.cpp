@@ -11,6 +11,7 @@ void PlayerView::init_all()
     TTF_Init();
     font = TTF_OpenFont("../assets/OpenSans-Regular.ttf", 16);
     update_moves();
+    init_generator();
 }
 
 void PlayerView::init_piece_clips() 
@@ -103,6 +104,7 @@ bool PlayerView::valid_move(Square from, Square to)
     return false;
 }
 
+// TODO: Bad place for this
 Colour operator!(Colour c)
 {
     return static_cast<Colour>(!static_cast<bool>(c));
@@ -130,7 +132,7 @@ void PlayerView::on_player_make_move(Piece piece)
     } else {
         board_state.ep_file = -1;
     }
-    std::cout << piece << '\n';
+
     // TODO: castling rights, halfmove_clock
     board_state.ply_count++;
     board_state.side_to_move = !board_state.side_to_move;
@@ -151,7 +153,7 @@ void PlayerView::handle_events()
 {
     switch(e.type) {
         case SDL_KEYDOWN : 
-            if( e.key.keysym.sym == SDLK_q ) {
+            if(e.key.keysym.sym == SDLK_q) {
                 running = false;
             }
             break; 
