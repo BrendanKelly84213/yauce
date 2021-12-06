@@ -249,8 +249,7 @@ void init_generator()
 Bitboard get_piece_moves(PieceType p, Square from, Bitboard occ)
 {
     Bitboard ts = piece_attacks[p][from];
-    Bitboard edges = FileABB | FileHBB | Rank1BB | Rank8BB; 
-    Bitboard bb = p == Knight || p == King ? occ : occ & ~edges;
+    Bitboard bb = occ ;
     while(bb) {
         Square to = pop_bit(bb);
         ts &= ~behind[from][to];
@@ -381,12 +380,20 @@ std::vector<Move> boardstate_to_move_vec(BoardState board_state)
 int main()
 {
     BoardState board_state;
-    std::string fen = "8/4kP1r/n4p2/2P1N1b1/4KQ1R/P6q/R3p3/2r5 w - - 0 1";
+    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     board_state.init(fen);
-    Bitboard occ = occ_squares(board_state.squares, Black) ;
+    Bitboard w_occ = occ_squares(board_state.squares, White);
+    Bitboard b_occ = occ_squares(board_state.squares, Black);
 
     init_behind();
     init_piece_attacks();
+    /* print(get_piece_moves(Knight, b1, w_occ | b_occ) & ~w_occ); */
+    std::vector<Move> moves = boardstate_to_move_vec(board_state);
+    for(auto &m : moves) {
+        if(m.from == b1 || m.from == g1) {
+            std::cout << square_to_str[m.to] << '\n';
+        }
+    }
 
     return 0;
 }
