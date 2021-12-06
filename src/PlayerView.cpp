@@ -1,5 +1,5 @@
 #include "PlayerView.h"
-        
+
 void PlayerView::init_all()
 {
     board_state.init(fen);
@@ -10,8 +10,8 @@ void PlayerView::init_all()
     init_pieces();
     TTF_Init();
     font = TTF_OpenFont("../assets/OpenSans-Regular.ttf", 16);
-    update_moves();
     init_generator();
+    update_moves();
 }
 
 void PlayerView::init_piece_clips() 
@@ -170,7 +170,7 @@ void PlayerView::handle_events()
                         on_player_make_move(board_pieces[s].p);
                     } else {
                         board_pieces[s].x = rect_w*(from % 8);
-                        board_pieces[s].y = rect_w*(floor(7-(from / 8)));
+                        board_pieces[s].y = rect_w*(floor(7-(from >> 3)));
                     }
                 }
             }
@@ -331,8 +331,8 @@ void PlayerView::handle_dragging()
         }
 
         if(board_pieces[s].dragging && mx < board_viewport.w) {
-            int cx = board_pieces[s].w / 2;
-            int cy = board_pieces[s].h / 2;
+            int cx = board_pieces[s].w * 0.5;
+            int cy = board_pieces[s].h * 0.5;
 
             board_pieces[s].x = mx - cx;
             board_pieces[s].y = my - cy; 
@@ -372,5 +372,12 @@ void PlayerView::free_textures()
 void PlayerView::update_moves()
 {
     move_vec = boardstate_to_move_vec(board_state);
+    // For debugging
+#if 0 
+    std::cout << "#################################### MOVES ####################################" << '\n';
+    for(auto &m : move_vec) {
+        std::cout << "From: " << get_square_to_str(m.from) << " To: " << get_square_to_str(m.to) << '\n';
+    }
+#endif
 }
 

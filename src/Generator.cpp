@@ -5,8 +5,6 @@
 //  Castling
 //  Organize code 
 //
-// FIX:
-//  White can only make pawn moves on the first turn
 
 
 
