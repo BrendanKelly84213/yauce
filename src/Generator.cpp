@@ -52,6 +52,12 @@ std::string square_to_str[64] = {
     "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
 };
 
+std::string get_square_to_str(Square s) 
+{
+    return square_to_str[s];
+}
+
+
 PieceType piece_to_piecetype(Piece piece) 
 {
     switch(piece) {

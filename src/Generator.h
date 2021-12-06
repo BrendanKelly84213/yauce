@@ -16,6 +16,7 @@ PieceType piece_to_piecetype(Piece piece);
 Bitboard occ_squares(Piece* squares, Colour colour);
 Bitboard get_behind(Square from, Square to);
 inline Square pop_bit(Bitboard &bb);
+std::string get_square_to_str(Square s);
 
 
 #endif
