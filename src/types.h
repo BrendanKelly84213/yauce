@@ -5,8 +5,8 @@
 
 enum Piece 
 { 
-    WQ, WK, WR, WN, WB, WP,
-    BQ, BK, BR, BN, BB, BP, None=-1
+    BQ, BK, BR, BN, BB, BP, 
+    WQ, WK, WR, WN, WB, WP,None=-1
 };
 
 enum PieceType 

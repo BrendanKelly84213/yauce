@@ -28,7 +28,7 @@ void BoardState::init(std::string fen)
     }
 
     while(fen[i] != ' ') {
-        int sq = (7-rank)*8 + file;
+        int sq = (rank)*8 + file;
 
         if(fen[i] == '/') {
             rank--;

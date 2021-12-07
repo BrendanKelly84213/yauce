@@ -6,12 +6,10 @@
 //  Organize code 
 //
 
-
-
 // BMove:
 // Bits 0 - 5: from 
 // Bits 6 - 11: to
-// Bits 11 - 16: empty for now
+// Bits 12 - 15: ??  
 
 //Ranks and files. 
 constexpr Bitboard FileABB = 0x0101010101010101ULL;
@@ -54,7 +52,6 @@ std::string get_square_to_str(Square s)
 {
     return square_to_str[s];
 }
-
 
 PieceType piece_to_piecetype(Piece piece) 
 {
@@ -311,6 +308,27 @@ Bitboard pawn_squares(
     return squares & mask & ~friend_occ;
 }
 
+Bitboard castle_squares(BoardState board_state) 
+{   
+    Bitboard squares = 0;
+    if(board_state.side_to_move == White) {
+        if(board_state.w_castle_ks) {
+            set_bit(squares, e1 + E + E);
+        }
+        if(board_state.w_castle_qs) {
+            set_bit(squares, e1 + W + W);
+        }
+    } else {
+        if(board_state.b_castle_ks) {
+            set_bit(squares, e1 + E + E);
+        }
+        if(board_state.b_castle_qs) {
+            set_bit(squares, e1 + W + W);
+        }
+    }
+    return squares;
+}
+
 BMove* generator(Bitboard * piece_bbs, 
         BoardState board_state, 
         Bitboard friend_occ, 
@@ -322,16 +340,21 @@ BMove* generator(Bitboard * piece_bbs,
         Bitboard occ = piece_bbs[p];
         while(occ) {
             Square origin = pop_bit(occ);
+            BMove from = static_cast<BMove>((origin << 6) & 0xfc0);
+            PieceType pt = static_cast<PieceType>(p);
             moves[i] = 0;
             Bitboard to_squares = 0;
+
             if(p == Pawn) {
                 to_squares = pawn_squares(friend_occ, op_occ, board_state, origin);
+            } else if(p == King) {
+                to_squares |= castle_squares(board_state);
+                to_squares |= get_piece_moves(pt, origin, friend_occ | op_occ); 
+                to_squares &= ~friend_occ;
             } else {
-                PieceType pt = static_cast<PieceType>(p);
                 to_squares = get_piece_moves(pt, origin, friend_occ | op_occ) & ~friend_occ; 
             }
 
-            BMove from = static_cast<BMove>((origin << 6) & 0xfc0);
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
                 BMove to = static_cast<BMove>(dest & 0x3f);
