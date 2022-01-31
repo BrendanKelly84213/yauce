@@ -14,8 +14,9 @@ bool is_piece_ch(char ch);
 Piece fen_to_piece(char ch);
 
 // TODO: check if fen is properly formatted 
+//       add update function
 
-void BoardState::init(std::string fen)
+void BoardState::init_squares(std::string fen)
 {
     // Parse out pieces 
     int rank=7;
@@ -105,11 +106,72 @@ void BoardState::init(std::string fen)
     }
 }
 
-void BoardState::update(BoardPiece * pieces)
+int piece_to_piecetype[12] = { 
+    Queen, King, Rook, Knight, Bishop, Pawn, 
+    Queen, King, Rook, Knight, Bishop, Pawn
+};
+
+void BoardState::init_bbs() 
 {
-    for(int s=0; s<64; ++s) {
-        squares[s] = pieces[s].p;
+    for(int s = 0; s <= 64; ++s) {
+        int p = (int)squares[s];
+        if(p >= 0) { 
+            int pt = piece_to_piecetype[p];
+            piece_bbs[p] |= (1ULL << s);
+            occ |= piece_bbs[p];
+            if(p >= 6 && p <= 11) {
+                white_piece_bbs[pt] |= (1ULL << s);
+                white_occ |= (1ULL << s);
+            } else {
+                black_piece_bbs[pt] |= (1ULL << s);
+                black_occ |= (1ULL << s);
+            }
+        }
     }
+}
+
+void BoardState::init(std::string fen)
+{
+    init_squares(fen);
+    init_bbs(); 
+}
+
+void BoardState::make_move(BMove m) 
+{
+    int from = (m >> 6) & 0x3f;
+    int to = m & 0x3f;
+    Piece p = squares[from];
+    // Squares
+    squares[from] = None;
+    squares[to] = p;
+    // Bitboards
+    piece_bbs[p] &= ~(1ULL << from); 
+    piece_bbs[p] |= (1ULL << to); 
+   
+    // Specific occupations
+    if(side_to_move == White) {
+        white_piece_bbs[p] &= ~(1ULL << from); 
+        white_piece_bbs[p] |= (1ULL << to); 
+        white_occ &= ~(1ULL << from); 
+        white_occ |= (1ULL << to); 
+    } else {
+        black_piece_bbs[p] &= ~(1ULL << from); 
+        black_piece_bbs[p] |= (1ULL << to); 
+        black_occ &= ~(1ULL << from); 
+        black_occ |= (1ULL << to); 
+
+    }
+
+}
+
+Bitboard BoardState::get_friend_occ()
+{
+    return side_to_move == White ? white_occ : black_occ;
+}
+
+Bitboard BoardState::get_op_occ()
+{
+    return side_to_move == Black ? white_occ : black_occ;
 }
 
 bool is_piece_ch(char ch) 

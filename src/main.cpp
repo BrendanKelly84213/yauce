@@ -10,7 +10,6 @@
 int main( int argc, char *argv[] )
 {
     std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    PlayerView game(fen);
 
     game.init_all();
     game.game_loop();
