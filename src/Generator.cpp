@@ -3,8 +3,8 @@
 // TODO: 
 //  Check for checks 
 //  Castling
-//  Organize code 
-//
+//  Organize code:
+//      bitwise operations goes in seperate utils 
 
 // BMove:
 // Bits 0 - 5: from 
@@ -36,49 +36,6 @@ static Bitboard behind[64][64];
 
 const Direction directions[] = { N, S, E, W, NE, NW, SE, SW };
 
-// For debugging
-std::string square_to_str[64] = {  
-    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", 
-    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2", 
-    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3", 
-    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4", 
-    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5", 
-    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6", 
-    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", 
-    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
-};
-
-std::string get_square_to_str(Square s) 
-{
-    return square_to_str[s];
-}
-
-PieceType piece_to_piecetype(Piece piece) 
-{
-    switch(piece) {
-        case WP:
-        case BP:
-            return Pawn;
-        case WN:
-        case BN:
-            return Knight;
-        case WB:
-        case BB:
-            return Bishop;
-        case WR:
-        case BR:
-            return Rook;
-        case WQ:
-        case BQ:
-            return Queen;
-        case WK:
-        case BK:
-            return King;
-        default: break;
-    }
-    return Null;
-}
-
 template<typename T>
 constexpr Square operator+(Square a, T b) 
 { 
@@ -109,6 +66,11 @@ constexpr Bitboard bit(int s)
 constexpr void set_bit(Bitboard &bb, int square) 
 { 
     bb |= 1ULL << square; 
+}
+
+constexpr void clear_bit(Bitboard &bb, int square)
+{
+    bb &= ~(1ULL << square);
 }
 
 constexpr Square orig_bm(BMove m)  
@@ -247,14 +209,15 @@ void init_generator()
     init_piece_attacks();
 }
 
-Bitboard get_piece_moves(PieceType p, Square from, Bitboard occ)
+Bitboard blockers_and_beyond(int p, int from, Bitboard occ)
 {
     Bitboard ts = piece_attacks[p][from];
-    Bitboard bb = occ ;
+    Bitboard bb = occ;
     while(bb) {
         Square to = pop_bit(bb);
         ts &= ~behind[from][to];
     }
+    
     return ts;
 }
 
@@ -262,7 +225,7 @@ Bitboard pawn_squares(
         Bitboard friend_occ, 
         Bitboard op_occ, 
         BoardState board_state, 
-        Square origin)
+        int origin)
 {
     Colour us = board_state.side_to_move;
     Direction push_dir = us == White ? N : S;  
@@ -329,6 +292,24 @@ Bitboard castle_squares(BoardState board_state)
     return squares;
 }
 
+Bitboard get_to_squares(int p, int from, BoardState board_state)
+{
+    Bitboard ts = 0; 
+    Bitboard friend_occ = board_state.get_friend_occ();
+    Bitboard op_occ = board_state.get_op_occ();
+    if(p == Pawn) {
+        ts = pawn_squares(friend_occ, op_occ, board_state, from);
+    } else if(p == King) {
+        ts |= castle_squares(board_state);
+        ts |= blockers_and_beyond(p, from, board_state.occ); 
+        ts &= ~friend_occ;
+    } else {
+        ts = blockers_and_beyond(p, from, board_state.occ);
+        ts &= ~friend_occ; 
+    }
+    return ts;
+}
+
 BMove* generator(Bitboard * piece_bbs, 
         BoardState board_state, 
         Bitboard friend_occ, 
@@ -343,17 +324,7 @@ BMove* generator(Bitboard * piece_bbs,
             BMove from = static_cast<BMove>((origin << 6) & 0xfc0);
             PieceType pt = static_cast<PieceType>(p);
             moves[i] = 0;
-            Bitboard to_squares = 0;
-
-            if(p == Pawn) {
-                to_squares = pawn_squares(friend_occ, op_occ, board_state, origin);
-            } else if(p == King) {
-                to_squares |= castle_squares(board_state);
-                to_squares |= get_piece_moves(pt, origin, friend_occ | op_occ); 
-                to_squares &= ~friend_occ;
-            } else {
-                to_squares = get_piece_moves(pt, origin, friend_occ | op_occ) & ~friend_occ; 
-            }
+            Bitboard to_squares = get_to_squares(pt, from, board_state);
 
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
@@ -367,6 +338,8 @@ BMove* generator(Bitboard * piece_bbs,
 }
 
 // For GUI 
+
+#if 0
 std::vector<Move> boardstate_to_move_vec(BoardState board_state)
 {
     std::vector<Move> move_vec;
@@ -403,7 +376,6 @@ std::vector<Move> boardstate_to_move_vec(BoardState board_state)
     return move_vec;
 }
 
-#if 0
 int main()
 {
     BoardState board_state;
