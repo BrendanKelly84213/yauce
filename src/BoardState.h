@@ -4,11 +4,15 @@
 #include <string> 
 #include <iostream>
 #include "utils/types.h"
+#include "utils/conversions.h"
 
 class BoardState {
 private: 
     void init_squares(std::string fen);
     void init_bbs();
+    void castle_kingside();
+    void castle_queenside();
+    void do_castle(int rook_from, int rook_to, int king_to);
 public: 
     Bitboard piece_bbs[12];
     Bitboard occ;
