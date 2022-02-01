@@ -271,27 +271,6 @@ Bitboard pawn_squares(
     return squares & mask & ~friend_occ;
 }
 
-Bitboard castle_squares(BoardState board_state) 
-{   
-    Bitboard squares = 0;
-    if(board_state.side_to_move == White) {
-        if(board_state.w_castle_ks) {
-            set_bit(squares, e1 + E + E);
-        }
-        if(board_state.w_castle_qs) {
-            set_bit(squares, e1 + W + W);
-        }
-    } else {
-        if(board_state.b_castle_ks) {
-            set_bit(squares, e1 + E + E);
-        }
-        if(board_state.b_castle_qs) {
-            set_bit(squares, e1 + W + W);
-        }
-    }
-    return squares;
-}
-
 Bitboard get_to_squares(int p, int from, BoardState board_state)
 {
     Bitboard ts = 0; 
@@ -299,9 +278,6 @@ Bitboard get_to_squares(int p, int from, BoardState board_state)
     Bitboard op_occ = board_state.get_op_occ();
     if(p == Pawn) {
         ts = pawn_squares(friend_occ, op_occ, board_state, from);
-    } else if(p == King) {
-        ts |= castle_squares(board_state);
-        ts |= blockers_and_beyond(p, from, board_state.occ); 
     } else {
         ts = blockers_and_beyond(p, from, board_state.occ);
     }
