@@ -3,8 +3,8 @@
 // TODO: 
 //  Check for checks 
 //  Castling
-//  Organize code 
-//
+//  Organize code:
+//      bitwise operations goes in seperate utils 
 
 // BMove:
 // Bits 0 - 5: from 
@@ -36,49 +36,6 @@ static Bitboard behind[64][64];
 
 const Direction directions[] = { N, S, E, W, NE, NW, SE, SW };
 
-// For debugging
-std::string square_to_str[64] = {  
-    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", 
-    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2", 
-    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3", 
-    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4", 
-    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5", 
-    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6", 
-    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", 
-    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
-};
-
-std::string get_square_to_str(Square s) 
-{
-    return square_to_str[s];
-}
-
-PieceType piece_to_piecetype(Piece piece) 
-{
-    switch(piece) {
-        case WP:
-        case BP:
-            return Pawn;
-        case WN:
-        case BN:
-            return Knight;
-        case WB:
-        case BB:
-            return Bishop;
-        case WR:
-        case BR:
-            return Rook;
-        case WQ:
-        case BQ:
-            return Queen;
-        case WK:
-        case BK:
-            return King;
-        default: break;
-    }
-    return Null;
-}
-
 template<typename T>
 constexpr Square operator+(Square a, T b) 
 { 
@@ -109,6 +66,11 @@ constexpr Bitboard bit(int s)
 constexpr void set_bit(Bitboard &bb, int square) 
 { 
     bb |= 1ULL << square; 
+}
+
+constexpr void clear_bit(Bitboard &bb, int square)
+{
+    bb &= ~(1ULL << square);
 }
 
 constexpr Square orig_bm(BMove m)  
@@ -247,14 +209,15 @@ void init_generator()
     init_piece_attacks();
 }
 
-Bitboard get_piece_moves(PieceType p, Square from, Bitboard occ)
+Bitboard blockers_and_beyond(int p, int from, Bitboard occ)
 {
     Bitboard ts = piece_attacks[p][from];
-    Bitboard bb = occ ;
+    Bitboard bb = occ;
     while(bb) {
         Square to = pop_bit(bb);
         ts &= ~behind[from][to];
     }
+    
     return ts;
 }
 
@@ -262,7 +225,7 @@ Bitboard pawn_squares(
         Bitboard friend_occ, 
         Bitboard op_occ, 
         BoardState board_state, 
-        Square origin)
+        int origin)
 {
     Colour us = board_state.side_to_move;
     Direction push_dir = us == White ? N : S;  
@@ -285,7 +248,7 @@ Bitboard pawn_squares(
 
     //En Passant
     if(board_state.ep_file != -1) {
-        int rank = floor(origin * 0.125);
+        int rank = origin >> 3;
         int file = origin % 8;
         if(us == White && rank == 4
         || (us == Black && rank == 3)) {
@@ -296,7 +259,7 @@ Bitboard pawn_squares(
     // Double push 
     if((us == Black && origin >= a7 && origin <= h7) 
     || (us == White && origin >= a2 && origin <= h2)) {
-        if(!(double_push & op_occ)) {
+        if(!(double_push & op_occ) && !(single_push & friend_occ)) {
             squares |= double_push;
         }
     }
@@ -308,25 +271,18 @@ Bitboard pawn_squares(
     return squares & mask & ~friend_occ;
 }
 
-Bitboard castle_squares(BoardState board_state) 
-{   
-    Bitboard squares = 0;
-    if(board_state.side_to_move == White) {
-        if(board_state.w_castle_ks) {
-            set_bit(squares, e1 + E + E);
-        }
-        if(board_state.w_castle_qs) {
-            set_bit(squares, e1 + W + W);
-        }
+Bitboard get_to_squares(int p, int from, BoardState board_state)
+{
+    Bitboard ts = 0; 
+    Bitboard friend_occ = board_state.get_friend_occ();
+    Bitboard op_occ = board_state.get_op_occ();
+    if(p == Pawn) {
+        ts = pawn_squares(friend_occ, op_occ, board_state, from);
     } else {
-        if(board_state.b_castle_ks) {
-            set_bit(squares, e1 + E + E);
-        }
-        if(board_state.b_castle_qs) {
-            set_bit(squares, e1 + W + W);
-        }
+        ts = blockers_and_beyond(p, from, board_state.occ);
     }
-    return squares;
+    ts &= ~friend_occ;
+    return ts;
 }
 
 BMove* generator(Bitboard * piece_bbs, 
@@ -343,17 +299,7 @@ BMove* generator(Bitboard * piece_bbs,
             BMove from = static_cast<BMove>((origin << 6) & 0xfc0);
             PieceType pt = static_cast<PieceType>(p);
             moves[i] = 0;
-            Bitboard to_squares = 0;
-
-            if(p == Pawn) {
-                to_squares = pawn_squares(friend_occ, op_occ, board_state, origin);
-            } else if(p == King) {
-                to_squares |= castle_squares(board_state);
-                to_squares |= get_piece_moves(pt, origin, friend_occ | op_occ); 
-                to_squares &= ~friend_occ;
-            } else {
-                to_squares = get_piece_moves(pt, origin, friend_occ | op_occ) & ~friend_occ; 
-            }
+            Bitboard to_squares = get_to_squares(pt, from, board_state);
 
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
@@ -365,63 +311,3 @@ BMove* generator(Bitboard * piece_bbs,
     }
     return moves;
 }
-
-// For GUI 
-std::vector<Move> boardstate_to_move_vec(BoardState board_state)
-{
-    std::vector<Move> move_vec;
-
-    Bitboard piece_bbs[6];
-    Colour us = board_state.side_to_move;
-    Bitboard friend_occ = occ_squares(board_state.squares, us);
-    Bitboard op_occ = occ_squares(board_state.squares, (us == White ? Black : White));
-    BMove * moves;
-
-    for(int p = Pawn; p <= King; ++p) {
-        piece_bbs[p] = 0;
-    }
-
-    for(Square s = a1; s <= h8; ++s) {
-        Piece piece = board_state.squares[s];
-        PieceType pt = piece_to_piecetype(piece); 
-        if(pt != Null) {
-            if((us == White && piece >= 6 && piece <= 11)
-            || (us == Black && piece >= 0 && piece <= 5)) {
-                piece_bbs[pt] |= bit(s);
-            }
-        }
-    }
-
-    moves = generator(piece_bbs, board_state, friend_occ, op_occ);
-    while(*moves != 0x00) {
-        BMove bmove = *moves++;
-        Move move;
-        move.from = orig_bm(bmove);
-        move.to = dest_bm(bmove);
-        move_vec.push_back(move);
-    }
-    return move_vec;
-}
-
-#if 0
-int main()
-{
-    BoardState board_state;
-    std::string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    board_state.init(fen);
-    Bitboard w_occ = occ_squares(board_state.squares, White);
-    Bitboard b_occ = occ_squares(board_state.squares, Black);
-
-    init_behind();
-    init_piece_attacks();
-    /* print(get_piece_moves(Knight, b1, w_occ | b_occ) & ~w_occ); */
-    std::vector<Move> moves = boardstate_to_move_vec(board_state);
-    for(auto &m : moves) {
-        if(m.from == b1 || m.from == g1) {
-            std::cout << square_to_str[m.to] << '\n';
-        }
-    }
-
-    return 0;
-}
-#endif

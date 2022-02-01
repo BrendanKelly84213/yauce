@@ -4,13 +4,18 @@
 #include <cstdint>
 #include <vector>
 #include "BoardState.h"
+#include "utils/types.h"
 
 typedef uint64_t Bitboard;
 typedef uint16_t BMove;
 
-std::vector<Move> boardstate_to_move_vec(BoardState board_state);
+BMove* generator(Bitboard * piece_bbs, 
+        BoardState board_state, 
+        Bitboard friend_occ, 
+        Bitboard op_occ);
 void init_generator();
-Bitboard get_piece_moves(PieceType p, Square from, Bitboard occ);
+Bitboard blockers_and_beyond(int p, int from, Bitboard occ);
+Bitboard get_to_squares(int p, int from, BoardState board_state);
 void print(Bitboard bb); 
 PieceType piece_to_piecetype(Piece piece); 
 Bitboard occ_squares(Piece* squares, Colour colour);

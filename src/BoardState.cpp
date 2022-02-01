@@ -14,8 +14,9 @@ bool is_piece_ch(char ch);
 Piece fen_to_piece(char ch);
 
 // TODO: check if fen is properly formatted 
+//       add update function
 
-void BoardState::init(std::string fen)
+void BoardState::init_squares(std::string fen)
 {
     // Parse out pieces 
     int rank=7;
@@ -105,11 +106,110 @@ void BoardState::init(std::string fen)
     }
 }
 
-void BoardState::update(BoardPiece * pieces)
+void BoardState::init_bbs() 
 {
-    for(int s=0; s<64; ++s) {
-        squares[s] = pieces[s].p;
+    for(int s = 0; s <= 64; ++s) {
+        int p = (int)squares[s];
+        if(p >= 0) { 
+            int pt = conversions::piece_to_piecetype(p);
+            piece_bbs[p] |= (1ULL << s);
+            occ |= piece_bbs[p];
+            if(p >= 6 && p <= 11) {
+                white_piece_bbs[pt] |= (1ULL << s);
+                white_occ |= (1ULL << s);
+            } else {
+                black_piece_bbs[pt] |= (1ULL << s);
+                black_occ |= (1ULL << s);
+            }
+        }
     }
+}
+
+void BoardState::init(std::string fen)
+{
+    init_squares(fen);
+    init_bbs(); 
+}
+
+void BoardState::do_castle(int rook_from, int rook_to, int king_to)
+{
+    Piece rook = side_to_move == White ? WR : BR;
+    Piece king = side_to_move == White ? WK : BK;
+    int king_from = side_to_move == White ? e1 : e8;
+
+    // Squares
+    squares[king_from] = None;
+    squares[rook_from] = None;
+    squares[king_to] = king;
+    squares[rook_to] = rook;
+    // Bitboards
+    piece_bbs[king] &= ~(1ULL << king_from);
+    piece_bbs[rook] &= ~(1ULL << rook_from);
+    piece_bbs[king] |= (1ULL << king_to);
+    piece_bbs[rook] |= (1ULL << rook_to);
+}
+
+void BoardState::castle_kingside()
+{
+    int rook_from = side_to_move == White ? h1 : h8;
+    int rook_to = side_to_move == White ? f1 : f8;
+    int king_to = side_to_move == White ? g1 : g8;
+    
+    do_castle(rook_from, rook_to, king_to);
+}
+
+void BoardState::castle_queenside()
+{
+    int rook_from = side_to_move == White ? a1 : a8;
+    int rook_to = side_to_move == White ? c1 : c8;
+    int king_to = side_to_move == White ? d1 : d8;
+
+    do_castle(rook_from, rook_to, king_to);
+}
+
+void BoardState::make_move(BMove m) 
+{
+    int from = (m >> 6) & 0x3f;
+    int to = m & 0x3f;
+    Piece p = squares[from];
+
+    // Castling
+    if(m == OO) {
+        castle_kingside();
+    } else if(m == OOO) {
+        castle_queenside();
+    } else {
+        // Squares
+        squares[from] = None;
+        squares[to] = p;
+        // Bitboards
+        piece_bbs[p] &= ~(1ULL << from); 
+        piece_bbs[p] |= (1ULL << to); 
+       
+        // Specific occupations
+        if(side_to_move == White) {
+            white_piece_bbs[p] &= ~(1ULL << from); 
+            white_piece_bbs[p] |= (1ULL << to); 
+            white_occ &= ~(1ULL << from); 
+            white_occ |= (1ULL << to); 
+        } else {
+            black_piece_bbs[p] &= ~(1ULL << from); 
+            black_piece_bbs[p] |= (1ULL << to); 
+            black_occ &= ~(1ULL << from); 
+            black_occ |= (1ULL << to); 
+
+        }
+    }
+}
+
+Bitboard BoardState::get_friend_occ()
+{
+    return side_to_move == White ? white_occ : black_occ;
+}
+
+Bitboard BoardState::get_op_occ()
+{
+    return side_to_move == Black ? white_occ : black_occ;
 }
 
 bool is_piece_ch(char ch) 
