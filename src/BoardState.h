@@ -35,6 +35,7 @@ public:
     void make_move(BMove m);
     Bitboard get_friend_occ();
     Bitboard get_op_occ();
+    Bitboard get_friend_piece_bb(int pt);
 };
 
 #endif

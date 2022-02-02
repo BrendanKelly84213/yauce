@@ -285,15 +285,13 @@ Bitboard get_to_squares(int p, int from, BoardState board_state)
     return ts;
 }
 
-BMove* generator(Bitboard * piece_bbs, 
-        BoardState board_state, 
-        Bitboard friend_occ, 
-        Bitboard op_occ)
+BMove* generator(BoardState board_state) 
 {   
     static BMove moves[128];
     int i = 0;
+    Colour us = board_state.side_to_move;
     for(int p = Pawn; p <= King; ++p) {
-        Bitboard occ = piece_bbs[p];
+        Bitboard occ = board_state.get_friend_piece_bb(p);
         while(occ) {
             Square origin = pop_bit(occ);
             BMove from = static_cast<BMove>((origin << 6) & 0xfc0);
