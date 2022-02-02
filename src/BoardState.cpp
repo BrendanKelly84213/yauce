@@ -212,6 +212,11 @@ Bitboard BoardState::get_op_occ()
     return side_to_move == Black ? white_occ : black_occ;
 }
 
+Bitboard BoardState::get_friend_piece_bb(int pt) 
+{
+    return side_to_move == White ? white_piece_bbs[pt] : black_piece_bbs[pt];
+}
+
 bool is_piece_ch(char ch) 
 {
     return (
@@ -229,6 +234,7 @@ bool is_piece_ch(char ch)
          || ch == 'B'
     );
 }
+
 
 Piece fen_to_piece(char ch) 
 {

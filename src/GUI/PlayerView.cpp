@@ -210,10 +210,7 @@ void run()
     }
     // For now...? In future: on_player_make_move
     BMove * moves_ptr;
-    moves_ptr = generator(board_state.white_piece_bbs, 
-            board_state,
-            board_state.white_occ,
-            board_state.black_occ);
+    moves_ptr = generator(board_state);
 
     int i=0;
     while(*moves_ptr != 0x00) {

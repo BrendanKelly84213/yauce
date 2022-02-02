@@ -9,10 +9,7 @@
 typedef uint64_t Bitboard;
 typedef uint16_t BMove;
 
-BMove* generator(Bitboard * piece_bbs, 
-        BoardState board_state, 
-        Bitboard friend_occ, 
-        Bitboard op_occ);
+BMove* generator(BoardState board_state);
 void init_generator();
 Bitboard blockers_and_beyond(int p, int from, Bitboard occ);
 Bitboard get_to_squares(int p, int from, BoardState board_state);
