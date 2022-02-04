@@ -130,7 +130,18 @@ void set_available_moves(int sq, int piece)
     for(int i=0; i<28; ++i) {
         selected_piece_moves[i] = -1;
     }
-
+    if(pt == King && can_castle_ks(board_state)) {
+        std::cout << "can castle ks" << '\n';
+        selected_piece_moves[i] = board_state.side_to_move == White ? g1 : g8;
+        ++i;
+    }
+    if(pt == King && can_castle_qs(board_state)) {
+        std::cout << "can castle qs" << '\n';
+        selected_piece_moves[i] = board_state.side_to_move == White ? d1 : d8;
+        ++i;
+        selected_piece_moves[i] = board_state.side_to_move == White ? c1 : c8;
+        ++i;
+    }
     print(to_squares);
     while(to_squares) {
         int s = pop_bit(to_squares);

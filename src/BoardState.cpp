@@ -15,6 +15,7 @@ Piece fen_to_piece(char ch);
 
 // TODO: check if fen is properly formatted 
 //       add update function
+//
 
 void BoardState::init_squares(std::string fen)
 {
@@ -106,9 +107,21 @@ void BoardState::init_squares(std::string fen)
     }
 }
 
+void temp_print(Bitboard bb) 
+{
+    for(int y=7; y >=0; --y){
+        std::cout << '\n';
+        for(int x=0; x < 8; ++x)
+            std::cout << ((bb >> y*8 + x) & 1ULL) << " ";
+    }
+    std::cout << '\n';
+}
+
 void BoardState::init_bbs() 
 {
-    for(int s = 0; s <= 64; ++s) {
+    white_occ = 0ULL; 
+    black_occ = 0ULL;
+    for(int s = 0; s<64; ++s) {
         int p = (int)squares[s];
         if(p >= 0) { 
             int pt = conversions::piece_to_piecetype(p);
@@ -215,6 +228,11 @@ Bitboard BoardState::get_op_occ()
 Bitboard BoardState::get_friend_piece_bb(int pt) 
 {
     return side_to_move == White ? white_piece_bbs[pt] : black_piece_bbs[pt];
+}
+
+Bitboard BoardState::get_op_piece_bb(int pt) 
+{
+    return side_to_move == Black ? white_piece_bbs[pt] : black_piece_bbs[pt];
 }
 
 bool is_piece_ch(char ch) 
