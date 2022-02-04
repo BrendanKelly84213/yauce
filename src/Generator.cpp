@@ -273,7 +273,7 @@ Bitboard pawn_squares(
 
 Bitboard get_to_squares(int p, int from, BoardState board_state)
 {
-    Bitboard ts = 0; 
+    Bitboard ts = 0ULL; 
     Bitboard friend_occ = board_state.get_friend_occ();
     Bitboard op_occ = board_state.get_op_occ();
     if(p == Pawn) {
@@ -285,11 +285,107 @@ Bitboard get_to_squares(int p, int from, BoardState board_state)
     return ts;
 }
 
+// ############################### CASTLING ############################### 
+// TODO: Refactor ?
+Bitboard op_attack_squares(BoardState board_state)
+{
+    BoardState op_board = board_state;
+    op_board.side_to_move = board_state.side_to_move == White ? Black : White;
+    Bitboard attack_squares = 0ULL; 
+    for(int pt=0; pt<6; ++pt) {
+        Bitboard piece_bb = op_board.get_friend_piece_bb(pt);
+        while(piece_bb) {
+            Square occ_sq = pop_bit(piece_bb);
+            attack_squares |= get_to_squares(pt, occ_sq, op_board);
+        }
+    }
+    return attack_squares;
+}
+
+bool can_castle_ks(BoardState board_state) 
+{
+    Colour us = board_state.side_to_move; 
+    bool rights;
+    Square k_sq, k_adj, r_adj, r_sq; // King and rook squares and adjacent squares
+    Bitboard attack_squares = op_attack_squares(board_state);
+    if(us == White) { 
+        rights = board_state.w_castle_ks;
+        k_sq  = e1;
+        k_adj = f1;
+        r_adj = g1;
+        r_sq  = h1;
+    } else {
+        rights = board_state.b_castle_ks;
+        k_sq  = e8;
+        k_adj = f8;
+        r_adj = g8;
+        r_sq  = h8;
+    }
+    if(!rights) {
+        return false;
+    }
+    print(attack_squares);
+    // Blockers 
+    if(board_state.occ & (bit(k_adj) | bit(r_adj))) {
+        return false;
+    }
+    // Attackers
+    if(attack_squares & (bit(k_sq) | bit(k_adj) | bit(r_adj) | bit(r_sq))) {
+        return false;
+    }
+    return true;
+}
+
+bool can_castle_qs(BoardState board_state) 
+{
+    Colour us = board_state.side_to_move; 
+    bool rights;
+    Square k_sq, k_adj1, k_adj2, r_adj, r_sq; // King and rook squares and adjacent squares
+    Bitboard attack_squares = op_attack_squares(board_state);
+    if(us == White) { 
+        rights = board_state.w_castle_qs;
+        k_sq   = e1;
+        k_adj1 = d1;
+        k_adj2 = c1;
+        r_adj  = b1;
+        r_sq   = a1;
+    } else {
+        rights = board_state.b_castle_qs;
+        k_sq   = e8;
+        k_adj1 = d8;
+        k_adj2 = c8;
+        r_adj  = b8;
+        r_sq   = a8;
+    }
+    if(!rights) {
+        return false;
+    }
+    // Blockers 
+    if(board_state.occ & (bit(k_adj1) | bit(k_adj2) | bit(r_adj))) {
+        return false;
+    }
+    // Attackers
+    if(attack_squares & (bit(k_sq) | bit(k_adj1) | bit(k_adj2) | bit(r_adj) | bit(r_sq))) {
+        return false;
+    }
+    return true;
+}
+
+// ############################################################## 
+
 BMove* generator(BoardState board_state) 
 {   
     static BMove moves[128];
     int i = 0;
     Colour us = board_state.side_to_move;
+    if(can_castle_qs(board_state)) {
+        moves[i] = OOO;
+        ++i;
+    }
+    if(can_castle_ks(board_state)) {
+        moves[i] = OO;
+        ++i;
+    }
     for(int p = Pawn; p <= King; ++p) {
         Bitboard occ = board_state.get_friend_piece_bb(p);
         while(occ) {

@@ -19,6 +19,8 @@ Bitboard occ_squares(Piece* squares, Colour colour);
 Bitboard get_behind(Square from, Square to);
 inline Square pop_bit(Bitboard &bb);
 std::string get_square_to_str(Square s);
+bool can_castle_ks(BoardState board_state);
+bool can_castle_qs(BoardState board_state);
 
 
 #endif

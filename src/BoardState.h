@@ -36,6 +36,7 @@ public:
     Bitboard get_friend_occ();
     Bitboard get_op_occ();
     Bitboard get_friend_piece_bb(int pt);
+    Bitboard get_op_piece_bb(int pt);
 };
 
 #endif
