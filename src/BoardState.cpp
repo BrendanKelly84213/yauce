@@ -107,16 +107,6 @@ void BoardState::init_squares(std::string fen)
     }
 }
 
-void temp_print(Bitboard bb) 
-{
-    for(int y=7; y >=0; --y){
-        std::cout << '\n';
-        for(int x=0; x < 8; ++x)
-            std::cout << ((bb >> y*8 + x) & 1ULL) << " ";
-    }
-    std::cout << '\n';
-}
-
 void BoardState::init_bbs() 
 {
     white_occ = 0ULL; 
@@ -180,6 +170,7 @@ void BoardState::castle_queenside()
     do_castle(rook_from, rook_to, king_to);
 }
 
+// Assume legal
 void BoardState::make_move(BMove m) 
 {
     int from = (m >> 6) & 0x3f;
@@ -213,6 +204,10 @@ void BoardState::make_move(BMove m)
 
         }
     }
+
+    side_to_move = static_cast<Colour>((bool)side_to_move); 
+    movelist[movelist_idx] = m;
+    movelist_idx++;
 }
 
 Bitboard BoardState::get_friend_occ()

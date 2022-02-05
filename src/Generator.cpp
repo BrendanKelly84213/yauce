@@ -230,8 +230,8 @@ Bitboard pawn_squares(
     Colour us = board_state.side_to_move;
     Direction push_dir = us == White ? N : S;  
 
-    Bitboard ratt = bit(origin + push_dir + E);
-    Bitboard latt = bit(origin + push_dir + W);
+    Bitboard ratt = bit(origin + push_dir + E) & ~FileABB;
+    Bitboard latt = bit(origin + push_dir + W) & ~FileHBB;
     Bitboard single_push = bit(origin + push_dir);
     Bitboard double_push = bit(origin + push_dir + push_dir);
 
