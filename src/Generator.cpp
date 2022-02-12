@@ -9,7 +9,7 @@
 // BMove:
 // Bits 0 - 5: from 
 // Bits 6 - 11: to
-// Bits 12 - 15: ??  
+// Bits 12 - 15: flag: Castle, en passant, capture
 
 //Ranks and files. 
 constexpr Bitboard FileABB = 0x0101010101010101ULL;
@@ -302,6 +302,20 @@ Bitboard op_attack_squares(BoardState board_state)
     return attack_squares;
 }
 
+Bitboard friend_attack_squares(BoardState board_state)
+{
+    BoardState copy_board = board_state;
+    Bitboard attack_squares = 0ULL; 
+    for(int pt=0; pt<6; ++pt) {
+        Bitboard piece_bb = copy_board.get_friend_piece_bb(pt);
+        while(piece_bb) {
+            Square occ_sq = pop_bit(piece_bb);
+            attack_squares |= get_to_squares(pt, occ_sq, copy_board);
+        }
+    }
+    return attack_squares;
+}
+
 bool can_castle_ks(BoardState board_state) 
 {
     Colour us = board_state.side_to_move; 
@@ -324,7 +338,6 @@ bool can_castle_ks(BoardState board_state)
     if(!rights) {
         return false;
     }
-    print(attack_squares);
     // Blockers 
     if(board_state.occ & (bit(k_adj) | bit(r_adj))) {
         return false;
@@ -372,19 +385,36 @@ bool can_castle_qs(BoardState board_state)
 }
 
 // ############################################################## 
+//
+
+bool is_legal(BMove m, BoardState board_state) 
+{
+    BoardState copy_state = board_state;
+    copy_state.make_move(m);
+    Bitboard our_king = copy_state.get_op_piece_bb(King); 
+    Bitboard op_attacks = friend_attack_squares(copy_state);
+    return !(our_king & op_attacks);
+}
 
 BMove* generator(BoardState board_state) 
 {   
     static BMove moves[128];
+    BMove current_move = 0;
     int i = 0;
     Colour us = board_state.side_to_move;
     if(can_castle_qs(board_state)) {
-        moves[i] = OOO;
-        ++i;
+        current_move = OOO;
+        if(is_legal(current_move, board_state)) {
+            moves[i] = current_move;
+            ++i;
+        }
     }
     if(can_castle_ks(board_state)) {
-        moves[i] = OO;
-        ++i;
+        current_move = OO;
+        if(is_legal(current_move, board_state)) {
+            moves[i] = current_move;
+            ++i;
+        }
     }
     for(int p = Pawn; p <= King; ++p) {
         Bitboard occ = board_state.get_friend_piece_bb(p);
@@ -394,12 +424,18 @@ BMove* generator(BoardState board_state)
             PieceType pt = static_cast<PieceType>(p);
             moves[i] = 0;
             Bitboard to_squares = get_to_squares(pt, from, board_state);
+            if(p == Pawn && board_state.ep_file != -1) {
+                current_move |= EN_PASSANT;
+            }
 
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
                 BMove to = static_cast<BMove>(dest & 0x3f);
-                moves[i] = from | to;
-                ++i;
+                current_move |= from | to;
+                if(is_legal(current_move, board_state)) {
+                    moves[i] = current_move;
+                    ++i;
+                }
             }
         }
     }

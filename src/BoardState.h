@@ -8,6 +8,9 @@
 
 class BoardState {
 private: 
+    BMove movelist[1024];
+    int movelist_idx = 0;
+
     void init_squares(std::string fen);
     void init_bbs();
     void castle_kingside();
@@ -33,6 +36,7 @@ public:
 
     void init(std::string fen);
     void make_move(BMove m);
+    void unmake_move(BMove m);
     Bitboard get_friend_occ();
     Bitboard get_op_occ();
     Bitboard get_friend_piece_bb(int pt);

@@ -36,7 +36,7 @@ enum Direction : int {
 }; 
 
 enum Move : BMove {
-    OO, OOO 
+    MOVE_NONE, OO, OOO, EN_PASSANT, CAPTURE
 };
 
 #endif

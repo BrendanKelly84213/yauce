@@ -170,12 +170,32 @@ void BoardState::castle_queenside()
     do_castle(rook_from, rook_to, king_to);
 }
 
+constexpr Bitboard temp_get_bit(Bitboard bb, int x, int y) 
+{ 
+    return (bb >> y*8 + x) & 1ULL;
+}
+
+void temp_print(Bitboard bb) 
+{
+    for(int y=7; y >=0; --y){
+        std::cout << '\n';
+        for(int x=0; x < 8; ++x)
+            std::cout << temp_get_bit(bb, x,y) << " ";
+    }
+    std::cout << '\n';
+}
+
 // Assume legal
 void BoardState::make_move(BMove m) 
 {
     int from = (m >> 6) & 0x3f;
     int to = m & 0x3f;
+    int flag = m & 0xf;
+    int ep_pawn = -1;
+    int ep_pawn_square = -1;
+    int ep_rank;
     Piece p = squares[from];
+    int pt = conversions::piece_to_piecetype(p);
 
     // Castling
     if(m == OO) {
@@ -183,29 +203,51 @@ void BoardState::make_move(BMove m)
     } else if(m == OOO) {
         castle_queenside();
     } else {
+        if(flag == EN_PASSANT) {
+            if(side_to_move == White) {
+                ep_rank = to + S;
+                ep_pawn = BP;
+            } else {
+                ep_rank = to + N;
+                ep_pawn = WP;
+            }
+            ep_pawn_square = ep_rank*8 + ep_file;
+            squares[ep_pawn_square] = None;
+            piece_bbs[ep_pawn] &= ~(1ULL << ep_pawn_square);
+            occ &= ~(1ULL << ep_pawn_square);
+        }
         // Squares
         squares[from] = None;
         squares[to] = p;
         // Bitboards
         piece_bbs[p] &= ~(1ULL << from); 
         piece_bbs[p] |= (1ULL << to); 
+        occ &= ~(1ULL << from); 
+        occ |= (1ULL << to); 
        
         // Specific occupations
         if(side_to_move == White) {
-            white_piece_bbs[p] &= ~(1ULL << from); 
-            white_piece_bbs[p] |= (1ULL << to); 
+            if(flag == EN_PASSANT) {
+                black_piece_bbs[Pawn] &= ~(1ULL << ep_pawn_square);
+                black_occ &= ~(1ULL << ep_pawn_square);
+            }
+            white_piece_bbs[pt] &= ~(1ULL << from); 
+            white_piece_bbs[pt] |= (1ULL << to); 
             white_occ &= ~(1ULL << from); 
             white_occ |= (1ULL << to); 
         } else {
-            black_piece_bbs[p] &= ~(1ULL << from); 
-            black_piece_bbs[p] |= (1ULL << to); 
+            if(flag == EN_PASSANT) {
+                white_piece_bbs[Pawn] &= ~(1ULL << ep_pawn_square);
+                white_occ &= ~(1ULL << ep_pawn_square);
+            }
+            black_piece_bbs[pt] &= ~(1ULL << from); 
+            black_piece_bbs[pt] |= (1ULL << to); 
             black_occ &= ~(1ULL << from); 
             black_occ |= (1ULL << to); 
-
         }
     }
 
-    side_to_move = static_cast<Colour>((bool)side_to_move); 
+    side_to_move = static_cast<Colour>(!(bool)side_to_move); 
     movelist[movelist_idx] = m;
     movelist_idx++;
 }

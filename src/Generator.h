@@ -21,6 +21,7 @@ inline Square pop_bit(Bitboard &bb);
 std::string get_square_to_str(Square s);
 bool can_castle_ks(BoardState board_state);
 bool can_castle_qs(BoardState board_state);
+bool is_legal(BMove m, BoardState board_state);
 
 
 #endif

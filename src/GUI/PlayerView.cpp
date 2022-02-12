@@ -122,6 +122,7 @@ void set_available_moves(int sq, int piece)
 {
     int pt=-1;
     int i=0;
+    BMove m = 0;
     Bitboard to_squares=0;
     if(piece >= 0 && board_state.side_to_move == piece_colour(piece)) {
         pt = conversions::piece_to_piecetype(piece);
@@ -132,21 +133,32 @@ void set_available_moves(int sq, int piece)
     }
     if(pt == King && can_castle_ks(board_state)) {
         std::cout << "can castle ks" << '\n';
-        selected_piece_moves[i] = board_state.side_to_move == White ? g1 : g8;
-        ++i;
+        m = OO;
+        if(is_legal(m, board_state)) {
+            selected_piece_moves[i] = board_state.side_to_move == White ? g1 : g8;
+            ++i;
+        }
     }
     if(pt == King && can_castle_qs(board_state)) {
         std::cout << "can castle qs" << '\n';
-        selected_piece_moves[i] = board_state.side_to_move == White ? d1 : d8;
-        ++i;
-        selected_piece_moves[i] = board_state.side_to_move == White ? c1 : c8;
-        ++i;
+        m = OOO;
+        if(is_legal(m, board_state)) {
+            selected_piece_moves[i] = board_state.side_to_move == White ? d1 : d8;
+            ++i;
+            selected_piece_moves[i] = board_state.side_to_move == White ? c1 : c8;
+            ++i;
+        }
     }
     print(to_squares);
     while(to_squares) {
         int s = pop_bit(to_squares);
-        selected_piece_moves[i] = s;
-        i++;
+        BMove from = static_cast<BMove>((sq << 6) & 0xfc0);
+        BMove to = static_cast<BMove>(s & 0x3f);
+        m = from | to;
+        if(is_legal(m, board_state)) {
+            selected_piece_moves[i] = s;
+            i++;
+        }
     }
 
     std::string p = conversions::piece_to_str(piece);
