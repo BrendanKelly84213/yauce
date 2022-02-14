@@ -6,10 +6,22 @@
 #include "utils/types.h"
 #include "utils/conversions.h"
 
+struct State {
+    Colour side_to_move = White; 
+    bool w_castle_ks = false; 
+    bool w_castle_qs = false; 
+    bool b_castle_ks = false; 
+    bool b_castle_qs = false; 
+    int ep_file = -1;
+    int halfmove_clock = 0;
+    int ply_count = 0; 
+};
+
 class BoardState {
 private: 
-    BMove movelist[1024];
     int movelist_idx = 0;
+    BMove movelist[1024];
+    State statelist[1024];
 
     void init_squares(std::string fen);
     void init_bbs();
@@ -23,16 +35,9 @@ public:
     Bitboard black_occ;
     Bitboard white_piece_bbs[6];
     Bitboard black_piece_bbs[6];
-
+    
+    State state;
     Piece squares[64];
-    Colour side_to_move; 
-    bool w_castle_ks = false; 
-    bool w_castle_qs = false; 
-    bool b_castle_ks = false; 
-    bool b_castle_qs = false; 
-    int ep_file;
-    int halfmove_clock;
-    int ply_count; 
 
     void init(std::string fen);
     void make_move(BMove m);
