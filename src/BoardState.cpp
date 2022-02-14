@@ -10,6 +10,7 @@ enum Section
     FullmoveCounter 
 };
 
+
 bool is_piece_ch(char ch);
 Piece fen_to_piece(char ch);
 
@@ -61,46 +62,46 @@ void BoardState::init_squares(std::string fen)
         switch(section) {
             case SideToMove: 
                 if(info[i] == 'w') {
-                    side_to_move = White;
+                    state.side_to_move = White;
                 } else {
-                    side_to_move = Black;
+                    state.side_to_move = Black;
                 }
                 break;
             case CastlingRights:
                 switch(info[i]) {
                     case '-':
-                        w_castle_ks = false; 
-                        w_castle_qs = false; 
-                        b_castle_ks = false; 
-                        b_castle_qs = false; 
+                        state.w_castle_ks = false; 
+                        state.w_castle_qs = false; 
+                        state.b_castle_ks = false; 
+                        state.b_castle_qs = false; 
                         break;
                     case 'k':
-                        b_castle_ks = true;
+                        state.b_castle_ks = true;
                         break;
                     case 'q':
-                        b_castle_qs = true;
+                        state.b_castle_qs = true;
                         break;
                     case 'K': 
-                        w_castle_ks = true;
+                        state.w_castle_ks = true;
                         break;
                     case 'Q':
-                        w_castle_qs = true;
+                        state.w_castle_qs = true;
                         break;
                     default: break;
                 }
                 break;
             case EPSquare:
                 if(info[i] == '-') {
-                    ep_file = -1;
+                    state.ep_file = -1;
                 } else if(info[i] >= 'a' && info[i] <= 'h') {
-                    ep_file = static_cast<int>(info[i] - 0x61);
+                    state.ep_file = static_cast<int>(info[i] - 0x61);
                 } 
                 break;
             case HalfmoveClock:
-                halfmove_clock = static_cast<int>(info[i] - 0x30);
+                state.halfmove_clock = static_cast<int>(info[i] - 0x30);
                 break;
             case FullmoveCounter:
-                ply_count = static_cast<int>(info[i] - 0x30);
+                state.ply_count = static_cast<int>(info[i] - 0x30);
                 break;
             default: break;
         }
@@ -136,9 +137,9 @@ void BoardState::init(std::string fen)
 
 void BoardState::do_castle(int rook_from, int rook_to, int king_to)
 {
-    Piece rook = side_to_move == White ? WR : BR;
-    Piece king = side_to_move == White ? WK : BK;
-    int king_from = side_to_move == White ? e1 : e8;
+    Piece rook = state.side_to_move == White ? WR : BR;
+    Piece king = state.side_to_move == White ? WK : BK;
+    int king_from = state.side_to_move == White ? e1 : e8;
 
     // Squares
     squares[king_from] = None;
@@ -154,18 +155,18 @@ void BoardState::do_castle(int rook_from, int rook_to, int king_to)
 
 void BoardState::castle_kingside()
 {
-    int rook_from = side_to_move == White ? h1 : h8;
-    int rook_to = side_to_move == White ? f1 : f8;
-    int king_to = side_to_move == White ? g1 : g8;
+    int rook_from = state.side_to_move == White ? h1 : h8;
+    int rook_to = state.side_to_move == White ? f1 : f8;
+    int king_to = state.side_to_move == White ? g1 : g8;
     
     do_castle(rook_from, rook_to, king_to);
 }
 
 void BoardState::castle_queenside()
 {
-    int rook_from = side_to_move == White ? a1 : a8;
-    int rook_to = side_to_move == White ? c1 : c8;
-    int king_to = side_to_move == White ? d1 : d8;
+    int rook_from = state.side_to_move == White ? a1 : a8;
+    int rook_to = state.side_to_move == White ? c1 : c8;
+    int king_to = state.side_to_move == White ? d1 : d8;
 
     do_castle(rook_from, rook_to, king_to);
 }
@@ -192,7 +193,7 @@ void BoardState::make_move(BMove m)
     int to = m & 0x3f;
     int flag = m & 0xf;
     int ep_pawn = -1;
-    int ep_pawn_square = -1;
+    int ep_square = -1;
     int ep_rank;
     Piece p = squares[from];
     int pt = conversions::piece_to_piecetype(p);
@@ -202,74 +203,106 @@ void BoardState::make_move(BMove m)
         castle_kingside();
     } else if(m == OOO) {
         castle_queenside();
-    } else {
-        if(flag == EN_PASSANT) {
-            if(side_to_move == White) {
-                ep_rank = to + S;
-                ep_pawn = BP;
-            } else {
-                ep_rank = to + N;
-                ep_pawn = WP;
-            }
-            ep_pawn_square = ep_rank*8 + ep_file;
-            squares[ep_pawn_square] = None;
-            piece_bbs[ep_pawn] &= ~(1ULL << ep_pawn_square);
-            occ &= ~(1ULL << ep_pawn_square);
-        }
-        // Squares
-        squares[from] = None;
-        squares[to] = p;
-        // Bitboards
-        piece_bbs[p] &= ~(1ULL << from); 
-        piece_bbs[p] |= (1ULL << to); 
-        occ &= ~(1ULL << from); 
-        occ |= (1ULL << to); 
-       
-        // Specific occupations
-        if(side_to_move == White) {
-            if(flag == EN_PASSANT) {
-                black_piece_bbs[Pawn] &= ~(1ULL << ep_pawn_square);
-                black_occ &= ~(1ULL << ep_pawn_square);
-            }
-            white_piece_bbs[pt] &= ~(1ULL << from); 
-            white_piece_bbs[pt] |= (1ULL << to); 
-            white_occ &= ~(1ULL << from); 
-            white_occ |= (1ULL << to); 
+    } 
+
+    // En Passant
+    if(flag == EN_PASSANT) {
+        if(state.side_to_move == White) {
+            ep_rank = to + S;
+            ep_pawn = BP;
+            ep_square = ep_rank*8 + state.ep_file;
+            black_piece_bbs[Pawn] &= ~(1ULL << ep_square);
+            black_occ &= ~(1ULL << ep_square);
         } else {
-            if(flag == EN_PASSANT) {
-                white_piece_bbs[Pawn] &= ~(1ULL << ep_pawn_square);
-                white_occ &= ~(1ULL << ep_pawn_square);
-            }
-            black_piece_bbs[pt] &= ~(1ULL << from); 
-            black_piece_bbs[pt] |= (1ULL << to); 
-            black_occ &= ~(1ULL << from); 
-            black_occ |= (1ULL << to); 
+            ep_rank = to + N;
+            ep_pawn = WP;
+            ep_square = ep_rank*8 + state.ep_file;
+            white_piece_bbs[Pawn] &= ~(1ULL << ep_square);
+            white_occ &= ~(1ULL << ep_square);
         }
+        squares[ep_square] = None;
+        piece_bbs[ep_pawn] &= ~(1ULL << ep_square);
+        occ &= ~(1ULL << ep_square);
     }
 
-    side_to_move = static_cast<Colour>(!(bool)side_to_move); 
+    // Squares
+    squares[from] = None;
+    squares[to] = p;
+    // Bitboards
+    piece_bbs[p] &= ~(1ULL << from); 
+    piece_bbs[p] |= (1ULL << to); 
+    occ &= ~(1ULL << from); 
+    occ |= (1ULL << to); 
+   
+    // Specific occupations
+    if(state.side_to_move == White) {
+        white_piece_bbs[pt] &= ~(1ULL << from); 
+        white_piece_bbs[pt] |= (1ULL << to); 
+        white_occ &= ~(1ULL << from); 
+        white_occ |= (1ULL << to); 
+    } else {
+        black_piece_bbs[pt] &= ~(1ULL << from); 
+        black_piece_bbs[pt] |= (1ULL << to); 
+        black_occ &= ~(1ULL << from); 
+        black_occ |= (1ULL << to); 
+    }
+
+    // Update board state
+    if(pt == Pawn && (from - to == N + N || from - to == S + S))
+        state.ep_file = from % 8;
+    else 
+        state.ep_file = -1;
+    if(p == BK) {
+        state.b_castle_ks = false;
+        state.b_castle_qs = false;
+    }
+    if(p == WK) {
+        state.w_castle_ks = false;
+        state.w_castle_qs = false;
+    }
+    if(p == BR) {
+        if(from == h8)
+            state.b_castle_ks = false;
+        if(from == a8)
+            state.b_castle_qs = false;
+    } else if(p == WR) {
+        if(from == h1)
+            state.w_castle_ks = false;
+        else if(from == a1)
+            state.w_castle_qs = false;
+    }
+    if(state.side_to_move == Black)
+        state.ply_count++;
+    if(pt != Pawn && flag != CAPTURE && flag != EN_PASSANT)
+        state.halfmove_clock++;
+    else 
+        state.halfmove_clock = 0;
+
     movelist[movelist_idx] = m;
+    statelist[movelist_idx] = state, 
+
     movelist_idx++;
+    state.side_to_move = static_cast<Colour>(!(bool)state.side_to_move); 
 }
 
 Bitboard BoardState::get_friend_occ()
 {
-    return side_to_move == White ? white_occ : black_occ;
+    return state.side_to_move == White ? white_occ : black_occ;
 }
 
 Bitboard BoardState::get_op_occ()
 {
-    return side_to_move == Black ? white_occ : black_occ;
+    return state.side_to_move == Black ? white_occ : black_occ;
 }
 
 Bitboard BoardState::get_friend_piece_bb(int pt) 
 {
-    return side_to_move == White ? white_piece_bbs[pt] : black_piece_bbs[pt];
+    return state.side_to_move == White ? white_piece_bbs[pt] : black_piece_bbs[pt];
 }
 
 Bitboard BoardState::get_op_piece_bb(int pt) 
 {
-    return side_to_move == Black ? white_piece_bbs[pt] : black_piece_bbs[pt];
+    return state.side_to_move == Black ? white_piece_bbs[pt] : black_piece_bbs[pt];
 }
 
 bool is_piece_ch(char ch) 
