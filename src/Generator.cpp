@@ -214,7 +214,7 @@ Bitboard blockers_and_beyond(int p, int from, Bitboard occ)
     Bitboard ts = piece_attacks[p][from];
     Bitboard bb = occ;
     while(bb) {
-        Square to = pop_bit(bb);
+        int to = pop_bit(bb);
         ts &= ~behind[from][to];
     }
     
@@ -250,9 +250,12 @@ Bitboard pawn_squares(
     if(board_state.state.ep_file != -1) {
         int rank = origin >> 3;
         int file = origin % 8;
-        if(us == White && rank == 4
-        || (us == Black && rank == 3)) {
-            squares |= ((board_state.state.ep_file < file) ? latt : ratt) ;
+        if((us == White && rank == 4
+        || (us == Black && rank == 3))) {
+            if(!(bit(latt) & board_state.get_occ()) && (board_state.state.ep_file < file)) 
+                squares |= latt;
+            else if(!(bit(ratt) & board_state.get_occ()) && (board_state.state.ep_file >= file)) 
+                squares |= ratt;
         } 
     }
 
@@ -271,57 +274,56 @@ Bitboard pawn_squares(
     return squares & mask & ~friend_occ;
 }
 
-Bitboard get_to_squares(int p, int from, BoardState board_state)
+Bitboard get_to_squares(int p, int from, BoardState board_state, Colour us)
 {
     Bitboard ts = 0ULL; 
-    Bitboard friend_occ = board_state.get_friend_occ();
-    Bitboard op_occ = board_state.get_op_occ();
+    Bitboard friend_occ = board_state.get_friend_occ(us);
+    Bitboard op_occ = board_state.get_op_occ(us);
     if(p == Pawn) {
         ts = pawn_squares(friend_occ, op_occ, board_state, from);
     } else {
-        ts = blockers_and_beyond(p, from, board_state.occ);
+        ts = blockers_and_beyond(p, from, board_state.get_occ());
     }
     ts &= ~friend_occ;
     return ts;
 }
 
+Bitboard get_attack_squares(BoardState board_state, Colour us)
+{
+    Bitboard attack_squares = 0ULL; 
+    for(int pt=0; pt<6; ++pt) {
+        Bitboard piece_bb = board_state.get_side_piece_bb(pt, us);
+        while(piece_bb) {
+            Square occ_sq = pop_bit(piece_bb);
+            attack_squares |= get_to_squares(pt, occ_sq, board_state, us);
+        }
+    }
+    return attack_squares;
+}
+
+/* bool in_check(BoardState board_state, Colour us) */
+/* { */
+/*     Colour not_us = (Colour)((int)us ^ 1); */
+/*     Bitboard attack_squares = get_attack_squares(board_state, not_us); */
+/*     /1* print(attack_squares); *1/ */
+/*     Bitboard king_idx = us == White ? WK : BK; */
+/*     Bitboard our_king = board_state.piece_bbs[king_idx]; */
+/*     return (bool)(attack_squares & our_king); */
+/* } */
+
+bool is_legal(BMove m, BoardState board_state)
+{
+    return true;
+}
+
 // ############################### CASTLING ############################### 
-// TODO: Refactor ?
-Bitboard op_attack_squares(BoardState board_state)
-{
-    BoardState op_board = board_state;
-    op_board.state.side_to_move = board_state.state.side_to_move == White ? Black : White;
-    Bitboard attack_squares = 0ULL; 
-    for(int pt=0; pt<6; ++pt) {
-        Bitboard piece_bb = op_board.get_friend_piece_bb(pt);
-        while(piece_bb) {
-            Square occ_sq = pop_bit(piece_bb);
-            attack_squares |= get_to_squares(pt, occ_sq, op_board);
-        }
-    }
-    return attack_squares;
-}
-
-Bitboard friend_attack_squares(BoardState board_state)
-{
-    BoardState copy_board = board_state;
-    Bitboard attack_squares = 0ULL; 
-    for(int pt=0; pt<6; ++pt) {
-        Bitboard piece_bb = copy_board.get_friend_piece_bb(pt);
-        while(piece_bb) {
-            Square occ_sq = pop_bit(piece_bb);
-            attack_squares |= get_to_squares(pt, occ_sq, copy_board);
-        }
-    }
-    return attack_squares;
-}
-
 bool can_castle_ks(BoardState board_state) 
 {
     Colour us = board_state.state.side_to_move; 
     bool rights;
     Square k_sq, k_adj, r_adj, r_sq; // King and rook squares and adjacent squares
-    Bitboard attack_squares = op_attack_squares(board_state);
+    Colour op = board_state.state.side_to_move == White ? Black : White;
+    Bitboard attack_squares = get_attack_squares(board_state, op);
     if(us == White) { 
         rights = board_state.state.w_castle_ks;
         k_sq  = e1;
@@ -339,7 +341,7 @@ bool can_castle_ks(BoardState board_state)
         return false;
     }
     // Blockers 
-    if(board_state.occ & (bit(k_adj) | bit(r_adj))) {
+    if(board_state.get_occ() & (bit(k_adj) | bit(r_adj))) {
         return false;
     }
     // Attackers
@@ -354,7 +356,8 @@ bool can_castle_qs(BoardState board_state)
     Colour us = board_state.state.side_to_move; 
     bool rights;
     Square k_sq, k_adj1, k_adj2, r_adj, r_sq; // King and rook squares and adjacent squares
-    Bitboard attack_squares = op_attack_squares(board_state);
+    Colour op = board_state.state.side_to_move == White ? Black : White;
+    Bitboard attack_squares = get_attack_squares(board_state, op);
     if(us == White) { 
         rights = board_state.state.w_castle_qs;
         k_sq   = e1;
@@ -374,7 +377,7 @@ bool can_castle_qs(BoardState board_state)
         return false;
     }
     // Blockers 
-    if(board_state.occ & (bit(k_adj1) | bit(k_adj2) | bit(r_adj))) {
+    if(board_state.get_occ() & (bit(k_adj1) | bit(k_adj2) | bit(r_adj))) {
         return false;
     }
     // Attackers
@@ -387,57 +390,63 @@ bool can_castle_qs(BoardState board_state)
 // ############################################################## 
 //
 
-bool is_legal(BMove m, BoardState board_state) 
-{
-    BoardState copy_state = board_state;
-    copy_state.make_move(m);
-    Bitboard our_king = copy_state.get_op_piece_bb(King); 
-    Bitboard op_attacks = friend_attack_squares(copy_state);
-    return !(our_king & op_attacks);
-}
-
-BMove* generator(BoardState board_state) 
+// Generate psuedo legal moves, return number of nodes 
+int psuedo_generator(BoardState board_state, BMove moves[]) 
 {   
-    static BMove moves[128];
     BMove current_move = 0;
     int i = 0;
     Colour us = board_state.state.side_to_move;
     if(can_castle_qs(board_state)) {
         current_move = OOO;
-        if(is_legal(current_move, board_state)) {
-            moves[i] = current_move;
-            ++i;
-        }
+        moves[i] = current_move;
+        i++;
     }
     if(can_castle_ks(board_state)) {
         current_move = OO;
-        if(is_legal(current_move, board_state)) {
-            moves[i] = current_move;
-            ++i;
-        }
+        moves[i] = current_move;
+        i++;
     }
-    for(int p = Pawn; p <= King; ++p) {
+
+    for(int p = Queen; p <= Pawn; ++p) {
         Bitboard occ = board_state.get_friend_piece_bb(p);
         while(occ) {
-            Square origin = pop_bit(occ);
-            BMove from = static_cast<BMove>((origin << 6) & 0xfc0);
-            PieceType pt = static_cast<PieceType>(p);
+            BMove origin = (BMove)pop_bit(occ);
+            Move flag = QUIET; // Special move nibble 
+            BMove dest;
             moves[i] = 0;
-            Bitboard to_squares = get_to_squares(pt, from, board_state);
-            if(p == Pawn && board_state.state.ep_file != -1) {
-                current_move |= EN_PASSANT;
-            }
-
+            current_move = 0;
+            Bitboard to_squares = get_to_squares(p, origin, board_state, board_state.state.side_to_move);
             while(to_squares) {
-                Square dest = pop_bit(to_squares);
-                BMove to = static_cast<BMove>(dest & 0x3f);
-                current_move |= from | to;
-                if(is_legal(current_move, board_state)) {
-                    moves[i] = current_move;
-                    ++i;
-                }
+                dest = (BMove)pop_bit(to_squares);
+                current_move = ((origin << 10) | (dest << 4));
+                flag = QUIET;
+
+                // In assigning a flag: 
+                //  Potentially risk unwanted overlap 
+                //      CAPTURE & DOUBLE_PAWN_PUSH for example
+                Bitboard next_moves = get_to_squares(p, dest, board_state, board_state.state.side_to_move);
+                if(next_moves & board_state.get_op_piece_bb(King)) 
+                    flag |= CHECK; // Any of these other flags can also be checks
+
+                if(bit(dest) & board_state.get_op_occ()) 
+                    flag |= CAPTURE;
+
+                if(p == Pawn) {
+                    if (bit(dest) == bit(origin + N + N) || bit(dest) == bit(origin + S + S)) 
+                        flag |= DOUBLE_PAWN_PUSH;
+                    else if(
+                            board_state.state.ep_file != -1
+                        && !(bit(dest) & board_state.get_occ()) // No piece on dest 
+                        && ((us == White && origin >> 3 == 5) || (us == Black && origin >> 3 == 4)) // origin on ep_rank
+                        && (dest % 8 == board_state.state.ep_file) // dest is same file as ep pawn
+                    )  
+                        flag |= EN_PASSANT;
+                } 
+                current_move |= flag;
+                moves[i] = current_move;
+                i++;
             }
         }
     }
-    return moves;
+    return i;
 }

@@ -36,7 +36,13 @@ enum Direction : int {
 }; 
 
 enum Move : BMove {
-    MOVE_NONE, OO, OOO, EN_PASSANT, CAPTURE
+    QUIET, DOUBLE_PAWN_PUSH, OO, OOO, CAPTURE, EN_PASSANT, CHECK=0x08, DOUBLE_CHECK=0x09
 };
+
+template<typename T>
+Move& operator|=(Move &a, T b) {
+    a = (Move)(a | (int)b);
+    return a;
+}
 
 #endif

@@ -126,7 +126,7 @@ void set_available_moves(int sq, int piece)
     Bitboard to_squares=0;
     if(piece >= 0 && board_state.state.side_to_move == piece_colour(piece)) {
         pt = conversions::piece_to_piecetype(piece);
-        to_squares = get_to_squares(pt, sq, board_state); 
+        to_squares = get_to_squares(pt, sq, board_state, board_state.state.side_to_move); 
     }
     for(int i=0; i<28; ++i) {
         selected_piece_moves[i] = -1;
@@ -226,23 +226,6 @@ bool init(std::string fen)
 
 void run()
 {
-
-    for(int i=0; i<28; ++i) {
-        selected_piece_moves[i] = -1;
-    }
-    // For now...? In future: on_player_make_move
-    BMove * moves_ptr;
-    moves_ptr = generator(board_state);
-
-    int i=0;
-    while(*moves_ptr != 0x00) {
-        BMove m = *moves_ptr++;
-        int from = (m << 6) & 0x3f;
-        available_moves[i] = m;
-        i++;
-    }
-    moves_ptr = NULL;
-
     running = true;
     while(running) {
         // Handle events 

@@ -13,7 +13,10 @@ std::string square_to_str(int idx)
         "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", 
         "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8" 
     };
-    return strs[idx];
+    if(idx >= a1 && idx <= h8) {
+        return strs[idx];
+    } 
+    return "Invalid Square Input" ;
 }
 
 std::string piece_to_str(int idx)
@@ -22,7 +25,7 @@ std::string piece_to_str(int idx)
         "BQ", "BK", "BR", "BN", "BB", "BP", 
         "WQ", "WK", "WR", "WN", "WB", "WP",
     };
-    return idx > 0 ? strs[idx] : "None" ;
+    return idx >= 0 ? strs[idx] : "None" ;
 }
 
 std::string piecetype_to_str(int idx)
@@ -41,5 +44,14 @@ int piece_to_piecetype(int idx)
     };
     return piecetypes[idx];
 }
+
+std::string flag_to_str(int idx)
+{
+    std::string strs[] = {
+        "QUIET", "DOUBLE_PAWN_PUSH", "OO", "OOO", "CAPTURE", "EN_PASSANT", "CHECK"
+    };
+    return idx >= 0 ? strs[idx] : "None";
+}
+
 };
 

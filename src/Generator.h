@@ -9,10 +9,10 @@
 typedef uint64_t Bitboard;
 typedef uint16_t BMove;
 
-BMove* generator(BoardState board_state);
+int psuedo_generator(BoardState board_state, BMove moves[]);
 void init_generator();
 Bitboard blockers_and_beyond(int p, int from, Bitboard occ);
-Bitboard get_to_squares(int p, int from, BoardState board_state);
+Bitboard get_to_squares(int p, int from, BoardState board_state, Colour us);
 void print(Bitboard bb); 
 PieceType piece_to_piecetype(Piece piece); 
 Bitboard occ_squares(Piece* squares, Colour colour);
@@ -22,6 +22,7 @@ std::string get_square_to_str(Square s);
 bool can_castle_ks(BoardState board_state);
 bool can_castle_qs(BoardState board_state);
 bool is_legal(BMove m, BoardState board_state);
+bool in_check(BoardState board_state, Colour us);
 
 
 #endif
