@@ -21,11 +21,8 @@ int main( int argc, char *argv[] )
 
     BoardState board_state;
     board_state.init(kiwipete);
-    init_generator();
     
-    /* std::cout << test_in_check(board_state, White) << '\n'; */
-    
-    print_perft(3, board_state);
+    print_perft(4, board_state);
 
 	return 0;
 }

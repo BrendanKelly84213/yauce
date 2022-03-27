@@ -7,6 +7,11 @@
 #include <cassert>
 #include "utils/types.h"
 #include "utils/conversions.h"
+#include "utils/bits.h"
+
+// Sliding piece lookup tables 
+static Bitboard piece_attacks[6][64];
+static Bitboard behind[64][64];
 
 struct State {
     Colour side_to_move = White; 
@@ -50,6 +55,7 @@ private:
     BMove movelist[1024];
     State prev_state;
     Bitboard piece_bbs[12];
+    Piece squares[64]; // Square centric lookup 
     Bitboard occ = 0ULL;
     Bitboard white_occ = 0ULL;
     Bitboard black_occ = 0ULL;
@@ -62,14 +68,20 @@ private:
     void uncastle_queenside();
     void do_castle(int rook_from, int rook_to, int king_from, int king_to);
     void move_piece(int from, int to);
+    void move_piece(int from, int to, Piece p);
     void remove_piece(int sq);
     void put_piece(int sq, Piece p);
     void update_extras();
     bool board_ok();
+    void init_behind();
+    void init_piece_attacks();
+    void init_attacks();
+    Bitboard blockers_and_beyond(int p, int from);
+    Bitboard pawn_squares(int origin, Colour us);
+    void print_context(BMove m, bool capture, Move flag);
 public: 
     
     State state;
-    Piece squares[64];
 
     void init(std::string fen);
     void make_move(BMove m);
@@ -82,9 +94,12 @@ public:
     Bitboard get_friend_piece_bb(int pt);
     Bitboard get_op_piece_bb(int pt);
     Bitboard get_side_piece_bb(int pt, Colour side);
+    Bitboard attacks_to(int sq, Colour attacker);
+    Bitboard get_to_squares(int p, int from, Colour us);
     Colour get_piece_colour(Piece p);
     bool in_check(Colour us);
     bool attacked(int sq, Colour by);
+    Piece get_piece(int s);
 
     bool operator==(BoardState b)
     {

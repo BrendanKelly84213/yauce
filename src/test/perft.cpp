@@ -19,31 +19,36 @@ int perft(int depth, BoardState board_state, Stats &stats)
        int to = (m >> 4) & 0x3f;
 
        Colour us = board_state.state.side_to_move;
-       Piece p = board_state.squares[from];
+       Piece p = board_state.get_piece(from);
+       int kingsq = __builtin_ctzll(board_state.get_friend_piece_bb(King));
+       bool check = (board_state.attacks_to(kingsq, us));
+       bool capture = (board_state.get_piece(to) != None);
+
        board_state.make_move(m);
        if(!board_state.in_check(us)) {
            nodes += perft(depth - 1, board_state, stats);
-           if(flag == CAPTURE)
+           if(capture)
                stats.captures++;
-           else if(flag == OO || flag == OOO) 
+           if(flag == OO || flag == OOO) 
                stats.castles++;
-           else if(flag == EN_PASSANT) {
+           if(flag == EN_PASSANT) {
                stats.ep++;
                stats.captures++;
-           } else if(flag == CHECK) {
+           } 
+           if(check) 
                stats.checks++;
-           }
        }
        board_state.unmake_move(m);
 
        if(!(copy == board_state)) {
-           if(flag == CAPTURE)
+           stats.bad_nodes++;
+           if(capture)
                stats.bad_captures++;
-           else if(flag == EN_PASSANT)
+           if(flag == EN_PASSANT)
                stats.bad_ep++;
-           else if(flag == CHECK)
+           if(check)
                stats.bad_check++;
-           else if(flag == OO || flag == OOO) 
+           if(flag == OO || flag == OOO) 
                stats.bad_castles++;
        }
    }
@@ -83,6 +88,7 @@ void print_perft(int depth, BoardState board_state)
         Stats curr_stats = stats_arr[d];
         std::cout
             << "depth: " << d
+            << " | nodes: " << curr_stats.bad_nodes
             << " | captures: " << curr_stats.bad_captures
             << " | EP: " << curr_stats.bad_ep
             << " | check: " << curr_stats.bad_check

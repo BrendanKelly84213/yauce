@@ -13,10 +13,11 @@ struct Stats {
     uint64_t castles = 0;
     uint64_t checks = 0;
 
-    int bad_captures = 0;
-    int bad_ep = 0;
-    int bad_check = 0;
-    int bad_castles = 0;
+    uint64_t bad_nodes = 0;
+    uint64_t bad_captures = 0;
+    uint64_t bad_ep = 0;
+    uint64_t bad_check = 0;
+    uint64_t bad_castles = 0;
 };
 
 int perft(int depth, BoardState board_state, Stats &stats);

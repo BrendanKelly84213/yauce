@@ -1,5 +1,5 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = main.cpp test/perft.cpp GUI/PlayerView.cpp utils/conversions.cpp BoardState.cpp Generator.cpp 
+OBJS = main.cpp test/perft.cpp utils/conversions.cpp utils/bits.cpp BoardState.cpp Generator.cpp  
 
 #CC specifies which compiler we're using
 CC = g++

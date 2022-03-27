@@ -48,7 +48,7 @@ int piece_to_piecetype(int idx)
 std::string flag_to_str(int idx)
 {
     std::string strs[] = {
-        "QUIET", "DOUBLE_PAWN_PUSH", "OO", "OOO", "CAPTURE", "EN_PASSANT", "CHECK"
+        "QUIET", "DOUBLE_PAWN_PUSH", "OO", "OOO", "EN_PASSANT" 
     };
     return idx >= 0 ? strs[idx] : "None";
 }

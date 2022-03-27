@@ -36,13 +36,19 @@ enum Direction : int {
 }; 
 
 enum Move : BMove {
-    QUIET, DOUBLE_PAWN_PUSH, OO, OOO, CAPTURE, EN_PASSANT, CHECK=0x08, DOUBLE_CHECK=0x09
+    QUIET, DOUBLE_PAWN_PUSH, OO, OOO, EN_PASSANT
 };
 
-template<typename T>
-Move& operator|=(Move &a, T b) {
-    a = (Move)(a | (int)b);
-    return a;
-}
+/* template<typename T> */
+/* constexpr Square operator+(Square a, T b) */ 
+/* { */ 
+/*     return static_cast<Square>(int(a) + int(b)); */ 
+/* } */
+
+/* Square& operator++(Square& s) */ 
+/* { */ 
+/*     s = static_cast<Square>(int(s) + 1); */ 
+/*     return s; */
+/* } */
 
 #endif
