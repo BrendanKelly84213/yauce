@@ -62,6 +62,11 @@ constexpr Square get_from(BMove m)
     return static_cast<Square>((m >> 10)& 0x3f);
 }
 
+constexpr Move get_flag(BMove m) 
+{
+    return static_cast<Move>(m & 0xf);
+}
+
 inline Square pop_bit(Bitboard &bb)
 {
     Square index = Square(__builtin_ctzll(bb));
@@ -108,5 +113,20 @@ constexpr Bitboard knight_mask(Square origin)
         | (bit(origin + SSW) & ~(FileHBB | Rank8BB | Rank7BB))
         | (bit(origin + SSE) & ~(FileABB | Rank8BB | Rank7BB))
         | (bit(origin + SEE) & ~(FileABB | FileBBB | Rank8BB));
+}
+
+constexpr Square square(int rank, int file)
+{
+    return (Square)(rank * 8 + file);
+}
+
+constexpr int rank(Square s)
+{
+    return s >> 3;
+}
+
+constexpr int file(Square s)
+{
+    return s % 8;
 }
 

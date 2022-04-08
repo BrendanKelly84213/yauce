@@ -5,6 +5,7 @@
 #include "utils/types.h"
 /* #include "GUI/PlayerView.h" */
 #include "test/perft.h"
+/* #include "utils/bits.h" */
 
 //TODO: 
 
@@ -21,7 +22,7 @@ int main( int argc, char *argv[] )
 
     BoardState board_state;
     board_state.init(kiwipete);
-    
+
     print_perft(4, board_state);
 
 	return 0;

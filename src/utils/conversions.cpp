@@ -1,6 +1,5 @@
 #include "conversions.h"
 
-namespace conversions {
 std::string square_to_str(int idx)
 {
     std::string strs[64] = {  
@@ -16,7 +15,9 @@ std::string square_to_str(int idx)
     if(idx >= a1 && idx <= h8) {
         return strs[idx];
     } 
-    return "Invalid Square Input" ;
+    if(idx == None)
+        return "None";
+    return "Invalid Square Input" + std::to_string(idx);
 }
 
 std::string piece_to_str(int idx)
@@ -52,6 +53,4 @@ std::string flag_to_str(int idx)
     };
     return idx >= 0 ? strs[idx] : "None";
 }
-
-};
 

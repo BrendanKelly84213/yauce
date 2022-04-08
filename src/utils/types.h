@@ -39,16 +39,4 @@ enum Move : BMove {
     QUIET, DOUBLE_PAWN_PUSH, OO, OOO, EN_PASSANT
 };
 
-/* template<typename T> */
-/* constexpr Square operator+(Square a, T b) */ 
-/* { */ 
-/*     return static_cast<Square>(int(a) + int(b)); */ 
-/* } */
-
-/* Square& operator++(Square& s) */ 
-/* { */ 
-/*     s = static_cast<Square>(int(s) + 1); */ 
-/*     return s; */
-/* } */
-
 #endif

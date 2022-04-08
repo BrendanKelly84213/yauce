@@ -14,9 +14,9 @@ int perft(int depth, BoardState board_state, Stats &stats)
 
    for(int i=0; i<num_moves; ++i) {
        BMove m = moves[i];
-       int flag = m & 0xf;
-       int from = (m >> 10) & 0x3f;
-       int to = (m >> 4) & 0x3f;
+       int flag = get_flag(m);
+       int from = get_from(m);
+       int to = get_to(m);
 
        Colour us = board_state.state.side_to_move;
        Piece p = board_state.get_piece(from);

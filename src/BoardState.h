@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 #include "utils/types.h"
 #include "utils/conversions.h"
 #include "utils/bits.h"
@@ -19,7 +20,7 @@ struct State {
     bool w_castle_qs = false; 
     bool b_castle_ks = false; 
     bool b_castle_qs = false; 
-    int ep_file = -1;
+    int ep_square = None;
     int halfmove_clock = 0;
     int ply_count = 0;     
     Piece last_captured = None;
@@ -31,7 +32,7 @@ struct State {
         this->w_castle_qs     = b.w_castle_qs;
         this->b_castle_ks     = b.b_castle_ks ;
         this->b_castle_qs     = b.b_castle_qs;
-        this->ep_file         = b.ep_file;
+        this->ep_square         = b.ep_square;
         this->halfmove_clock  = b.halfmove_clock;
         this->ply_count       = b.ply_count;
     }
@@ -43,7 +44,7 @@ struct State {
           && this->w_castle_qs    == b.w_castle_qs
           && this->b_castle_ks    == b.b_castle_ks 
           && this->b_castle_qs    == b.b_castle_qs
-          && this->ep_file        == b.ep_file
+          && this->ep_square        == b.ep_square
           && this->halfmove_clock == b.halfmove_clock
           && this->ply_count      == b.ply_count;
     }
@@ -51,8 +52,7 @@ struct State {
 
 class BoardState {
 private: 
-    int movelist_idx = 0;
-    BMove movelist[1024];
+    std::vector<BMove> movelist;
     State prev_state;
     Bitboard piece_bbs[12];
     Piece squares[64]; // Square centric lookup 
@@ -78,9 +78,9 @@ private:
     void init_attacks();
     Bitboard blockers_and_beyond(int p, int from);
     Bitboard pawn_squares(int origin, Colour us);
-    void print_context(BMove m, bool capture, Move flag);
 public: 
     
+    // TODO: Should be private
     State state;
 
     void init(std::string fen);
@@ -100,6 +100,11 @@ public:
     bool in_check(Colour us);
     bool attacked(int sq, Colour by);
     Piece get_piece(int s);
+    bool can_castle(Colour us, Move type);
+    int get_ep_square();
+    void print_previous_moves();
+    void print_occupied();
+    void print_context(BMove m, bool capture, Move flag);
 
     bool operator==(BoardState b)
     {

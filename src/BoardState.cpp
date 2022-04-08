@@ -23,7 +23,7 @@ void print_squares(Piece squares[64])
             if(squares[s] == -1) {
                 std::cout << "|##";
             } else {
-                std::cout << "|" << conversions::piece_to_str(squares[s]);
+                std::cout << "|" << piece_to_str(squares[s]);
             }
             if(s == h8)
                 std::cout << "|";
@@ -109,9 +109,11 @@ void BoardState::init_squares(std::string fen)
                 break;
             case EPSquare:
                 if(info[i] == '-') {
-                    state.ep_file = -1;
+                    state.ep_square = -1;
                 } else if(info[i] >= 'a' && info[i] <= 'h') {
-                    state.ep_file = static_cast<int>(info[i] - 0x61);
+                    int ep_file = static_cast<int>(info[i] - 0x61);
+                    int ep_rank = state.side_to_move == White ? 4 : 5;
+                    state.ep_square = square(ep_rank, ep_file);
                 } 
                 break;
             case HalfmoveClock:
@@ -137,7 +139,7 @@ void BoardState::init_bbs()
     for(int s = 0; s<64; ++s) {
         int p = (int)squares[s];
         if(p >= 0) { 
-            int pt = conversions::piece_to_piecetype(p);
+            int pt = piece_to_piecetype(p);
             piece_bbs[p] |= (1ULL << s);
             occ |= piece_bbs[p];
             if(p >= WQ && p <= WP) {
@@ -154,6 +156,11 @@ void BoardState::init(std::string fen)
     init_squares(fen);
     init_bbs(); 
     init_attacks();
+}
+
+bool BoardState::can_castle(Colour us, Move type) 
+{
+    return true;
 }
 
 void BoardState::do_castle(int rook_from, int rook_to, int king_from, int king_to)
@@ -210,8 +217,8 @@ void BoardState::move_piece(int from, int to, Piece p)
 {
     if(p == -1) {
         std::cout << "p == -1 on move_piece: " 
-            << conversions::square_to_str(from)
-            << conversions::square_to_str(to) 
+            << square_to_str(from)
+            << square_to_str(to) 
             << '\n';
         assert(p != -1);
     }
@@ -254,8 +261,11 @@ void BoardState::remove_piece(int sq)
     Piece p = squares[sq];
     if(p == -1) {
         std::cout << "p == -1 on remove_piece" 
-            << conversions::square_to_str(sq)
+            << " " << square_to_str(sq)
             << '\n';
+        print_previous_moves();
+        print_squares(squares);
+        print_occupied();
         assert(p != -1);
     }
     Colour pc = get_piece_colour(p);
@@ -288,20 +298,25 @@ void print_move(BMove m)
     BMove from = get_from(m);
     BMove to = get_to(m);
     std::cout 
-            << conversions::square_to_str(from)
-            << conversions::square_to_str(to);
+            << square_to_str(from)
+            << square_to_str(to);
 }
 
-void BoardState::print_context(BMove m, bool capture, Move flag)
+void BoardState::print_previous_moves()
 {
-    BMove from = get_from(m);
-    BMove to = get_to(m);
-    BMove prev = movelist[movelist_idx - 1];
-    BMove prev_to = get_to(prev);
-    BMove prev_from = get_from(prev);
+    std::cout << " Previous moves: ";
+    std::for_each( 
+            movelist.rbegin(),
+            movelist.rend(), 
+            [](const auto &m) {
+                print_move(m);
+                std::cout << " ";
+    });
+    std::cout << '\n';
+}
 
-    print_squares(squares);
-    print_squares(squares);
+void BoardState::print_occupied()
+{
     std::cout << "occ";
     print(occ);
     std::cout << "white occ";
@@ -312,81 +327,78 @@ void BoardState::print_context(BMove m, bool capture, Move flag)
     print(black_occ & ~occ);
     std::cout << "white occ & ~occ";
     print(white_occ & ~occ);
+}
+
+void BoardState::print_context(BMove m, bool capture, Move flag)
+{
+    BMove from = get_from(m);
+    BMove to = get_to(m);
+
+    if(flag == EN_PASSANT)
+        std::cout << "ep square: " << square_to_str(get_ep_square());
 
     std::cout 
-        << "On move: "
-        << conversions::square_to_str(from)
-        << conversions::square_to_str(to)
-        << " type: " << conversions::flag_to_str(flag) 
+        << " On move: "
+        << square_to_str(from)
+        << square_to_str(to)
+        << " type: " << flag_to_str(flag) 
         << " capture: " << (capture ? " yes " : " no ") << '\n'
-        << " squares(to) " << conversions::piece_to_str(get_piece(to))
-        << " squares(from) " << conversions::piece_to_str(get_piece(from)) << '\n'
-        << " Previous moves: " 
-        << conversions::square_to_str(get_from(movelist[movelist_idx - 1]))  
-        << conversions::square_to_str(get_to(movelist[movelist_idx - 1]))
-        << " " << conversions::square_to_str(get_from(movelist[movelist_idx - 2]))  
-        << conversions::square_to_str(get_to(movelist[movelist_idx - 2]))
-        << " " << conversions::square_to_str(get_from(movelist[movelist_idx - 3]))  
-        << conversions::square_to_str(get_to(movelist[movelist_idx - 3]))
-        << " " << conversions::square_to_str(get_from(movelist[movelist_idx - 4]))  
-        << conversions::square_to_str(get_to(movelist[movelist_idx - 4]))
-        << '\n';
+        << " squares(to) " << piece_to_str(get_piece(to))
+        << " squares(from) " << piece_to_str(get_piece(from)) << '\n';
+
+    print_previous_moves();
+    print_squares(squares);
+    print_occupied();
 }
 
 // Assume legal
 void BoardState::make_move(BMove m) 
 {
-    BMove from = get_from(m);
-    BMove to = get_to(m);
-    Move flag = (Move)(m & 0xf);
-    Piece ep_pawn = None;
-    int ep_square = -1;
-    int ep_rank;
+    int from = get_from(m);
+    int to = get_to(m);
+    Move flag = get_flag(m);
     Piece p = get_piece(from);
-    int pt = conversions::piece_to_piecetype(p);
+    int pt = piece_to_piecetype(p);
     Piece cp = get_piece(to);
     bool capture = ((cp != None) || (flag == EN_PASSANT));
+    /* bool capture = cp != None; */
     Colour us = state.side_to_move;
 
-    if(p == -1) {
-        assert(p != -1);
-    }
+    assert(p != -1);
 
     // save state in prev_state 
     prev_state = state;
 
-    // Reset ep_file
-    state.ep_file = -1; 
     state.last_captured = None; 
-        
-    if(
-        flag == DOUBLE_PAWN_PUSH
-    && ( (from >> 3 == 1 && us == White) || (from >> 3 == 7 && us == Black) )
-    ) {
-        state.ep_file = from % 8;
-    } 
-    
-    if(capture) { // Capture regular or capture En Passant
+
+    bool ep_possible = (
+        flag == DOUBLE_PAWN_PUSH && 
+        (
+            (get_op_piece_bb(Pawn) & bit(to + W) & ~FileHBB) ||
+            (get_op_piece_bb(Pawn) & bit(to + E) & ~FileABB)   
+        )
+    );
+
+    // Set En Passant square
+    if(ep_possible) 
+        state.ep_square = to;
+    else state.ep_square = -1;  
+
+    // Capture regular or En Passant
+#if 1 
+    if(capture) { 
         int capsq = to;
         // En Passant
         if(flag == EN_PASSANT) {
-            if(state.side_to_move == White) {
-                ep_rank = 5;
-                ep_pawn = BP;
-                ep_square = ep_rank*8 + state.ep_file;
-            } else {
-                ep_rank = 4;
-                ep_pawn = WP;
-                ep_square = ep_rank*8 + state.ep_file;
-            }
-            capsq = ep_square;
-            cp = ep_pawn;
+            capsq = to + (us == White ? S : N);
+            cp = us == White ? BP : WP;
         } 
 
         // Capture
         remove_piece(capsq);
         state.last_captured = cp; 
     } 
+#endif
 
     if(flag == OO) {
         castle_kingside();
@@ -397,6 +409,7 @@ void BoardState::make_move(BMove m)
     }
 
     // Update board state
+    // Reset captured piece and ep square
     if(p == BK) {
         state.b_castle_ks = false;
         state.b_castle_qs = false;
@@ -426,11 +439,14 @@ void BoardState::make_move(BMove m)
     state.side_to_move = static_cast<Colour>(!(bool)state.side_to_move); 
    
     // Add move to ongoing movelist
-    movelist[movelist_idx] = m;
-    movelist_idx++;
+    movelist.push_back(m);
+
+    // TEMP
+    /* print_squares(squares); */
 
     // Make sure all is well afterwords 
     if(!board_ok()) {
+        std::cout << "on make move" << '\n';
         print_context(m, capture, flag);
         assert(board_ok());
     }
@@ -440,18 +456,17 @@ void BoardState::unmake_move(BMove m)
 {
     int from = get_from(m);
     int to = get_to(m);
-    Move flag = (Move)(m & 0xf);
-    Piece ep_pawn = None;
-    int ep_square = -1;
-    int ep_rank;
+    Move flag = get_flag(m);
     Piece p = get_piece(to); 
+
     Piece cp; 
     bool capture;
+    Colour us;
 
     if(p == -1 && flag != OO && flag != OOO) {
         std::cout 
-            << conversions::square_to_str(from)
-            << conversions::square_to_str(to)
+            << square_to_str(from)
+            << square_to_str(to)
             << '\n';
         assert(p != -1);
     }
@@ -460,6 +475,7 @@ void BoardState::unmake_move(BMove m)
 
     cp = state.last_captured;
     capture = (cp != None);
+    us = state.side_to_move;
     
     // Uncastle
     if(flag == OO) {
@@ -473,26 +489,18 @@ void BoardState::unmake_move(BMove m)
     if(capture) {
         int capsq = to;
         if(flag == EN_PASSANT) {
-            if(state.side_to_move == White) {
-                ep_rank = 5;
-                ep_pawn = BP;
-                ep_square = ep_rank*8 + state.ep_file;
-            } else {
-                ep_rank = 4;
-                ep_pawn = WP;
-                ep_square = ep_rank*8 + state.ep_file;
-            }
-            capsq = ep_square;
-            cp = ep_pawn;
+            capsq = get_ep_square();
         }
         // uncapture 
         put_piece(capsq, cp);
     } 
 
     if(!board_ok()) {
+        std::cout << "on unmake move" << '\n';
         print_context(m, capture, flag);
         assert(board_ok());
     }
+    movelist.pop_back();
 }
 
 Bitboard BoardState::get_friend_occ()
@@ -617,6 +625,7 @@ Bitboard BoardState::blockers_and_beyond(int p, int from)
 }
 
 // Returns pawns attacks squares
+// Double pushes and En Passant are handled directly in generator function in order to also attach relevant flag
 Bitboard BoardState::pawn_squares(int origin, Colour us)
 {
     Direction push_dir = us == White ? N : S;  
@@ -624,15 +633,14 @@ Bitboard BoardState::pawn_squares(int origin, Colour us)
     Bitboard ratt = bit(origin + push_dir + E) & ~FileABB;
     Bitboard latt = bit(origin + push_dir + W) & ~FileHBB;
     Bitboard single_push = bit(origin + push_dir);
-    Bitboard double_push = bit(origin + push_dir + push_dir);
 
-    Bitboard mask = ratt | latt | single_push | double_push;
+    Bitboard mask = ratt | latt | single_push;
     Bitboard squares = 0; 
 
     Bitboard op_occ = get_op_occ();
     Bitboard friend_occ = get_friend_occ();
 
-    // Attacks 
+    // Captures 
     if(op_occ & ratt) {
         squares |= ratt;
     }
@@ -640,32 +648,17 @@ Bitboard BoardState::pawn_squares(int origin, Colour us)
         squares |= latt;
     }
 
-    //En Passant
-    if(state.ep_file != -1) {
-        int rank = origin >> 3;
-        int file = origin % 8;
-        if((us == White && rank == 4
-        || (us == Black && rank == 3))) {
-            if(!(bit(latt) & get_occ()) && (state.ep_file < file)) 
-                squares |= latt;
-            else if(!(bit(ratt) & get_occ()) && (state.ep_file >= file)) 
-                squares |= ratt;
-        } 
-    }
-
-    // Double push 
-    if((us == Black && origin >= a7 && origin <= h7) 
-    || (us == White && origin >= a2 && origin <= h2)) {
-        if(!(double_push & op_occ) && !(single_push & friend_occ)) {
-            squares |= double_push;
-        }
-    }
-
+    // Single push
     if(!(single_push & op_occ)) {
         squares |= single_push;
     }
 
     return squares & mask & ~friend_occ;
+}
+
+int BoardState::get_ep_square()
+{
+    return state.ep_square; 
 }
 
 Bitboard BoardState::attacks_to(int sq, Colour attacker)
