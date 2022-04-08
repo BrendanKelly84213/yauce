@@ -18,7 +18,7 @@ int perft(int depth, BoardState board_state, Stats &stats)
        int from = get_from(m);
        int to = get_to(m);
 
-       Colour us = board_state.state.side_to_move;
+       Colour us = board_state.get_side_to_move();
        Piece p = board_state.get_piece(from);
        int kingsq = __builtin_ctzll(board_state.get_friend_piece_bb(King));
        bool check = (board_state.attacks_to(kingsq, us));
