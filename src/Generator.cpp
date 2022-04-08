@@ -5,7 +5,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
 {   
     BMove current_move = 0;
     int i = 0; 
-    Colour us = board_state.state.side_to_move;
+    Colour us = board_state.get_side_to_move();
     int kingsq = (us == White ? e1 : e8);
 
     // Castle 

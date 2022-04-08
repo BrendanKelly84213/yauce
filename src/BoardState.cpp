@@ -14,6 +14,7 @@ enum Section
 bool is_piece_ch(char ch);
 Piece fen_to_piece(char ch);
 
+
 void print_squares(Piece squares[64])
 {
     for(int y = 7; y >= 0; --y) {
@@ -626,7 +627,7 @@ Bitboard BoardState::blockers_and_beyond(int p, int from)
 
 // Returns pawns attacks squares
 // Double pushes and En Passant are handled directly in generator function in order to also attach relevant flag
-Bitboard BoardState::pawn_squares(int origin, Colour us)
+Bitboard BoardState::pawn_squares(int origin, Colour us) 
 {
     Direction push_dir = us == White ? N : S;  
 
@@ -688,6 +689,31 @@ bool BoardState::in_check(Colour us)
 Piece BoardState::get_piece(int s)
 {
     return squares[s];
+}
+
+bool BoardState::operator==(BoardState b)
+{
+    for(int p=BQ; p <= WP; ++p) {
+        if(this->piece_bbs[p] != b.piece_bbs[p])
+            return false;
+    }
+    return this->white_occ == b.white_occ
+        && this->black_occ == b.black_occ  
+        && this->occ == b.occ
+        && this->state == b.state;
+}
+
+bool State::operator==(State &b)
+{
+  return this->side_to_move   == b.side_to_move
+      && this->w_castle_ks    == b.w_castle_ks
+      && this->w_castle_qs    == b.w_castle_qs
+      && this->b_castle_ks    == b.b_castle_ks 
+      && this->b_castle_qs    == b.b_castle_qs
+      && this->ep_square        == b.ep_square
+      && this->halfmove_clock == b.halfmove_clock
+      && this->ply_count      == b.ply_count
+      && this->last_captured  == b.last_captured;
 }
 
 bool is_piece_ch(char ch) 

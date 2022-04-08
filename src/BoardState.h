@@ -25,33 +25,12 @@ struct State {
     int ply_count = 0;     
     Piece last_captured = None;
 
-    void operator=(const State &b)
-    {
-        this->side_to_move    = b.side_to_move;
-        this->w_castle_ks     = b.w_castle_ks;
-        this->w_castle_qs     = b.w_castle_qs;
-        this->b_castle_ks     = b.b_castle_ks ;
-        this->b_castle_qs     = b.b_castle_qs;
-        this->ep_square         = b.ep_square;
-        this->halfmove_clock  = b.halfmove_clock;
-        this->ply_count       = b.ply_count;
-    }
-
-    bool operator==(State &b)
-    {
-      return this->side_to_move   == b.side_to_move
-          && this->w_castle_ks    == b.w_castle_ks
-          && this->w_castle_qs    == b.w_castle_qs
-          && this->b_castle_ks    == b.b_castle_ks 
-          && this->b_castle_qs    == b.b_castle_qs
-          && this->ep_square        == b.ep_square
-          && this->halfmove_clock == b.halfmove_clock
-          && this->ply_count      == b.ply_count;
-    }
+    bool operator==(State &b);
 };
 
 class BoardState {
 private: 
+    State state;
     std::vector<BMove> movelist;
     State prev_state;
     Bitboard piece_bbs[12];
@@ -78,11 +57,8 @@ private:
     void init_attacks();
     Bitboard blockers_and_beyond(int p, int from);
     Bitboard pawn_squares(int origin, Colour us);
-public: 
-    
-    // TODO: Should be private
-    State state;
 
+public: 
     void init(std::string fen);
     void make_move(BMove m);
     void unmake_move(BMove m);
@@ -102,21 +78,12 @@ public:
     Piece get_piece(int s);
     bool can_castle(Colour us, Move type);
     int get_ep_square();
+    Colour get_side_to_move() const { return state.side_to_move; }
+
     void print_previous_moves();
     void print_occupied();
     void print_context(BMove m, bool capture, Move flag);
-
-    bool operator==(BoardState b)
-    {
-        for(int p=BQ; p <= WP; ++p) {
-            if(this->piece_bbs[p] != b.piece_bbs[p])
-                return false;
-        }
-        return this->white_occ == b.white_occ
-            && this->black_occ == b.black_occ  
-            && this->occ == b.occ
-            && this->state == b.state;
-    }
+    bool operator==(BoardState b);
 };
 
 #endif
