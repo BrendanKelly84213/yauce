@@ -223,20 +223,8 @@ void BoardState::move_piece(int from, int to, Piece p)
             << '\n';
         assert(p != -1);
     }
-    Colour pc = get_piece_colour(p);
-    squares[from] = None;
-    squares[to] = p;
-    piece_bbs[p] &= ~(1ULL << from); 
-    piece_bbs[p] |= (1ULL << to); 
-    occ &= ~(1ULL << from); 
-    occ |= (1ULL << to); 
-    if(pc == White) {
-        white_occ &= ~(1ULL << from); 
-        white_occ |= (1ULL << to); 
-    } else {
-        black_occ &= ~(1ULL << from); 
-        black_occ |= (1ULL << to); 
-    }
+    put_piece(to, p);
+    remove_piece(from);
 }
 
 void BoardState::move_piece(int from, int to) 
@@ -260,37 +248,29 @@ bool BoardState::board_ok()
 void BoardState::remove_piece(int sq)
 {
     Piece p = squares[sq];
-    if(p == -1) {
-        std::cout << "p == -1 on remove_piece" 
-            << " " << square_to_str(sq)
-            << '\n';
-        print_previous_moves();
-        print_squares(squares);
-        print_occupied();
-        assert(p != -1);
-    }
+    assert(p != -1);
     Colour pc = get_piece_colour(p);
     squares[sq] = None;
-    piece_bbs[p] &= ~(1ULL << sq); 
-    occ &= ~(1ULL << sq); 
+    clear_bit(piece_bbs[p], sq); 
+    clear_bit(occ, sq); 
     if(pc == White) {
-        white_occ &= ~(1ULL << sq); 
+        clear_bit(white_occ, sq); 
     } else {
-        black_occ &= ~(1ULL << sq); 
+        clear_bit(black_occ, sq); 
     }
 }
 
 void BoardState::put_piece(int sq, Piece p)
 {
-    assert(p != -1);
+    assert(p != -1 && sq != -1);
     Colour pc = get_piece_colour(p);
     squares[sq] = p;
-    piece_bbs[p] |= (1ULL << sq); 
+    set_bit(piece_bbs[p], sq); 
     occ |= (1ULL << sq); 
     if(pc == White) {
-        white_occ |= (1ULL << sq); 
+        set_bit(white_occ, sq); 
     } else {
-        black_occ |= (1ULL << sq); 
+        set_bit(black_occ, sq); 
     }
 }
 
@@ -362,23 +342,25 @@ void BoardState::make_move(BMove m)
     int pt = piece_to_piecetype(p);
     Piece cp = get_piece(to);
     bool capture = ((cp != None) || (flag == EN_PASSANT));
-    /* bool capture = cp != None; */
     Colour us = state.side_to_move;
 
+
     assert(p != -1);
+
+    // Add move to ongoing movelist
+    movelist.push_back(m);
 
     // save state in prev_state 
     prev_state = state;
 
     state.last_captured = None; 
 
-    bool ep_possible = (
-        flag == DOUBLE_PAWN_PUSH && 
-        (
-            (get_op_piece_bb(Pawn) & bit(to + W) & ~FileHBB) ||
-            (get_op_piece_bb(Pawn) & bit(to + E) & ~FileABB)   
-        )
-    );
+    // En Passant Possibility
+    bool pawn_adj = 
+        (get_op_piece_bb(Pawn) & bit(to + W) & ~FileHBB) ||
+        (get_op_piece_bb(Pawn) & bit(to + E) & ~FileABB);
+
+    bool ep_possible = flag == DOUBLE_PAWN_PUSH && pawn_adj;
 
     // Set En Passant square
     if(ep_possible) 
@@ -386,21 +368,34 @@ void BoardState::make_move(BMove m)
     else state.ep_square = -1;  
 
     // Capture regular or En Passant
-#if 1 
+    int capsq = None;
     if(capture) { 
-        int capsq = to;
+         capsq = to;
         // En Passant
         if(flag == EN_PASSANT) {
             capsq = to + (us == White ? S : N);
             cp = us == White ? BP : WP;
         } 
 
+#if 0
+        if(get_piece(capsq) == None) {
+            std::cout << "Trying to capture : cp == None on remove_piece" 
+                << " " << square_to_str(capsq)
+                << '\n';
+            print_move(m);
+            std::cout << '\n' << flag_to_str(flag) << '\n';
+            print_previous_moves();
+            print_squares(squares);
+            /* print_occupied(); */
+        }
+#endif 
+
         // Capture
         remove_piece(capsq);
         state.last_captured = cp; 
     } 
-#endif
 
+    // Move the piece
     if(flag == OO) {
         castle_kingside();
     } else if(flag == OOO) {
@@ -409,8 +404,20 @@ void BoardState::make_move(BMove m)
         move_piece(from, to); 
     }
 
+    // Temp
+#if 0 
+    if(capsq == a4) {
+        print_move(m);
+        std::cout << " ";
+        std::cout 
+            << piece_to_str(get_piece(to)) 
+            << "x" << piece_to_str(cp) << " " 
+            << flag_to_str(flag) << (capture ? " capture" : " not capture") << '\n';
+        print_squares(squares);
+    }
+#endif 
+
     // Update board state
-    // Reset captured piece and ep square
     if(p == BK) {
         state.b_castle_ks = false;
         state.b_castle_qs = false;
@@ -438,12 +445,6 @@ void BoardState::make_move(BMove m)
         state.halfmove_clock = 0;
 
     state.side_to_move = static_cast<Colour>(!(bool)state.side_to_move); 
-   
-    // Add move to ongoing movelist
-    movelist.push_back(m);
-
-    // TEMP
-    /* print_squares(squares); */
 
     // Make sure all is well afterwords 
     if(!board_ok()) {
@@ -451,32 +452,44 @@ void BoardState::make_move(BMove m)
         print_context(m, capture, flag);
         assert(board_ok());
     }
+
 }
 
 void BoardState::unmake_move(BMove m)
 {
+    state = prev_state;
+
     int from = get_from(m);
     int to = get_to(m);
     Move flag = get_flag(m);
     Piece p = get_piece(to); 
 
-    Piece cp; 
-    bool capture;
-    Colour us;
+    Piece cp = state.last_captured; 
+    bool capture = (cp != None);
+    Colour us = state.side_to_move;
+    int capsq = to;
 
-    if(p == -1 && flag != OO && flag != OOO) {
+    assert(p != -1);
+
+    movelist.pop_back();
+
+    // FIXME: Temp debug
+#if 0
+    if(capture && to == a4) {
+        std::cout << "On unmake (checking on if xa4 moves are getting stored as captures)" << '\n';
+        std::cout << "On Move: ";
+        print_move(m);
+        std::cout << "\n";
+        print_previous_moves();
+        std::cout << " ";
         std::cout 
-            << square_to_str(from)
-            << square_to_str(to)
-            << '\n';
-        assert(p != -1);
+            << piece_to_str(get_piece(from)) 
+            << "x" << piece_to_str(cp) << " " 
+            << flag_to_str(flag) << (capture ? " capture" : " not capture") << '\n';
+        print_squares(squares);
     }
+#endif 
 
-    state = prev_state;
-
-    cp = state.last_captured;
-    capture = (cp != None);
-    us = state.side_to_move;
     
     // Uncastle
     if(flag == OO) {
@@ -484,11 +497,11 @@ void BoardState::unmake_move(BMove m)
     } else if(flag == OOO) {
         uncastle_queenside();
     } else {
+        // Unmove piece if its not a castle
         move_piece(to, from); 
     }
     
     if(capture) {
-        int capsq = to;
         if(flag == EN_PASSANT) {
             capsq = get_ep_square();
         }
@@ -496,12 +509,12 @@ void BoardState::unmake_move(BMove m)
         put_piece(capsq, cp);
     } 
 
+
     if(!board_ok()) {
         std::cout << "on unmake move" << '\n';
         print_context(m, capture, flag);
         assert(board_ok());
     }
-    movelist.pop_back();
 }
 
 Bitboard BoardState::get_friend_occ()
