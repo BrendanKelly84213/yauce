@@ -1,9 +1,9 @@
 #include "bits.h"
 
-Bitboard trace_ray(int origin, Direction d)
+Bitboard trace_ray(Square origin, Direction d)
 {
     Bitboard ray = 0ULL;
-    for(int s=origin + d; in_bounds(s,d); s += d) {
+    for(Square s=origin + d; in_bounds(s,d); s = s + d) {
         ray |= bit(s);  
     }
     return ray;

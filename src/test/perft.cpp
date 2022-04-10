@@ -14,13 +14,13 @@ int perft(int depth, BoardState board_state, Stats &stats)
 
    for(int i=0; i<num_moves; ++i) {
        BMove m = moves[i];
-       int flag = get_flag(m);
-       int from = get_from(m);
-       int to = get_to(m);
+       Move flag = get_flag(m);
+       Square from = get_from(m);
+       Square to = get_to(m);
 
        Colour us = board_state.get_side_to_move();
        Piece p = board_state.get_piece(from);
-       int kingsq = __builtin_ctzll(board_state.get_friend_piece_bb(King));
+       Square kingsq = (Square)__builtin_ctzll(board_state.get_friend_piece_bb(King));
        bool check = (board_state.attacks_to(kingsq, us));
        bool capture = (board_state.get_piece(to) != None);
 

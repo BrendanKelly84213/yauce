@@ -25,7 +25,7 @@ constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 const Direction directions[] = { N, S, E, W, NE, NW, SE, SW };
 
 void print(Bitboard bb);
-Bitboard trace_ray(int origin, Direction d);
+Bitboard trace_ray(Square origin, Direction d);
 
 constexpr Bitboard get_bit(Bitboard bb, int square) 
 { 
@@ -37,17 +37,17 @@ constexpr Bitboard get_bit(Bitboard bb, int x, int y)
     return (bb >> y*8 + x) & 1ULL;
 }
 
-constexpr Bitboard bit(int s)
+constexpr Bitboard bit(Square s)
 {
     return 1ULL << s;
 }
 
-constexpr void set_bit(Bitboard &bb, int square) 
+constexpr void set_bit(Bitboard &bb, Square square) 
 { 
     bb |= 1ULL << square; 
 }
 
-constexpr void clear_bit(Bitboard &bb, int square)
+constexpr void clear_bit(Bitboard &bb, Square square)
 {
     bb &= ~(1ULL << square);
 }

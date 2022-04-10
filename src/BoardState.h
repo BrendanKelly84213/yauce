@@ -20,7 +20,8 @@ struct State {
     bool w_castle_qs = false; 
     bool b_castle_ks = false; 
     bool b_castle_qs = false; 
-    int ep_square = None;
+    Square ep_square = NullSquare;
+    // FIXME: int -> size_t
     int halfmove_clock = 0;
     int ply_count = 0;     
     Piece last_captured = None;
@@ -45,18 +46,19 @@ private:
     void uncastle_kingside();
     void castle_queenside();
     void uncastle_queenside();
-    void do_castle(int rook_from, int rook_to, int king_from, int king_to);
-    void move_piece(int from, int to);
-    void move_piece(int from, int to, Piece p);
-    void remove_piece(int sq);
-    void put_piece(int sq, Piece p);
+    void do_castle(Square rook_from, Square rook_to, Square king_from, Square king_to);
+    void move_piece(Square from, Square to);
+    void move_piece(Square from, Square to, Piece p);
+    void remove_piece(Square sq);
+    void put_piece(Square sq, Piece p);
     void update_extras();
     bool board_ok();
     void init_behind();
     void init_piece_attacks();
     void init_attacks();
-    Bitboard blockers_and_beyond(int p, int from) const;
-    Bitboard pawn_squares(int origin, Colour us) const;
+    // FIXME: int p -> Piece p
+    Bitboard blockers_and_beyond(int p, Square from) const;
+    Bitboard pawn_squares(Square origin, Colour us) const;
 
 public: 
     void init(std::string fen);
@@ -70,14 +72,14 @@ public:
     Bitboard get_friend_piece_bb(int pt) const;
     Bitboard get_op_piece_bb(int pt) const;
     Bitboard get_side_piece_bb(int pt, Colour side) const ;
-    Bitboard attacks_to(int sq, Colour attacker) const;
-    Bitboard get_to_squares(int p, int from, Colour us) const;
+    Bitboard attacks_to(Square sq, Colour attacker) const;
+    Bitboard get_to_squares(int p, Square from, Colour us) const;
     Colour get_piece_colour(Piece p) const;
     bool in_check(Colour us);
-    bool attacked(int sq, Colour by);
-    Piece get_piece(int s) const;
+    bool attacked(Square sq, Colour by);
+    Piece get_piece(Square s) const;
     bool can_castle(Colour us, Move type);
-    int get_ep_square() const;
+    Square get_ep_square() const;
     Colour get_side_to_move() const { return state.side_to_move; }
 
     void print_previous_moves();
