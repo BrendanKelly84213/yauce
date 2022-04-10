@@ -238,6 +238,7 @@ bool BoardState::board_ok()
     if((black_occ | occ) != occ) {
         return false;
     }
+
     return true;
 }
 
@@ -373,19 +374,6 @@ void BoardState::make_move(BMove m)
             cp = us == White ? BP : WP;
         } 
 
-#if 0
-        if(get_piece(capsq) == None) {
-            std::cout << "Trying to capture : cp == None on remove_piece" 
-                << " " << square_to_str(capsq)
-                << '\n';
-            print_move(m);
-            std::cout << '\n' << flag_to_str(flag) << '\n';
-            print_previous_moves();
-            print_squares(squares);
-            /* print_occupied(); */
-        }
-#endif 
-
         // Capture
         remove_piece(capsq);
         state.last_captured = cp; 
@@ -399,19 +387,6 @@ void BoardState::make_move(BMove m)
     } else {
         move_piece(from, to); 
     }
-
-    // Temp
-#if 0 
-    if(capsq == a4) {
-        print_move(m);
-        std::cout << " ";
-        std::cout 
-            << piece_to_str(get_piece(to)) 
-            << "x" << piece_to_str(cp) << " " 
-            << flag_to_str(flag) << (capture ? " capture" : " not capture") << '\n';
-        print_squares(squares);
-    }
-#endif 
 
     // Update board state
     if(p == BK) {
@@ -453,7 +428,6 @@ void BoardState::make_move(BMove m)
 
 void BoardState::unmake_move(BMove m)
 {
-    state = prev_state;
 
     Square from = get_from(m);
     Square to = get_to(m);
@@ -461,8 +435,8 @@ void BoardState::unmake_move(BMove m)
     Piece p = get_piece(to); 
 
     Piece cp = state.last_captured; 
+    state = prev_state;
     bool capture = (cp != None);
-    Colour us = state.side_to_move;
     Square capsq = to;
 
     assert(p != -1);
@@ -478,23 +452,6 @@ void BoardState::unmake_move(BMove m)
         // Unmove piece if its not a castle
         move_piece(to, from); 
     }
-
-    // FIXME: Temp debug
-#if 1
-    if(capture && to == a4) {
-        std::cout << "On unmake (checking on if xa4 moves are getting stored as captures)" << '\n';
-        std::cout << "On Move: ";
-        print_move(m);
-        std::cout << "\n";
-        print_previous_moves();
-        std::cout << " ";
-        std::cout 
-            << piece_to_str(get_piece(from)) 
-            << "x" << piece_to_str(cp) << " " 
-            << flag_to_str(flag) << (capture ? " capture" : " not capture") << '\n';
-        print_squares(squares);
-    }
-#endif 
     
     if(capture) {
         if(flag == EN_PASSANT) {
@@ -504,12 +461,12 @@ void BoardState::unmake_move(BMove m)
         put_piece(capsq, cp);
     } 
 
-
     if(!board_ok()) {
         std::cout << "on unmake move" << '\n';
         print_context(m, capture, flag);
         assert(board_ok());
     }
+
 }
 
 // FIXME: Return get_friend_occ(state.side_to_move)
