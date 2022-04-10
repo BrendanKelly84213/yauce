@@ -10,10 +10,8 @@ enum Section
     FullmoveCounter 
 };
 
-
 bool is_piece_ch(char ch);
 Piece fen_to_piece(char ch);
-
 
 void print_squares(Piece squares[64])
 {
@@ -33,8 +31,6 @@ void print_squares(Piece squares[64])
     }
     std::cout << "\n";
 }
-
-// TODO: 
 
 void BoardState::init_squares(std::string fen)
 {
@@ -344,7 +340,6 @@ void BoardState::make_move(BMove m)
     bool capture = ((cp != None) || (flag == EN_PASSANT));
     Colour us = state.side_to_move;
 
-
     assert(p != -1);
 
     // Add move to ongoing movelist
@@ -473,8 +468,18 @@ void BoardState::unmake_move(BMove m)
 
     movelist.pop_back();
 
+    // Uncastle
+    if(flag == OO) {
+        uncastle_kingside(); 
+    } else if(flag == OOO) {
+        uncastle_queenside();
+    } else {
+        // Unmove piece if its not a castle
+        move_piece(to, from); 
+    }
+
     // FIXME: Temp debug
-#if 0
+#if 1
     if(capture && to == a4) {
         std::cout << "On unmake (checking on if xa4 moves are getting stored as captures)" << '\n';
         std::cout << "On Move: ";
@@ -489,17 +494,6 @@ void BoardState::unmake_move(BMove m)
         print_squares(squares);
     }
 #endif 
-
-    
-    // Uncastle
-    if(flag == OO) {
-        uncastle_kingside(); 
-    } else if(flag == OOO) {
-        uncastle_queenside();
-    } else {
-        // Unmove piece if its not a castle
-        move_piece(to, from); 
-    }
     
     if(capture) {
         if(flag == EN_PASSANT) {
@@ -517,27 +511,29 @@ void BoardState::unmake_move(BMove m)
     }
 }
 
-Bitboard BoardState::get_friend_occ()
+// FIXME: Return get_friend_occ(state.side_to_move)
+Bitboard BoardState::get_friend_occ() const
 {
     return state.side_to_move == White ? white_occ : black_occ;
 }
 
-Bitboard BoardState::get_friend_occ(Colour us)
+Bitboard BoardState::get_friend_occ(Colour us) const
 {
     return us == White ? white_occ : black_occ;
 }
 
-Bitboard BoardState::get_op_occ()
+// FIXME: Return get_occ_occ(state.side_to_move)
+Bitboard BoardState::get_op_occ() const 
 {
     return state.side_to_move == Black ? white_occ : black_occ;
 }
 
-Bitboard BoardState::get_op_occ(Colour us)
+Bitboard BoardState::get_op_occ(Colour us) const 
 {
     return us == Black ? white_occ : black_occ;
 }
 
-Bitboard BoardState::get_side_piece_bb(int pt, Colour side)
+Bitboard BoardState::get_side_piece_bb(int pt, Colour side) const 
 {
     int p = side == White ? pt + 6 : pt;
     if(p >= 0 && p < 12)
@@ -548,7 +544,7 @@ Bitboard BoardState::get_side_piece_bb(int pt, Colour side)
     }
 }
 
-Bitboard BoardState::get_friend_piece_bb(int pt) 
+Bitboard BoardState::get_friend_piece_bb(int pt) const 
 {
     int p = state.side_to_move == White ? pt + 6 : pt;
     if(p >= 0 && p < 12)
@@ -559,7 +555,7 @@ Bitboard BoardState::get_friend_piece_bb(int pt)
     }
 }
 
-Bitboard BoardState::get_op_piece_bb(int pt) 
+Bitboard BoardState::get_op_piece_bb(int pt) const
 {
     int p = state.side_to_move == White ? pt : pt + 6 ;
     if(p >= 0 && p < 12)
@@ -570,7 +566,7 @@ Bitboard BoardState::get_op_piece_bb(int pt)
     }
 }
 
-Colour BoardState::get_piece_colour(Piece p)
+Colour BoardState::get_piece_colour(Piece p) const
 {
     assert(p != None);
     if(p >= BQ && p <= BP)
@@ -578,7 +574,7 @@ Colour BoardState::get_piece_colour(Piece p)
     return White;
 }
 
-Bitboard BoardState::get_occ()
+Bitboard BoardState::get_occ() const 
 {
     return occ;
 }
@@ -626,7 +622,7 @@ void BoardState::init_attacks()
 
 
 // Returns attacks squares of a (not pawn) piece on a square 
-Bitboard BoardState::blockers_and_beyond(int p, int from)
+Bitboard BoardState::blockers_and_beyond(int p, int from) const
 {
     Bitboard ts = piece_attacks[p][from];
     Bitboard bb = occ;
@@ -640,7 +636,7 @@ Bitboard BoardState::blockers_and_beyond(int p, int from)
 
 // Returns pawns attacks squares
 // Double pushes and En Passant are handled directly in generator function in order to also attach relevant flag
-Bitboard BoardState::pawn_squares(int origin, Colour us) 
+Bitboard BoardState::pawn_squares(int origin, Colour us) const
 {
     Direction push_dir = us == White ? N : S;  
 
@@ -670,18 +666,18 @@ Bitboard BoardState::pawn_squares(int origin, Colour us)
     return squares & mask & ~friend_occ;
 }
 
-int BoardState::get_ep_square()
+int BoardState::get_ep_square() const 
 {
     return state.ep_square; 
 }
 
-Bitboard BoardState::attacks_to(int sq, Colour attacker)
+Bitboard BoardState::attacks_to(int sq, Colour attacker) const
 {
     return 0ULL;
 }
 
 // Returns attacks of a given piece on a given square 
-Bitboard BoardState::get_to_squares(int p, int from, Colour us)
+Bitboard BoardState::get_to_squares(int p, int from, Colour us) const 
 {
     Bitboard ts = 0ULL; 
     Bitboard friend_occ = get_friend_occ(us);
@@ -699,7 +695,7 @@ bool BoardState::in_check(Colour us)
     return false; 
 }
 
-Piece BoardState::get_piece(int s)
+Piece BoardState::get_piece(int s) const 
 {
     return squares[s];
 }

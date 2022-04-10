@@ -55,29 +55,29 @@ private:
     void init_behind();
     void init_piece_attacks();
     void init_attacks();
-    Bitboard blockers_and_beyond(int p, int from);
-    Bitboard pawn_squares(int origin, Colour us);
+    Bitboard blockers_and_beyond(int p, int from) const;
+    Bitboard pawn_squares(int origin, Colour us) const;
 
 public: 
     void init(std::string fen);
     void make_move(BMove m);
     void unmake_move(BMove m);
-    Bitboard get_occ();
-    Bitboard get_friend_occ();
-    Bitboard get_friend_occ(Colour us);
-    Bitboard get_op_occ();
-    Bitboard get_op_occ(Colour us);
-    Bitboard get_friend_piece_bb(int pt);
-    Bitboard get_op_piece_bb(int pt);
-    Bitboard get_side_piece_bb(int pt, Colour side);
-    Bitboard attacks_to(int sq, Colour attacker);
-    Bitboard get_to_squares(int p, int from, Colour us);
-    Colour get_piece_colour(Piece p);
+    Bitboard get_occ() const; 
+    Bitboard get_friend_occ() const;
+    Bitboard get_friend_occ(Colour us) const;
+    Bitboard get_op_occ() const;
+    Bitboard get_op_occ(Colour us) const ;
+    Bitboard get_friend_piece_bb(int pt) const;
+    Bitboard get_op_piece_bb(int pt) const;
+    Bitboard get_side_piece_bb(int pt, Colour side) const ;
+    Bitboard attacks_to(int sq, Colour attacker) const;
+    Bitboard get_to_squares(int p, int from, Colour us) const;
+    Colour get_piece_colour(Piece p) const;
     bool in_check(Colour us);
     bool attacked(int sq, Colour by);
-    Piece get_piece(int s);
+    Piece get_piece(int s) const;
     bool can_castle(Colour us, Move type);
-    int get_ep_square();
+    int get_ep_square() const;
     Colour get_side_to_move() const { return state.side_to_move; }
 
     void print_previous_moves();
