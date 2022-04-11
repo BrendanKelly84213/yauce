@@ -39,27 +39,29 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 Direction push_dir = us == White ? N : S;  
                 Square double_push = origin + push_dir + push_dir;
                 Square single_push = origin + push_dir;
-                if((us == Black && origin >= a7 && origin <= h7) 
-                || (us == White && origin >= a2 && origin <= h2)) {
-                    if(!(bit(double_push) & board_state.get_op_occ()) && 
-                        !(bit(single_push) & board_state.get_friend_occ())) {
-                        moves[i] = ((origin << 10) | (double_push << 4));
-                        moves[i] |= DOUBLE_PAWN_PUSH;
-                        i++;
-                    } 
+
+                bool fst_move =  
+                         (us == White && rank(origin) == 1) ||
+                         (us == Black && rank(origin) == 6);
+
+                bool piece_on_single_push = (bit(single_push) & board_state.get_occ());
+                bool piece_on_double_push = (bit(double_push) & board_state.get_occ());
+                bool has_blockers = piece_on_single_push || piece_on_double_push;
+
+                if(fst_move && !has_blockers) {
+                    moves[i] = ((origin << 10) | (double_push << 4));
+                    moves[i] |= DOUBLE_PAWN_PUSH;
+                    i++;
                 }
 
                 // En Passant 
                 Square epsq = board_state.get_ep_square();
                 Square tosq = epsq + push_dir;
-                     
-                if(
-                    epsq != None &&
-                    (
+                bool pawn_adj = 
                      (bit(origin + W) & bit(epsq) & ~FileHBB) ||
-                     (bit(origin + E) & bit(epsq) & ~FileABB)
-                    )
-                ) {
+                     (bit(origin + E) & bit(epsq) & ~FileABB);
+                     
+                if(epsq != None && pawn_adj) {
                     moves[i] = ((origin << 10) | (tosq << 4));
                     moves[i] |= EN_PASSANT;
                     i++;
