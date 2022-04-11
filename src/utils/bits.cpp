@@ -20,3 +20,11 @@ void print(Bitboard bb)
     std::cout << '\n';
 }
 
+void print_move(BMove m)
+{
+    BMove from = get_from(m);
+    BMove to = get_to(m);
+    std::cout 
+            << square_to_str(from)
+            << square_to_str(to);
+}

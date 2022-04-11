@@ -1,6 +1,7 @@
 #include <cstdint>
-#include "types.h"
 #include <iostream>
+#include "types.h"
+#include "conversions.h"
 
 //Ranks and files. 
 constexpr Bitboard FileABB = 0x0101010101010101ULL;
@@ -25,6 +26,7 @@ constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 const Direction directions[] = { N, S, E, W, NE, NW, SE, SW };
 
 void print(Bitboard bb);
+void print_move(BMove m);
 Bitboard trace_ray(Square origin, Direction d);
 
 constexpr Bitboard get_bit(Bitboard bb, int square) 
