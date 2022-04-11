@@ -13,18 +13,18 @@ enum Section
 bool is_piece_ch(char ch);
 Piece fen_to_piece(char ch);
 
-void print_squares(Piece squares[64])
+void BoardState::print_squares()
 {
     for(int y = 7; y >= 0; --y) {
         std::cout << "\n";
         for(int x = 0; x < 8; ++x) {
-            int s = y*8 + x;
-            if(squares[s] == -1) {
+            Square s = (Square)(y*8 + x);
+            if(squares[s] == None) {
                 std::cout << "|##";
             } else {
                 std::cout << "|" << piece_to_str(squares[s]);
             }
-            if(s == h8)
+            if(file(s) == 7)
                 std::cout << "|";
         }
 
@@ -271,15 +271,6 @@ void BoardState::put_piece(Square sq, Piece p)
     }
 }
 
-void print_move(BMove m)
-{
-    BMove from = get_from(m);
-    BMove to = get_to(m);
-    std::cout 
-            << square_to_str(from)
-            << square_to_str(to);
-}
-
 void BoardState::print_previous_moves()
 {
     std::cout << " Previous moves: ";
@@ -325,7 +316,7 @@ void BoardState::print_context(BMove m, bool capture, Move flag)
         << " squares(from) " << piece_to_str(get_piece(from)) << '\n';
 
     print_previous_moves();
-    print_squares(squares);
+    print_squares();
     print_occupied();
 }
 

@@ -82,9 +82,11 @@ public:
     Square get_ep_square() const;
     Colour get_side_to_move() const { return state.side_to_move; }
 
+    void print_squares();
     void print_previous_moves();
     void print_occupied();
     void print_context(BMove m, bool capture, Move flag);
+
     bool operator==(BoardState b);
 };
 
