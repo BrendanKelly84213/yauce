@@ -57,7 +57,7 @@ private:
     void init_piece_attacks();
     void init_attacks();
     // FIXME: int p -> Piece p
-    Bitboard blockers_and_beyond(int p, Square from) const;
+    Bitboard blockers_and_beyond(PieceType pt, Square from) const;
     Bitboard pawn_squares(Square origin, Colour us) const;
 
 public: 
@@ -73,7 +73,7 @@ public:
     Bitboard get_op_piece_bb(int pt) const;
     Bitboard get_side_piece_bb(int pt, Colour side) const ;
     Bitboard attacks_to(Square sq, Colour attacker) const;
-    Bitboard get_to_squares(int p, Square from, Colour us) const;
+    Bitboard get_to_squares(PieceType pt, Square from, Colour us) const;
     Colour get_piece_colour(Piece p) const;
     bool in_check(Colour us);
     bool attacked(Square sq, Colour by);

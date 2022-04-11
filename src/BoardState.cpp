@@ -129,6 +129,7 @@ void BoardState::init_bbs()
     white_occ = 0ULL; 
     black_occ = 0ULL;
     occ = 0ULL;
+    // FIXME: int -> Piece ?
     for(int p=BQ; p<=WP; ++p) {
         piece_bbs[p] = 0ULL;
     }
@@ -155,6 +156,7 @@ void BoardState::init(std::string fen)
     init_attacks();
 }
 
+// FIXME: 
 bool BoardState::can_castle(Colour us, Move type) 
 {
     return true;
@@ -212,13 +214,7 @@ void BoardState::uncastle_queenside()
 // Remove from, add to
 void BoardState::move_piece(Square from, Square to, Piece p)
 {
-    if(p == -1) {
-        std::cout << "p == -1 on move_piece: " 
-            << square_to_str(from)
-            << square_to_str(to) 
-            << '\n';
-        assert(p != -1);
-    }
+    assert(p != None);
     put_piece(to, p);
     remove_piece(from);
 }
@@ -238,6 +234,7 @@ bool BoardState::board_ok()
     if((black_occ | occ) != occ) {
         return false;
     }
+    // TODO: Check there are not more than 12 pieces on the board 
 
     return true;
 }
@@ -245,7 +242,7 @@ bool BoardState::board_ok()
 void BoardState::remove_piece(Square sq)
 {
     Piece p = squares[sq];
-    assert(p != -1);
+    assert(p != None);
     Colour pc = get_piece_colour(p);
     squares[sq] = None;
     clear_bit(piece_bbs[p], sq); 
@@ -259,7 +256,7 @@ void BoardState::remove_piece(Square sq)
 
 void BoardState::put_piece(Square sq, Piece p)
 {
-    assert(p != -1 && sq != -1);
+    assert(p != None && sq != NullSquare);
     Colour pc = get_piece_colour(p);
     squares[sq] = p;
     set_bit(piece_bbs[p], sq); 
@@ -332,7 +329,7 @@ void BoardState::make_move(BMove m)
     bool capture = ((cp != None) || (flag == EN_PASSANT));
     Colour us = state.side_to_move;
 
-    assert(p != -1);
+    assert(p != None);
 
     // Add move to ongoing movelist
     movelist.push_back(m);
@@ -429,7 +426,7 @@ void BoardState::unmake_move(BMove m)
     bool capture = (cp != None);
     Square capsq = to;
 
-    assert(p != -1);
+    assert(p != None);
 
     movelist.pop_back();
 
@@ -570,12 +567,12 @@ void BoardState::init_attacks()
 
 
 // Returns attacks squares of a (not pawn) piece on a square 
-Bitboard BoardState::blockers_and_beyond(int p, Square from) const
+Bitboard BoardState::blockers_and_beyond(PieceType pt, Square from) const
 {
-    Bitboard ts = piece_attacks[p][from];
+    Bitboard ts = piece_attacks[pt][from];
     Bitboard bb = occ;
     while(bb) {
-        int to = pop_bit(bb);
+        Square to = pop_bit(bb);
         ts &= ~behind[from][to];
     }
     
@@ -625,14 +622,14 @@ Bitboard BoardState::attacks_to(Square sq, Colour attacker) const
 }
 
 // Returns attacks of a given piece on a given square 
-Bitboard BoardState::get_to_squares(int p, Square from, Colour us) const 
+Bitboard BoardState::get_to_squares(PieceType pt, Square from, Colour us) const 
 {
     Bitboard ts = 0ULL; 
     Bitboard friend_occ = get_friend_occ(us);
-    if(p == Pawn) {
+    if(pt == Pawn) {
         ts = pawn_squares(from, us);
     } else {
-        ts = blockers_and_beyond(p, from);
+        ts = blockers_and_beyond(pt, from);
     }
     ts &= ~friend_occ;
     return ts;

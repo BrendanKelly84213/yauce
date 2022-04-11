@@ -24,8 +24,9 @@ int psuedo_generator(BoardState board_state, BMove moves[])
     }
 #endif
 
-    for(int p = Queen; p <= Pawn; ++p) {
-        Bitboard occ = board_state.get_friend_piece_bb(p);
+    auto incr = [&](PieceType &pt) { pt = (PieceType)((int)pt + 1); };
+    for(PieceType pt = Queen; pt <= Pawn; incr(pt)) {
+        Bitboard occ = board_state.get_friend_piece_bb(pt);
         while(occ) {
             Square origin = pop_bit(occ);
             Move flag = QUIET; // Special move nibble 
@@ -34,7 +35,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
             current_move = 0;
 
             // Special moves
-            if(p == Pawn) {
+            if(pt == Pawn) {
                 // Double pawn push
                 Direction push_dir = us == White ? N : S;  
                 Square double_push = origin + push_dir + push_dir;
@@ -49,6 +50,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 bool has_blockers = piece_on_single_push || piece_on_double_push;
 
                 if(fst_move && !has_blockers) {
+                    // FIXME: implement set_move
                     moves[i] = ((origin << 10) | (double_push << 4));
                     moves[i] |= DOUBLE_PAWN_PUSH;
                     i++;
@@ -62,6 +64,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                      (bit(origin + E) & bit(epsq) & ~FileABB);
                      
                 if(epsq != None && pawn_adj) {
+                    // FIXME: implement set_move
                     moves[i] = ((origin << 10) | (tosq << 4));
                     moves[i] |= EN_PASSANT;
                     i++;
@@ -69,9 +72,10 @@ int psuedo_generator(BoardState board_state, BMove moves[])
             } 
 
             // Regular attacks
-            Bitboard to_squares = board_state.get_to_squares(p, origin, us);
+            Bitboard to_squares = board_state.get_to_squares(pt, origin, us);
             while(to_squares) {
                 dest = pop_bit(to_squares);
+                // FIXME: implement set_move
                 moves[i] = ((origin << 10) | (dest << 4));
                 i++;
             }
