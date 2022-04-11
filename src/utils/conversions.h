@@ -7,7 +7,7 @@
 std::string square_to_str(int idx);
 std::string piece_to_str(int idx);
 std::string piecetype_to_str(int idx);
-int piece_to_piecetype(int idx);
+PieceType piece_to_piecetype(Piece p);
 std::string flag_to_str(int idx);
 
 #endif

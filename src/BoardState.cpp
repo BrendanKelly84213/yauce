@@ -133,16 +133,16 @@ void BoardState::init_bbs()
         piece_bbs[p] = 0ULL;
     }
 
-    for(int s = 0; s<64; ++s) {
-        int p = (int)squares[s];
-        if(p >= 0) { 
-            int pt = piece_to_piecetype(p);
-            piece_bbs[p] |= (1ULL << s);
-            occ |= piece_bbs[p];
-            if(p >= WQ && p <= WP) {
-                white_occ |= piece_bbs[p];
+    for(Square s = a1; s <= h8; s = s + E) {
+        Piece p = squares[s];
+        if(p != None) { 
+            PieceType pt = piece_to_piecetype(p);
+            set_bit(piece_bbs[p], s);
+            set_bit(occ, s);
+            if(get_piece_colour(p) == White) {
+                set_bit(white_occ, s);
             } else {
-                black_occ |= piece_bbs[p];
+                set_bit(black_occ, s);
             }
         }
     }
@@ -327,8 +327,7 @@ void BoardState::make_move(BMove m)
     Square to = get_to(m);
     Move flag = get_flag(m);
     Piece p = get_piece(from);
-    // FIXME: int -> PieceType
-    int pt = piece_to_piecetype(p);
+    PieceType pt = piece_to_piecetype(p);
     Piece cp = get_piece(to);
     bool capture = ((cp != None) || (flag == EN_PASSANT));
     Colour us = state.side_to_move;

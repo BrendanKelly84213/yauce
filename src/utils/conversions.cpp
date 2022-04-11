@@ -37,13 +37,15 @@ std::string piecetype_to_str(int idx)
     return idx >= 0 ? strs[idx] : "None";
 }
 
-int piece_to_piecetype(int idx)
+PieceType piece_to_piecetype(Piece p)
 {
-    int piecetypes[12] = { 
+    PieceType piecetypes[12] = { 
         Queen, King, Rook, Knight, Bishop, Pawn, 
         Queen, King, Rook, Knight, Bishop, Pawn
     };
-    return piecetypes[idx];
+    if(p == None || p < BQ || p > WP)
+        return Null;
+    return piecetypes[p];
 }
 
 std::string flag_to_str(int idx)
