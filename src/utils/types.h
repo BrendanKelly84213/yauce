@@ -40,5 +40,6 @@ enum Move : BMove {
 };
 
 constexpr Square operator+(Square a, Direction b) { return (Square)( (int)a + (int)b ); }
+constexpr Colour operator!(Colour c) { return (Colour)( !( (bool)c) ); }
 
 #endif

@@ -88,11 +88,10 @@ public:
     Bitboard attacks_to(Square sq, Colour attacker) const;
     Bitboard get_to_squares(PieceType pt, Square from, Colour us) const;
     Colour get_piece_colour(Piece p) const;
-    bool in_check(Colour us);
+    bool in_check(Colour us) const;
     bool attacked(Square sq, Colour by);
     Piece get_piece(Square s) const;
-    bool can_castle_ks(Colour us);
-    bool can_castle(Colour us, Move type);
+    bool can_castle(Colour us, Move type) const;
     Square get_ep_square() const;
     Square get_king_square(Colour us) const;
     Colour get_side_to_move() const { return state.side_to_move; }

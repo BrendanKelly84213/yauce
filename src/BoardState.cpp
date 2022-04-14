@@ -156,33 +156,52 @@ void BoardState::init(std::string fen)
     init_attacks();
 }
 
-//TODO: Refactor
-bool BoardState::can_castle_ks(Colour us) 
-{
-    Square kingsq = get_king_square(us);
-    Square rooksq = us == White ? h1 : h8;
-    Bitboard kingbb = get_side_piece_bb(King, us);
-
-    bool has_right = us == White ? state.w_castle_ks : state.b_castle_ks;
-    // Has blockers: if the rook on the h file can "attack" the king, no, else yes
-    // If occupied squares interesect rooks attacks, blocked
-    bool has_blockers = piece_attacks[Rook][rooksq] & occ & ~FileHBB & ~behind[rooksq][kingsq];
-    // TODO: Implement
-    bool in_check = true; 
-    bool pass_through_check = true; 
-
-    return (
-        has_right && 
-        !has_blockers && 
-        !in_check && 
-        !pass_through_check
-    ); 
-}
-
-bool BoardState::can_castle(Colour us, Move type) 
+bool BoardState::can_castle(Colour us, Move type) const
 {
     assert(type == OO || type == OOO);
-    return false;
+
+    bool has_right = us == White ? state.w_castle_ks : state.b_castle_ks;
+    if(!has_right) 
+        return false;
+
+    if(in_check(us)) return false;
+
+    // If there is at least one attacker attacking a square between rook and king
+    Bitboard in_between = ([&]() -> Bitboard {
+        if(type == OO) {
+            if(us == White) return bit(f1) | bit(g1);
+            else return bit(d1) | bit(c1) | bit(b1);
+        } else {
+            if(us == White) return bit(f8) | bit(g8);
+            else return bit(d8) | bit(c8) | bit(b8);
+        }
+    })();
+
+    while(in_between) {
+        Square between_square = pop_bit(in_between);
+        if(attacks_to(between_square, !us))  
+            return false;
+    }
+
+    // If there are any pieces in between the rook and king
+    Square rooksq = ([&]() -> Square { 
+        if(type == OO) {
+            if(us == White) return h1;
+            return h8;
+        } else {
+            if(us == Black) return a1;
+            return a8;
+        } 
+    })();
+
+    Square kingsq = get_king_square(us);
+    Bitboard kingbb = get_side_piece_bb(King, us);
+    Bitboard file_mask = type == OO ? FileHBB : FileABB;
+
+    bool has_blockers = piece_attacks[Rook][rooksq] & occ & ~file_mask & ~behind[rooksq][kingsq];
+    if(has_blockers) return false;
+
+    return true;
 }
 
 void BoardState::do_castle(Square rook_from, Square rook_to, Square king_from, Square king_to)
@@ -647,6 +666,7 @@ Square BoardState::get_king_square(Colour us) const
 
 Bitboard BoardState::attacks_to(Square sq, Colour attacker) const
 {
+    // FIXME
     return 0ULL;
 }
 
@@ -664,9 +684,11 @@ Bitboard BoardState::get_to_squares(PieceType pt, Square from, Colour us) const
     return ts;
 }
 
-bool BoardState::in_check(Colour us)
+bool BoardState::in_check(Colour us) const
 {
-    return false; 
+    const Square kingsq = get_king_square(us);
+    bool attacked = attacks_to(kingsq, !us); 
+    return attacked; 
 }
 
 Piece BoardState::get_piece(Square s) const 
