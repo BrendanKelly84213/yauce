@@ -56,7 +56,7 @@ constexpr void clear_bit(Bitboard &bb, Square square)
 
 constexpr BMove move(Square from, Square to, Move flag)
 {
-    return static_cast<BMove>((from << 10) | (to << 4) | flag);
+    return static_cast<BMove>(((from << 10) | (to << 4)) | flag);
 }
 
 constexpr Square get_to(BMove m)  
@@ -81,6 +81,22 @@ inline Square pop_bit(Bitboard &bb)
     return index;
 } 
 
+constexpr Square msb(Bitboard bb)
+{
+    return static_cast<Square>(__builtin_clzll(bb));
+}
+
+constexpr Square lsb(Bitboard bb)
+{
+    return static_cast<Square>(__builtin_ctzll(bb));
+}
+
+constexpr size_t popcount(Bitboard bb)
+{
+    return __builtin_popcountll(bb);
+}
+
+// FIXME: return unsigned, take Square, Square 
 constexpr int distance(int origin, int dest)
 {
     int r2 = dest >> 3;

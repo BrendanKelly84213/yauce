@@ -12,14 +12,12 @@ int psuedo_generator(BoardState board_state, BMove moves[])
         Bitboard occ = board_state.get_friend_piece_bb(pt);
         while(occ) {
             Square origin = pop_bit(occ);
-            Move flag = QUIET; // Special move nibble 
-            Square dest;
-            moves[i] = 0;
 
             // Special moves
             if(pt == Pawn) {
                 // Double pawn push
                 Direction push_dir = us == White ? N : S;  
+
                 Square double_push = origin + push_dir + push_dir;
                 Square single_push = origin + push_dir;
 
@@ -32,7 +30,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 bool has_blockers = piece_on_single_push || piece_on_double_push;
 
                 if(fst_move && !has_blockers) {
-                    moves[i] = move(origin, dest, DOUBLE_PAWN_PUSH); 
+                    moves[i] = move(origin, double_pawn_push, DOUBLE_PAWN_PUSH); 
                     i++;
                 }
 
@@ -44,7 +42,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                      (bit(origin + E) & bit(epsq) & ~FileABB);
                      
                 if(epsq != None && pawn_adj) {
-                    moves[i] = move(origin, dest, EN_PASSANT); 
+                    moves[i] = move(origin, tosq, EN_PASSANT); 
                     i++;
                 }
             } 
@@ -70,7 +68,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
             // Regular attacks
             Bitboard to_squares = board_state.get_to_squares(pt, origin, us);
             while(to_squares) {
-                dest = pop_bit(to_squares);
+                Square dest = pop_bit(to_squares);
                 moves[i] = move(origin, dest, QUIET); 
                 i++;
             }
