@@ -14,6 +14,19 @@
 static Bitboard piece_attacks[6][64];
 static Bitboard behind[64][64];
 
+// TODO: Implement 
+#if 0
+constexpr Bitboard get_piece_attacks(PieceType pt, Square from)
+{
+    return piece_attacks[pt][from];
+}
+
+constexpr Bitboard get_behind(Square from, Square to)
+{
+    return behind[from][to];
+}
+#endif 
+
 struct State {
     Colour side_to_move = White; 
     bool w_castle_ks = false; 
@@ -78,6 +91,7 @@ public:
     bool in_check(Colour us);
     bool attacked(Square sq, Colour by);
     Piece get_piece(Square s) const;
+    bool can_castle_ks(Colour us);
     bool can_castle(Colour us, Move type);
     Square get_ep_square() const;
     Square get_king_square(Colour us) const;

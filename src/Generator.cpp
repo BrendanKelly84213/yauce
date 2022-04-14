@@ -30,7 +30,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 bool has_blockers = piece_on_single_push || piece_on_double_push;
 
                 if(fst_move && !has_blockers) {
-                    moves[i] = move(origin, double_pawn_push, DOUBLE_PAWN_PUSH); 
+                    moves[i] = move(origin, double_push, DOUBLE_PAWN_PUSH); 
                     i++;
                 }
 
@@ -49,17 +49,17 @@ int psuedo_generator(BoardState board_state, BMove moves[])
 
             if(pt == King) {
                 // Castles 
-#if 0 
-                Square kingsq = (us == White ? e1 : e8);
-                if(board_state.can_castle(us, OOO)) {
-                    Square to = (us == White ? d1 : d8); 
-                    moves[i] = move(kingsq, to, OOO);
-                    i++;
-                }
-
+                Square kingsq = board_state.get_king_square(us);
+#if 1 
                 if(board_state.can_castle(us, OO)) {
                     Square to = (us == White ? g1 : g8); 
                     moves[i] = move(kingsq, to, OO);
+                    i++;
+                }
+
+                if(board_state.can_castle(us, OOO)) {
+                    Square to = (us == White ? d1 : d8); 
+                    moves[i] = move(kingsq, to, OOO);
                     i++;
                 }
 #endif 

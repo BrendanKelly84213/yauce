@@ -156,10 +156,33 @@ void BoardState::init(std::string fen)
     init_attacks();
 }
 
-// FIXME: 
+//TODO: Refactor
+bool BoardState::can_castle_ks(Colour us) 
+{
+    Square kingsq = get_king_square(us);
+    Square rooksq = us == White ? h1 : h8;
+    Bitboard kingbb = get_side_piece_bb(King, us);
+
+    bool has_right = us == White ? state.w_castle_ks : state.b_castle_ks;
+    // Has blockers: if the rook on the h file can "attack" the king, no, else yes
+    // If occupied squares interesect rooks attacks, blocked
+    bool has_blockers = piece_attacks[Rook][rooksq] & occ & ~FileHBB & ~behind[rooksq][kingsq];
+    // TODO: Implement
+    bool in_check = true; 
+    bool pass_through_check = true; 
+
+    return (
+        has_right && 
+        !has_blockers && 
+        !in_check && 
+        !pass_through_check
+    ); 
+}
+
 bool BoardState::can_castle(Colour us, Move type) 
 {
-    return true;
+    assert(type == OO || type == OOO);
+    return false;
 }
 
 void BoardState::do_castle(Square rook_from, Square rook_to, Square king_from, Square king_to)
@@ -564,7 +587,6 @@ void BoardState::init_attacks()
     init_behind();
     init_piece_attacks();
 }
-
 
 // Returns attacks squares of a (not pawn) piece on a square 
 Bitboard BoardState::blockers_and_beyond(PieceType pt, Square from) const
