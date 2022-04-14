@@ -3,27 +3,10 @@
 // Generate psuedo legal moves, return number of nodes 
 int psuedo_generator(BoardState board_state, BMove moves[]) 
 {   
-    BMove current_move = 0;
     int i = 0; 
     Colour us = board_state.get_side_to_move();
-    Square kingsq = (us == White ? e1 : e8);
 
-    // Castle 
-#if 0
-    if(board_state.can_castle(us, OOO)) {
-        int to = (us == White ? d1 : d8); 
-        moves[i] = ((kingsq << 10) | (to << 4));
-        moves[i] |= OOO;
-        i++;
-    }
-    if(board_state.can_castle(us, OO)) {
-        int to = (us == White ? g1 : g8); 
-        moves[i] = ((kingsq << 10) | (to << 4));
-        moves[i] |= OO;
-        i++;
-    }
-#endif
-
+    // temp?
     auto incr = [&](PieceType &pt) { pt = (PieceType)((int)pt + 1); };
     for(PieceType pt = Queen; pt <= Pawn; incr(pt)) {
         Bitboard occ = board_state.get_friend_piece_bb(pt);
@@ -32,7 +15,6 @@ int psuedo_generator(BoardState board_state, BMove moves[])
             Move flag = QUIET; // Special move nibble 
             Square dest;
             moves[i] = 0;
-            current_move = 0;
 
             // Special moves
             if(pt == Pawn) {
@@ -50,9 +32,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 bool has_blockers = piece_on_single_push || piece_on_double_push;
 
                 if(fst_move && !has_blockers) {
-                    // FIXME: implement set_move
-                    moves[i] = ((origin << 10) | (double_push << 4));
-                    moves[i] |= DOUBLE_PAWN_PUSH;
+                    moves[i] = move(origin, dest, DOUBLE_PAWN_PUSH); 
                     i++;
                 }
 
@@ -64,19 +44,34 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                      (bit(origin + E) & bit(epsq) & ~FileABB);
                      
                 if(epsq != None && pawn_adj) {
-                    // FIXME: implement set_move
-                    moves[i] = ((origin << 10) | (tosq << 4));
-                    moves[i] |= EN_PASSANT;
+                    moves[i] = move(origin, dest, EN_PASSANT); 
                     i++;
                 }
             } 
+
+            if(pt == King) {
+                // Castles 
+#if 0 
+                Square kingsq = (us == White ? e1 : e8);
+                if(board_state.can_castle(us, OOO)) {
+                    Square to = (us == White ? d1 : d8); 
+                    moves[i] = move(kingsq, to, OOO);
+                    i++;
+                }
+
+                if(board_state.can_castle(us, OO)) {
+                    Square to = (us == White ? g1 : g8); 
+                    moves[i] = move(kingsq, to, OO);
+                    i++;
+                }
+#endif 
+            }
 
             // Regular attacks
             Bitboard to_squares = board_state.get_to_squares(pt, origin, us);
             while(to_squares) {
                 dest = pop_bit(to_squares);
-                // FIXME: implement set_move
-                moves[i] = ((origin << 10) | (dest << 4));
+                moves[i] = move(origin, dest, QUIET); 
                 i++;
             }
         }

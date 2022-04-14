@@ -54,6 +54,11 @@ constexpr void clear_bit(Bitboard &bb, Square square)
     bb &= ~(1ULL << square);
 }
 
+constexpr BMove move(Square from, Square to, Move flag)
+{
+    return static_cast<BMove>((from << 10) | (to << 4) | flag);
+}
+
 constexpr Square get_to(BMove m)  
 {
     return static_cast<Square>((m >> 4) & 0x3f);
@@ -61,7 +66,7 @@ constexpr Square get_to(BMove m)
 
 constexpr Square get_from(BMove m) 
 {
-    return static_cast<Square>((m >> 10)& 0x3f);
+    return static_cast<Square>((m >> 10) & 0x3f);
 }
 
 constexpr Move get_flag(BMove m) 
