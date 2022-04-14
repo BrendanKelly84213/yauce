@@ -616,6 +616,13 @@ Square BoardState::get_ep_square() const
     return state.ep_square; 
 }
 
+Square BoardState::get_king_square(Colour us) const 
+{
+    const Bitboard king_bb = get_side_piece_bb(King, us);
+    assert(popcount(king_bb) == 1);
+    return lsb(king_bb);
+}
+
 Bitboard BoardState::attacks_to(Square sq, Colour attacker) const
 {
     return 0ULL;

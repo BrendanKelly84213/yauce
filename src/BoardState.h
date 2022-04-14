@@ -68,10 +68,10 @@ public:
     Bitboard get_friend_occ() const;
     Bitboard get_friend_occ(Colour us) const;
     Bitboard get_op_occ() const;
-    Bitboard get_op_occ(Colour us) const ;
+    Bitboard get_op_occ(Colour us) const;
     Bitboard get_friend_piece_bb(int pt) const;
     Bitboard get_op_piece_bb(int pt) const;
-    Bitboard get_side_piece_bb(int pt, Colour side) const ;
+    Bitboard get_side_piece_bb(int pt, Colour side) const;
     Bitboard attacks_to(Square sq, Colour attacker) const;
     Bitboard get_to_squares(PieceType pt, Square from, Colour us) const;
     Colour get_piece_colour(Piece p) const;
@@ -80,6 +80,7 @@ public:
     Piece get_piece(Square s) const;
     bool can_castle(Colour us, Move type);
     Square get_ep_square() const;
+    Square get_king_square(Colour us) const;
     Colour get_side_to_move() const { return state.side_to_move; }
 
     void print_squares();
