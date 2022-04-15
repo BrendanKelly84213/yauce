@@ -163,10 +163,10 @@ bool BoardState::can_castle(Colour us, Move type) const
     bool has_right = ([&]() -> bool {
         if(type == OO) {
             if(us == White) return state.w_castle_ks;
-            else return state.b_castle_ks;
+            return state.b_castle_ks;
         } else {
             if(us == White) return state.w_castle_qs;
-            else return state.b_castle_qs;
+            return state.b_castle_qs;
         }
     })();
 
@@ -180,18 +180,17 @@ bool BoardState::can_castle(Colour us, Move type) const
     Bitboard in_between = ([&]() -> Bitboard {
         if(type == OO) {
             if(us == White) return bit(f1) | bit(g1);
-            else return bit(d1) | bit(c1) | bit(b1);
+            return bit(f8) | bit(g8);
         } else {
-            if(us == White) return bit(f8) | bit(g8);
-            else return bit(d8) | bit(c8) | bit(b8);
+            if(us == White) return bit(d1) | bit(c1) | bit(b1);
+            return bit(d8) | bit(c8) | bit(b8);
         }
     })();
 
     while(in_between) {
         Square between_square = pop_bit(in_between);
-        if(attacked(between_square, !us)) {
+        if(attacked(between_square, !us)) 
             return false;
-        }
     }
 
     // If there are any pieces in between the rook and king
@@ -679,7 +678,6 @@ Square BoardState::get_king_square(Colour us) const
 
 Bitboard BoardState::attacks_to(Square sq) const
 {
-    // FIXME: too slow
     //  - Maybe we can cache to squares on each move made 
     // Naive implementation
     // Build a hypothetical piece which has all piece attacks
@@ -689,30 +687,40 @@ Bitboard BoardState::attacks_to(Square sq) const
 }
 
 // Is a square attacked
+// NOTE: Asking if a friendly occupied square is attacked (and it is) will return true
+//       when using this function make sure that you are not asking if a friendly square is attacked by friends
+// FIXME: Incrementally updated attack tables 
+//        re calculating attacks is noticeably slow
 bool BoardState::attacked(Square sq, Colour by) const
 {
     Bitboard bishops = get_side_piece_bb(Bishop, by);
-    if(get_to_squares(Bishop, sq, by) & bishops) 
+    Bitboard bishop_attacks = blockers_and_beyond(Bishop, sq);
+    if(bishop_attacks & bishops) 
         return true;
 
     Bitboard kings = get_side_piece_bb(King, by);
-    if(get_to_squares(King, sq, by) & kings) 
+    Bitboard king_attacks = piece_attacks[King][sq];
+    if(king_attacks & kings) 
         return true;
 
     Bitboard knights = get_side_piece_bb(Knight, by);
-    if(get_to_squares(Knight, sq, by) & knights) 
+    Bitboard knight_attacks = piece_attacks[Knight][sq];
+    if(knight_attacks & knights) 
         return true;
 
     Bitboard pawns = get_side_piece_bb(Pawn, by);
-    if(get_to_squares(Pawn, sq, !by) & pawns) 
+    Bitboard pawn_attacks = pawn_squares(sq, !by);
+    if(pawn_attacks & pawns) 
         return true;
 
     Bitboard queens = get_side_piece_bb(Queen, by);
-    if(get_to_squares(Queen, sq, by) & queens) 
+    Bitboard queen_attacks = blockers_and_beyond(Queen, sq);
+    if(queen_attacks & queens) 
         return true;
 
     Bitboard rooks = get_side_piece_bb(Rook, by);
-    if(get_to_squares(Rook, sq, by) & rooks) 
+    Bitboard rook_attacks = blockers_and_beyond(Rook, sq);
+    if(rook_attacks & rooks) 
         return true;
 
     return false;
@@ -762,7 +770,7 @@ bool State::operator==(State &b)
       && this->w_castle_qs    == b.w_castle_qs
       && this->b_castle_ks    == b.b_castle_ks 
       && this->b_castle_qs    == b.b_castle_qs
-      && this->ep_square        == b.ep_square
+      && this->ep_square      == b.ep_square
       && this->halfmove_clock == b.halfmove_clock
       && this->ply_count      == b.ply_count
       && this->last_captured  == b.last_captured;
