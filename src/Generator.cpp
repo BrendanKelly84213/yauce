@@ -6,9 +6,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
     int i = 0; 
     Colour us = board_state.get_side_to_move();
 
-    // temp?
-    auto incr = [&](PieceType &pt) { pt = (PieceType)((int)pt + 1); };
-    for(PieceType pt = Queen; pt <= Pawn; incr(pt)) {
+    for(PieceType pt = Queen; pt <= Pawn; ++pt) {
         Bitboard occ = board_state.get_friend_piece_bb(pt);
         while(occ) {
             Square origin = pop_bit(occ);
