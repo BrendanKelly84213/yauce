@@ -160,11 +160,21 @@ bool BoardState::can_castle(Colour us, Move type) const
 {
     assert(type == OO || type == OOO);
 
-    bool has_right = us == White ? state.w_castle_ks : state.b_castle_ks;
+    bool has_right = ([&]() -> bool {
+        if(type == OO) {
+            if(us == White) return state.w_castle_ks;
+            else return state.b_castle_ks;
+        } else {
+            if(us == White) return state.w_castle_qs;
+            else return state.b_castle_qs;
+        }
+    })();
+
     if(!has_right) 
         return false;
 
-    if(in_check(us)) return false;
+    if(in_check(us)) 
+        return false;
 
     // If there is at least one attacker attacking a square between rook and king
     Bitboard in_between = ([&]() -> Bitboard {
@@ -179,8 +189,9 @@ bool BoardState::can_castle(Colour us, Move type) const
 
     while(in_between) {
         Square between_square = pop_bit(in_between);
-        if(attacks_to(between_square, !us))  
+        if(attacked(between_square, !us)) {
             return false;
+        }
     }
 
     // If there are any pieces in between the rook and king
@@ -189,7 +200,7 @@ bool BoardState::can_castle(Colour us, Move type) const
             if(us == White) return h1;
             return h8;
         } else {
-            if(us == Black) return a1;
+            if(us == White) return a1;
             return a8;
         } 
     })();
@@ -197,9 +208,11 @@ bool BoardState::can_castle(Colour us, Move type) const
     Square kingsq = get_king_square(us);
     Bitboard kingbb = get_side_piece_bb(King, us);
     Bitboard file_mask = type == OO ? FileHBB : FileABB;
+    Bitboard mask = file_mask | behind[rooksq][kingsq] | kingbb;
 
-    bool has_blockers = piece_attacks[Rook][rooksq] & occ & ~file_mask & ~behind[rooksq][kingsq];
-    if(has_blockers) return false;
+    Bitboard has_blockers = piece_attacks[Rook][rooksq] & occ & ~mask;
+    if(has_blockers) 
+        return false;
 
     return true;
 }
@@ -664,10 +677,45 @@ Square BoardState::get_king_square(Colour us) const
     return lsb(king_bb);
 }
 
-Bitboard BoardState::attacks_to(Square sq, Colour attacker) const
+Bitboard BoardState::attacks_to(Square sq) const
 {
-    // FIXME
+    // FIXME: too slow
+    //  - Maybe we can cache to squares on each move made 
+    // Naive implementation
+    // Build a hypothetical piece which has all piece attacks
+    // place hypothetical piece on square, get its attacks
+    // Intersection of attacking pieces and super_piece_attacks
     return 0ULL;
+}
+
+// Is a square attacked
+bool BoardState::attacked(Square sq, Colour by) const
+{
+    Bitboard bishops = get_side_piece_bb(Bishop, by);
+    if(get_to_squares(Bishop, sq, by) & bishops) 
+        return true;
+
+    Bitboard kings = get_side_piece_bb(King, by);
+    if(get_to_squares(King, sq, by) & kings) 
+        return true;
+
+    Bitboard knights = get_side_piece_bb(Knight, by);
+    if(get_to_squares(Knight, sq, by) & knights) 
+        return true;
+
+    Bitboard pawns = get_side_piece_bb(Pawn, by);
+    if(get_to_squares(Pawn, sq, !by) & pawns) 
+        return true;
+
+    Bitboard queens = get_side_piece_bb(Queen, by);
+    if(get_to_squares(Queen, sq, by) & queens) 
+        return true;
+
+    Bitboard rooks = get_side_piece_bb(Rook, by);
+    if(get_to_squares(Rook, sq, by) & rooks) 
+        return true;
+
+    return false;
 }
 
 // Returns attacks of a given piece on a given square 
@@ -687,8 +735,7 @@ Bitboard BoardState::get_to_squares(PieceType pt, Square from, Colour us) const
 bool BoardState::in_check(Colour us) const
 {
     const Square kingsq = get_king_square(us);
-    bool attacked = attacks_to(kingsq, !us); 
-    return attacked; 
+    return attacked(kingsq, !us); 
 }
 
 Piece BoardState::get_piece(Square s) const 

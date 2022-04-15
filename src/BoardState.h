@@ -85,11 +85,11 @@ public:
     Bitboard get_friend_piece_bb(int pt) const;
     Bitboard get_op_piece_bb(int pt) const;
     Bitboard get_side_piece_bb(int pt, Colour side) const;
-    Bitboard attacks_to(Square sq, Colour attacker) const;
+    Bitboard attacks_to(Square sq) const;
+    bool attacked(Square sq, Colour by) const;
     Bitboard get_to_squares(PieceType pt, Square from, Colour us) const;
     Colour get_piece_colour(Piece p) const;
     bool in_check(Colour us) const;
-    bool attacked(Square sq, Colour by);
     Piece get_piece(Square s) const;
     bool can_castle(Colour us, Move type) const;
     Square get_ep_square() const;
