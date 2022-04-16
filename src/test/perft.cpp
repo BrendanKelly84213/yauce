@@ -20,8 +20,7 @@ int perft(int depth, BoardState board_state, Stats &stats)
 
        Colour us = board_state.get_side_to_move();
        Piece p = board_state.get_piece(from);
-       Square kingsq = (Square)__builtin_ctzll(board_state.get_friend_piece_bb(King));
-       bool check = (board_state.attacks_to(kingsq, us));
+
        bool capture = (board_state.get_piece(to) != None);
 
        board_state.make_move(m);
@@ -35,7 +34,7 @@ int perft(int depth, BoardState board_state, Stats &stats)
                stats.ep++;
                stats.captures++;
            } 
-           if(check) 
+           if(board_state.in_check(!us)) 
                stats.checks++;
        }
        board_state.unmake_move(m);
@@ -46,7 +45,7 @@ int perft(int depth, BoardState board_state, Stats &stats)
                stats.bad_captures++;
            if(flag == EN_PASSANT)
                stats.bad_ep++;
-           if(check)
+           if(board_state.in_check(!us)) // I don't think this works... getting tired... 
                stats.bad_check++;
            if(flag == OO || flag == OOO) 
                stats.bad_castles++;
