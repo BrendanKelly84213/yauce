@@ -64,3 +64,8 @@ std::string flag_to_str(int idx)
     return idx >= 0 ? strs[idx] : "None";
 }
 
+std::string colour_to_str(Colour c)
+{
+    return c ? "White" : "Black";
+}
+
