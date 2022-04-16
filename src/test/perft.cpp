@@ -34,8 +34,11 @@ int perft(int depth, BoardState board_state, Stats &stats)
                stats.ep++;
                stats.captures++;
            } 
-           if(board_state.in_check(!us)) 
+           if(board_state.in_check(!us)) {
                stats.checks++;
+               /* board_state.print_moves(); */
+               /* board_state.print_squares(); */
+           }
        }
        board_state.unmake_move(m);
 
@@ -83,7 +86,6 @@ void print_perft(int depth, BoardState board_state)
     << "make_move / unmake_move errors: \n";
 
     for(int d = 1; d <= depth; ++d) {
-        nodes[d] = perft(d, board_state, stats_arr[d]);
         Stats curr_stats = stats_arr[d];
         std::cout
             << "depth: " << d

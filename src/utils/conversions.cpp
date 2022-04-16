@@ -37,6 +37,14 @@ std::string piecetype_to_str(int idx)
     return idx >= 0 ? strs[idx] : "None";
 }
 
+std::string piecetype_to_algstr(int idx)
+{
+    std::string strs[6] = {
+        "Q", "K", "R", "N", "B", "P"
+    };
+    return idx >= 0 ? strs[idx] : "None";
+}
+
 PieceType piece_to_piecetype(Piece p)
 {
     PieceType piecetypes[12] = { 
