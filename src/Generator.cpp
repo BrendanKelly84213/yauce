@@ -48,19 +48,17 @@ int psuedo_generator(BoardState board_state, BMove moves[])
             if(pt == King) {
                 // Castles 
                 Square kingsq = board_state.get_king_square(us);
-#if 1 
                 if(board_state.can_castle(us, OO)) {
                     Square to = (us == White ? g1 : g8); 
                     moves[i] = move(kingsq, to, OO);
                     i++;
-                }
+                } 
 
                 if(board_state.can_castle(us, OOO)) {
                     Square to = (us == White ? d1 : d8); 
                     moves[i] = move(kingsq, to, OOO);
                     i++;
-                }
-#endif 
+                } 
             }
 
             // Regular attacks

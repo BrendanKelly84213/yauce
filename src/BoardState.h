@@ -123,8 +123,8 @@ private:
     bool board_ok();
     // Attacks 
     // FIXME: int p -> Piece p
-    Bitboard blockers_and_beyond(PieceType pt, Square from) const;
-    Bitboard pawn_squares(Square origin, Colour us) const;
+    inline Bitboard blockers_and_beyond(PieceType pt, Square from) const;
+    inline Bitboard pawn_squares(Square origin, Colour us) const;
 
 public: 
     void init(std::string fen);

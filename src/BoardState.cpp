@@ -182,8 +182,8 @@ bool BoardState::can_castle(Colour us, Move type) const
             if(us == White) return bit(f1) | bit(g1);
             return bit(f8) | bit(g8);
         } else {
-            if(us == White) return bit(d1) | bit(c1) | bit(b1);
-            return bit(d8) | bit(c8) | bit(b8);
+            if(us == White) return bit(d1) | bit(c1);
+            return bit(d8) | bit(c8);
         }
     })();
 
@@ -630,7 +630,7 @@ void BoardState::init_attacks()
 }
 
 // Returns attacks squares of a (not pawn) piece on a square 
-Bitboard BoardState::blockers_and_beyond(PieceType pt, Square from) const
+inline Bitboard BoardState::blockers_and_beyond(PieceType pt, Square from) const
 {
     Bitboard ts = piece_attacks[pt][from];
     Bitboard bb = occ;
@@ -644,7 +644,7 @@ Bitboard BoardState::blockers_and_beyond(PieceType pt, Square from) const
 
 // Returns pawns attacks squares
 // Double pushes and En Passant are handled directly in generator function in order to also attach relevant flag
-Bitboard BoardState::pawn_squares(Square origin, Colour us) const
+inline Bitboard BoardState::pawn_squares(Square origin, Colour us) const
 {
     Direction push_dir = us == White ? N : S;  
 
@@ -709,10 +709,6 @@ Bitboard BoardState::attacks_to(Square sq) const
 //        re calculating attacks is noticeably slow
 bool BoardState::attacked(Square sq, Colour by) const
 {
-    Bitboard bishops = get_side_piece_bb(Bishop, by);
-    Bitboard bishop_attacks = blockers_and_beyond(Bishop, sq);
-    if(bishop_attacks & bishops) 
-        return true;
 
     Bitboard kings = get_side_piece_bb(King, by);
     Bitboard king_attacks = piece_attacks[King][sq];
@@ -727,6 +723,11 @@ bool BoardState::attacked(Square sq, Colour by) const
     Bitboard pawns = get_side_piece_bb(Pawn, by);
     Bitboard pawn_attacks = pawn_captures_mask(sq, !by);
     if(pawn_attacks & pawns) 
+        return true;
+
+    Bitboard bishops = get_side_piece_bb(Bishop, by);
+    Bitboard bishop_attacks = blockers_and_beyond(Bishop, sq);
+    if(bishop_attacks & bishops) 
         return true;
 
     Bitboard queens = get_side_piece_bb(Queen, by);
