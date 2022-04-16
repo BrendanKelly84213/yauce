@@ -27,8 +27,57 @@ constexpr Bitboard get_behind(Square from, Square to)
 }
 #endif 
 
+// For Pretty Printing and debugging
+struct MoveInfo {
+    BMove m;
+    PieceType moved;
+    PieceType captured;
+    Colour side;
+    std::string algebraic;
+
+    MoveInfo(BMove _m, PieceType _moved, PieceType _captured, Colour _side) 
+        : m(_m), moved(_moved), captured(_captured), side(_side) 
+    {
+        // TODO: checks, other flags, etc...
+        std::string tosq = square_to_str(get_to(m));
+        Move flag = get_flag(m);
+        if(flag == OO || flag == OOO) {
+            algebraic = flag_to_str(flag);
+        } else if(_moved == Pawn) {
+            if(captured != Null) 
+                algebraic = tosq;
+            else algebraic = "Px" + tosq;
+        } else {
+            algebraic = piecetype_to_algstr(_moved) + (captured != None ? "x" : "") + tosq;
+        }
+    }
+};
+
+// Movelist wrapper class for ongoing game movelist
+// Not to be confused with our generated moves array, which is a raw C style array 
+// containing unsigned 16 bit encoded moves 
+class MoveList {
+private: 
+    std::vector<MoveInfo> movelist;
+public: 
+    void add(BMove m, 
+            PieceType moved, 
+            PieceType captured, 
+            Colour side) 
+    { 
+        const MoveInfo mi(m, moved, captured, side);
+        movelist.push_back(mi); 
+    }
+
+    void remove() { movelist.pop_back(); }
+    void print_moves() const;
+
+    MoveInfo get_latest() const { return  movelist.back(); }
+};
+
 struct State {
     Colour side_to_move = White; 
+    // TODO: Castle can be a lot more lightweight...
     bool w_castle_ks = false; 
     bool w_castle_qs = false; 
     bool b_castle_ks = false; 
@@ -39,14 +88,14 @@ struct State {
     int ply_count = 0;     
     Piece last_captured = None;
 
-    bool operator==(State &b);
+    bool operator==(State &b) const;
 };
 
 class BoardState {
 private: 
-    State state;
-    std::vector<BMove> movelist;
+    State state; 
     State prev_state;
+    MoveList movelist;
     Bitboard piece_bbs[12];
     Piece squares[64]; // Square centric lookup 
     Bitboard occ = 0ULL;
@@ -55,28 +104,34 @@ private:
 
     void init_squares(std::string fen);
     void init_bbs();
+
+    void init_behind();
+    void init_piece_attacks();
+    void init_attacks();
+
     void castle_kingside();
     void uncastle_kingside();
     void castle_queenside();
     void uncastle_queenside();
     void do_castle(Square rook_from, Square rook_to, Square king_from, Square king_to);
+
     void move_piece(Square from, Square to);
     void move_piece(Square from, Square to, Piece p);
     void remove_piece(Square sq);
     void put_piece(Square sq, Piece p);
-    void update_extras();
+
     bool board_ok();
-    void init_behind();
-    void init_piece_attacks();
-    void init_attacks();
+    // Attacks 
     // FIXME: int p -> Piece p
     Bitboard blockers_and_beyond(PieceType pt, Square from) const;
     Bitboard pawn_squares(Square origin, Colour us) const;
 
 public: 
     void init(std::string fen);
+
     void make_move(BMove m);
     void unmake_move(BMove m);
+
     Bitboard get_occ() const; 
     Bitboard get_friend_occ() const;
     Bitboard get_friend_occ(Colour us) const;
@@ -85,23 +140,25 @@ public:
     Bitboard get_friend_piece_bb(int pt) const;
     Bitboard get_op_piece_bb(int pt) const;
     Bitboard get_side_piece_bb(int pt, Colour side) const;
-    Bitboard attacks_to(Square sq) const;
-    bool attacked(Square sq, Colour by) const;
     Bitboard get_to_squares(PieceType pt, Square from, Colour us) const;
     Colour get_piece_colour(Piece p) const;
-    bool in_check(Colour us) const;
-    Piece get_piece(Square s) const;
-    bool can_castle(Colour us, Move type) const;
+    Colour get_side_to_move() const { return state.side_to_move; }
     Square get_ep_square() const;
     Square get_king_square(Colour us) const;
-    Colour get_side_to_move() const { return state.side_to_move; }
+    Piece get_piece(Square s) const;
+
+    Bitboard attacks_to(Square sq) const;
+    bool attacked(Square sq, Colour by) const;
+    bool in_check(Colour us) const;
+    bool can_castle(Colour us, Move type) const;
 
     void print_squares() const;
-    void print_previous_moves() const;
-    void print_occupied();
-    void print_context(BMove m, bool capture, Move flag);
+    void print_move(BMove m) const;
+    void print_moves() const { movelist.print_moves(); }
+    void print_occupied() const;
+    void print_context(BMove m, bool capture, Move flag) const;
 
-    bool operator==(BoardState b);
+    bool operator==(BoardState b) const;
 };
 
 #endif

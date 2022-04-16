@@ -248,9 +248,9 @@ void BoardState::uncastle_kingside()
 void BoardState::castle_queenside()
 {
     Square rook_from = state.side_to_move == White ? a1 : a8;
-    Square rook_to = state.side_to_move == White ? c1 : c8;
+    Square rook_to = state.side_to_move == White ? d1 : d8;
     Square king_from = state.side_to_move == White ? e1 : e8;
-    Square king_to = state.side_to_move == White ? d1 : d8;
+    Square king_to = state.side_to_move == White ? c1 : c8;
 
     do_castle(rook_from, rook_to, king_from, king_to);
 }
@@ -258,9 +258,9 @@ void BoardState::castle_queenside()
 void BoardState::uncastle_queenside()
 {
     Square rook_from = state.side_to_move == White ? a1 : a8;
-    Square rook_to = state.side_to_move == White ? c1 : c8;
+    Square rook_to = state.side_to_move == White ? d1 : d8;
     Square king_from = state.side_to_move == White ? e1 : e8;
-    Square king_to = state.side_to_move == White ? d1 : d8;
+    Square king_to = state.side_to_move == White ? c1 : c8;
 
     do_castle(rook_to, rook_from, king_to, king_from);
 }
@@ -322,20 +322,30 @@ void BoardState::put_piece(Square sq, Piece p)
     }
 }
 
-void BoardState::print_previous_moves() const
+void BoardState::print_move(BMove m) const
+{
+    BMove from = get_from(m);
+    BMove to = get_to(m);
+    
+    std::cout 
+            << square_to_str(from)
+            << square_to_str(to);
+}
+
+void MoveList::print_moves() const
 {
     std::cout << " Previous moves: ";
     std::for_each( 
             movelist.rbegin(),
             movelist.rend(), 
-            [](const auto &m) {
-                print_move(m);
-                std::cout << " ";
-    });
+            [&](const auto &m) {
+                std::cout << m.algebraic << " ";
+            }
+    );
     std::cout << '\n';
 }
 
-void BoardState::print_occupied() 
+void BoardState::print_occupied() const
 {
     std::cout << "occ";
     print(occ);
@@ -349,7 +359,7 @@ void BoardState::print_occupied()
     print(white_occ & ~occ);
 }
 
-void BoardState::print_context(BMove m, bool capture, Move flag)
+void BoardState::print_context(BMove m, bool capture, Move flag) const
 {
     Square from = get_from(m);
     Square to = get_to(m);
@@ -366,7 +376,7 @@ void BoardState::print_context(BMove m, bool capture, Move flag)
         << " squares(to) " << piece_to_str(get_piece(to))
         << " squares(from) " << piece_to_str(get_piece(from)) << '\n';
 
-    print_previous_moves();
+    movelist.print_moves();
     print_squares();
     print_occupied();
 }
@@ -386,7 +396,7 @@ void BoardState::make_move(BMove m)
     assert(p != None);
 
     // Add move to ongoing movelist
-    movelist.push_back(m);
+    movelist.add(m, pt, piece_to_piecetype(cp), get_side_to_move());
 
     // save state in prev_state 
     prev_state = state;
@@ -482,7 +492,7 @@ void BoardState::unmake_move(BMove m)
 
     assert(p != None);
 
-    movelist.pop_back();
+    movelist.remove();
 
     // Uncastle
     if(flag == OO) {
@@ -676,7 +686,7 @@ Square BoardState::get_king_square(Colour us) const
     if(popcount(king_bb) != 1) {
         print(king_bb);
         print_squares();
-        print_previous_moves();
+        movelist.print_moves();
         assert(popcount(king_bb) == 1);
     }
     return lsb(king_bb);
@@ -758,7 +768,7 @@ Piece BoardState::get_piece(Square s) const
     return squares[s];
 }
 
-bool BoardState::operator==(BoardState b)
+bool BoardState::operator==(BoardState b) const
 {
     for(int p=BQ; p <= WP; ++p) {
         if(this->piece_bbs[p] != b.piece_bbs[p])
@@ -770,7 +780,7 @@ bool BoardState::operator==(BoardState b)
         && this->state == b.state;
 }
 
-bool State::operator==(State &b)
+bool State::operator==(State &b) const
 {
   return this->side_to_move   == b.side_to_move
       && this->w_castle_ks    == b.w_castle_ks
