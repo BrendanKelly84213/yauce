@@ -13,7 +13,7 @@ enum Section
 bool is_piece_ch(char ch);
 Piece fen_to_piece(char ch);
 
-void BoardState::print_squares()
+void BoardState::print_squares() const
 {
     for(int y = 7; y >= 0; --y) {
         std::cout << "\n";
@@ -322,7 +322,7 @@ void BoardState::put_piece(Square sq, Piece p)
     }
 }
 
-void BoardState::print_previous_moves()
+void BoardState::print_previous_moves() const
 {
     std::cout << " Previous moves: ";
     std::for_each( 
@@ -335,7 +335,7 @@ void BoardState::print_previous_moves()
     std::cout << '\n';
 }
 
-void BoardState::print_occupied()
+void BoardState::print_occupied() 
 {
     std::cout << "occ";
     print(occ);
@@ -672,7 +672,13 @@ Square BoardState::get_ep_square() const
 Square BoardState::get_king_square(Colour us) const 
 {
     const Bitboard king_bb = get_side_piece_bb(King, us);
-    assert(popcount(king_bb) == 1);
+    // FIXME 
+    if(popcount(king_bb) != 1) {
+        print(king_bb);
+        print_squares();
+        print_previous_moves();
+        assert(popcount(king_bb) == 1);
+    }
     return lsb(king_bb);
 }
 
@@ -709,7 +715,7 @@ bool BoardState::attacked(Square sq, Colour by) const
         return true;
 
     Bitboard pawns = get_side_piece_bb(Pawn, by);
-    Bitboard pawn_attacks = pawn_squares(sq, !by);
+    Bitboard pawn_attacks = pawn_captures_mask(sq, !by);
     if(pawn_attacks & pawns) 
         return true;
 
@@ -743,7 +749,8 @@ Bitboard BoardState::get_to_squares(PieceType pt, Square from, Colour us) const
 bool BoardState::in_check(Colour us) const
 {
     const Square kingsq = get_king_square(us);
-    return attacked(kingsq, !us); 
+    const bool king_attacked = attacked(kingsq, !us); 
+    return king_attacked; 
 }
 
 Piece BoardState::get_piece(Square s) const 

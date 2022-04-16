@@ -96,8 +96,8 @@ public:
     Square get_king_square(Colour us) const;
     Colour get_side_to_move() const { return state.side_to_move; }
 
-    void print_squares();
-    void print_previous_moves();
+    void print_squares() const;
+    void print_previous_moves() const;
     void print_occupied();
     void print_context(BMove m, bool capture, Move flag);
 

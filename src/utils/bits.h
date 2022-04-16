@@ -138,6 +138,24 @@ constexpr Bitboard knight_mask(Square origin)
         | (bit(origin + SEE) & ~(FileABB | FileBBB | Rank8BB));
 }
 
+constexpr Bitboard pawn_captures_mask(Square origin, Colour us)
+{
+    Direction push_dir = us == White ? N : S;  
+
+    Bitboard ratt = bit(origin + push_dir + E) & ~FileABB;
+    Bitboard latt = bit(origin + push_dir + W) & ~FileHBB;
+
+    return ratt | latt;
+}
+
+constexpr Bitboard pawn_mask(Square origin, Colour us)
+{
+    Direction push_dir = us == White ? N : S;  
+    Bitboard single_push = bit(origin + push_dir);
+
+    return pawn_captures_mask(origin, us) | single_push;
+}   
+
 constexpr Square square(int rank, int file)
 {
     return (Square)(rank * 8 + file);
