@@ -1,10 +1,76 @@
 #include "Generator.h"
 
+// TODO: If in check:
+//          only generate moves that move the king out of the way, or that attack the checkers
+//       BoardState should store attacking checkers 
+//       in_check should be cached value set on make_move?
+//          Then we don't have to recompute attacking pieces 
+//          This might be too much optimization this early on...
+
+// Generate only moves required to get out of check
+int in_check_generator(BoardState board_state, BMove moves[]) 
+{
+    int i=0;
+    Colour us = board_state.get_side_to_move();
+
+    // King moves 
+    Square king_sq = board_state.get_king_square(us);
+    Bitboard king_to_squares = board_state.get_to_squares(King, king_sq, us);
+    // Potentially naive...
+    while(king_to_squares) {
+        Square to = pop_bit(king_to_squares);
+        if(!board_state.attacked(to, !us)) {
+            moves[i] = move(king_sq, to, QUIET);
+            i++;
+        }
+    }
+
+    // Counter attacks and blocks
+    Bitboard checkers = board_state.checkers(us); // Attacks to the king
+    while(checkers) {
+        Square checking_from = pop_bit(checkers);
+
+        // Blocking moves 
+        Piece attacking_piece = board_state.get_piece(checking_from);
+        PieceType attacking_piecetype = piece_to_piecetype(attacking_piece);
+        if(attacking_piecetype != Pawn && attacking_piecetype != Knight && attacking_piecetype != King) {
+
+            Bitboard between_squares = get_sliding_until_ni(attacking_piecetype, checking_from, king_sq);
+            while(between_squares) {
+
+                Square blocker_to = pop_bit(between_squares);
+                Bitboard blockers = board_state.attacks_to(blocker_to) & board_state.get_friend_occ(us);
+                while(blockers) {
+                    Square blocker_from = pop_bit(blockers);
+                    moves[i] = move(blocker_from, blocker_to, QUIET);
+                    i++;
+                }
+            }
+        }
+
+        // Counter attacks 
+        Bitboard counter_attackers = board_state.attacks_to(checking_from) & board_state.get_friend_occ(us);
+        while(counter_attackers) {
+            Square counter_attacking_from = pop_bit(counter_attackers);
+            // Move from the counter attackers square to the checkers square (capture)
+            moves[i] = move(counter_attacking_from, checking_from, QUIET); // TODO: Come up with a better flag name than QUIET. 
+            i++;
+        }
+    }
+
+    return i;
+}
+
 // Generate psuedo legal moves, return number of nodes 
 int psuedo_generator(BoardState board_state, BMove moves[]) 
 {   
     int i = 0; 
     Colour us = board_state.get_side_to_move();
+
+    // TODO: If in check and no moves can be generated: checkmate 
+    //         This can likely be handled outside of generator function, 
+    //         then set as a value in BoardState (or something)
+    //         Or just cut off the search there 
 
     for(PieceType pt = Queen; pt <= Pawn; ++pt) {
         Bitboard occ = board_state.get_friend_piece_bb(pt);
