@@ -757,6 +757,11 @@ Bitboard BoardState::get_to_squares(PieceType pt, Square from, Colour us) const
     return ts;
 }
 
+Bitboard BoardState::checkers(Colour us) const 
+{
+    return 0ULL;
+}
+
 bool BoardState::in_check(Colour us) const
 {
     const Square kingsq = get_king_square(us);

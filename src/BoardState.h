@@ -10,20 +10,32 @@
 #include "utils/conversions.h"
 #include "utils/bits.h"
 
+// TODO: Attacks and related methods really belong in their own class...
 // Sliding piece lookup tables 
 static Bitboard piece_attacks[6][64];
 static Bitboard behind[64][64];
 
-// TODO: Implement 
-#if 0
-constexpr Bitboard get_piece_attacks(PieceType pt, Square from)
+#if 1
+inline Bitboard get_piece_attacks(PieceType pt, Square from)
 {
     return piece_attacks[pt][from];
 }
 
-constexpr Bitboard get_behind(Square from, Square to)
+inline Bitboard get_behind(Square from, Square to)
 {
     return behind[from][to];
+}
+
+// the moves of a sliding piece up until a square, including that square 
+inline Bitboard get_sliding_until_i(PieceType pt, Square from, Square to)
+{
+   return  get_piece_attacks(pt, from) & ~get_behind(from, to);
+}
+
+// the moves of a sliding piece up until a square, not including that square 
+inline Bitboard get_sliding_until_ni(PieceType pt, Square from, Square to)
+{
+   return get_sliding_until_i(pt, from, to) & ~bit(to);
 }
 #endif 
 
@@ -141,6 +153,7 @@ public:
     Bitboard get_op_piece_bb(int pt) const;
     Bitboard get_side_piece_bb(int pt, Colour side) const;
     Bitboard get_to_squares(PieceType pt, Square from, Colour us) const;
+    Bitboard checkers(Colour us) const; 
     Colour get_piece_colour(Piece p) const;
     Colour get_side_to_move() const { return state.side_to_move; }
     Square get_ep_square() const;
