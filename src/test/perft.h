@@ -12,6 +12,7 @@ struct Stats {
     uint64_t ep = 0;
     uint64_t castles = 0;
     uint64_t checks = 0;
+    uint64_t checkmates = 0;
 
     uint64_t bad_nodes = 0;
     uint64_t bad_captures = 0;
