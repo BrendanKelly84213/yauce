@@ -39,6 +39,7 @@ inline Bitboard get_sliding_until_ni(PieceType pt, Square from, Square to)
 }
 #endif 
 
+
 // For Pretty Printing and debugging mostly
 struct MoveInfo {
     BMove m;
@@ -59,6 +60,8 @@ struct MoveInfo {
             if(captured == Null) 
                 algebraic = tosq;
             else algebraic = "Px" + tosq;
+            if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP)
+                algebraic += promote_flag_to_str(flag);
         } else {
             algebraic = piecetype_to_algstr(_moved) + (captured != None ? "x" : "") + tosq;
         }
@@ -66,6 +69,7 @@ struct MoveInfo {
         if(check) 
             algebraic += "+";
     }
+
 };
 
 // Movelist wrapper class for ongoing game movelist
@@ -140,11 +144,11 @@ private:
 
     bool board_ok();
     // Attacks 
-    // FIXME: int p -> Piece p
     inline Bitboard blockers_and_beyond(PieceType pt, Square from) const;
     inline Bitboard pawn_squares(Square origin, Colour us) const;
 
 public: 
+
     void init(std::string fen);
 
     void make_move(BMove m);
