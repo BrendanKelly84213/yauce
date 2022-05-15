@@ -66,9 +66,19 @@ Piece piecetype_to_piece(PieceType pt, Colour us)
 std::string flag_to_str(int idx)
 {
     std::string strs[] = {
-        "QUIET", "DOUBLE_PAWN_PUSH", "OO", "OOO", "EN_PASSANT" 
+        "QUIET", "DOUBLE_PAWN_PUSH", "OO", "OOO", "EN_PASSANT", "PROMOTE_QUEEN", "PROMOTE_ROOK", "PROMOTE_KNIGHT", "PROMOTE_BISHOP" 
     };
     return idx >= 0 ? strs[idx] : "None";
+}
+
+
+std::string promote_flag_to_str(Move flag) 
+{
+    std::string strs[] = {
+        "None", "None", "None", "None", "None", "Q", "R", "N", "B" 
+    };
+    return flag >= 0 ? strs[flag] : "None";
+
 }
 
 std::string colour_to_str(Colour c)
