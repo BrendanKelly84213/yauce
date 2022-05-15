@@ -1,13 +1,17 @@
 #include "Generator.h"
 
 // TODO: If in check:
-//          only generate moves that move the king out of the way, or that attack the checkers
+//          only generate moves that move the king out of the way, attack the checkers or block the checkers if sliding
+//
 //       BoardState should store attacking checkers 
-//       in_check should be cached value set on make_move?
-//          Then we don't have to recompute attacking pieces 
-//          This might be too much optimization this early on...
+//           in_check should be cached value set on make_move?
+//              Then we don't have to recompute attacking pieces 
+//              This might be too much optimization this early on...
 
 // Generate only moves required to get out of check
+// TODO: Double checks
+// NOTE: Putting this on the backburner for the next little while, since its too much optimization too soon...
+//       The engine should be able to get the correct perft results without this anyway
 int in_check_generator(BoardState board_state, BMove moves[]) 
 {
     int i=0;
@@ -16,7 +20,7 @@ int in_check_generator(BoardState board_state, BMove moves[])
     // King moves 
     Square king_sq = board_state.get_king_square(us);
     Bitboard king_to_squares = board_state.get_to_squares(King, king_sq, us);
-    // Potentially naive...
+    // NOTE: Potentially naive...
     while(king_to_squares) {
         Square to = pop_bit(king_to_squares);
         if(!board_state.attacked(to, !us)) {
@@ -28,18 +32,24 @@ int in_check_generator(BoardState board_state, BMove moves[])
     // Counter attacks and blocks
     Bitboard checkers = board_state.checkers(us); // Attacks to the king
     while(checkers) {
+
         Square checking_from = pop_bit(checkers);
 
         // Blocking moves 
+        // Get attacking piece
         Piece attacking_piece = board_state.get_piece(checking_from);
         PieceType attacking_piecetype = piece_to_piecetype(attacking_piece);
-        if(attacking_piecetype != Pawn && attacking_piecetype != Knight && attacking_piecetype != King) {
+        const bool is_sliding = !(attacking_piecetype == Pawn || attacking_piecetype == Knight || attacking_piecetype == King);
 
+        if(is_sliding) {
+
+            // Squares between attacker and king
             Bitboard between_squares = get_sliding_until_ni(attacking_piecetype, checking_from, king_sq);
             while(between_squares) {
 
                 Square blocker_to = pop_bit(between_squares);
                 Bitboard blockers = board_state.attacks_to(blocker_to) & board_state.get_friend_occ(us);
+
                 while(blockers) {
                     Square blocker_from = pop_bit(blockers);
                     moves[i] = move(blocker_from, blocker_to, QUIET);
@@ -51,6 +61,7 @@ int in_check_generator(BoardState board_state, BMove moves[])
         // Counter attacks 
         Bitboard counter_attackers = board_state.attacks_to(checking_from) & board_state.get_friend_occ(us);
         while(counter_attackers) {
+
             Square counter_attacking_from = pop_bit(counter_attackers);
             // Move from the counter attackers square to the checkers square (capture)
             moves[i] = move(counter_attacking_from, checking_from, QUIET); // TODO: Come up with a better flag name than QUIET. 
