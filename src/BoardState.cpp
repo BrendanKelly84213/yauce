@@ -71,7 +71,7 @@ void BoardState::init_squares(std::string fen)
     for(int i=0; i<info.length(); ++i) {
         if(info[i] == ' ') {
             section++;
-            continue;
+            /* continue; */
         }
         switch(section) {
             case SideToMove: 
@@ -331,6 +331,7 @@ void BoardState::promote(PieceType pt, Square sq, Colour us)
 
     Piece p = piecetype_to_piece(pt, us);
     put_piece(sq, p); // Put the promoted piece on the square
+    /* assert(0); */
 }
 
 void BoardState::print_move(BMove m) const
@@ -379,9 +380,9 @@ void BoardState::print_context(BMove m, bool capture, Move flag) const
         std::cout << "ep square: " << square_to_str(get_ep_square());
 
     std::cout 
-        << " On move: "
-        << square_to_str(from)
-        << square_to_str(to)
+        << "\n----------------------------------\n"
+        << "from: " << square_to_str(from) 
+        << " to: " << square_to_str(to) 
         << " type: " << flag_to_str(flag) 
         << " capture: " << (capture ? " yes " : " no ") << '\n'
         << " squares(to) " << piece_to_str(get_piece(to))
@@ -463,6 +464,7 @@ void BoardState::make_move(BMove m)
             case PROMOTE_KNIGHT:
                 promote(Knight, to, us);
                 break;
+            default: break;
         }
     }
 
@@ -517,10 +519,17 @@ void BoardState::unmake_move(BMove m)
     state = prev_state;
     bool capture = (cp != None);
     Square capsq = to;
+    Colour us = get_side_to_move();
 
     assert(p != None);
 
     movelist.remove();
+
+    // Unpromote
+    if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
+        remove_piece(to);
+        put_piece(to, piecetype_to_piece(Pawn, us));
+    }
 
     // Uncastle
     if(flag == OO) {
@@ -737,7 +746,6 @@ Bitboard BoardState::attacks_to(Square sq) const
 //        re calculating attacks is noticeably slow
 bool BoardState::attacked(Square sq, Colour by) const
 {
-
     Bitboard kings = get_side_piece_bb(King, by);
     Bitboard king_attacks = piece_attacks[King][sq];
     if(king_attacks & kings) 
