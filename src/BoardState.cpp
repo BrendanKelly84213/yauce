@@ -322,6 +322,17 @@ void BoardState::put_piece(Square sq, Piece p)
     }
 }
 
+// NOTE: Do promotion only after pawn has moved
+void BoardState::promote(PieceType pt, Square sq, Colour us) 
+{
+    assert(pt != King);
+    assert(pt != Pawn);
+    assert(rank(sq) == get_opposite_end(us));
+
+    Piece p = piecetype_to_piece(pt, us);
+    put_piece(sq, p); // Put the promoted piece on the square
+}
+
 void BoardState::print_move(BMove m) const
 {
     BMove from = get_from(m);
@@ -381,6 +392,7 @@ void BoardState::print_context(BMove m, bool capture, Move flag) const
     /* print_occupied(); */
 }
 
+
 // Assume legal
 void BoardState::make_move(BMove m) 
 {
@@ -394,7 +406,6 @@ void BoardState::make_move(BMove m)
     Colour us = state.side_to_move;
 
     assert(p != None);
-
 
     // save state in prev_state 
     prev_state = state;
@@ -435,6 +446,24 @@ void BoardState::make_move(BMove m)
         castle_queenside();
     } else {
         move_piece(from, to); 
+    }
+
+    // Promotions
+    if(pt == Pawn && flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
+        switch(flag) {
+            case PROMOTE_QUEEN:
+                promote(Queen, to, us);
+                break;
+            case PROMOTE_BISHOP:
+                promote(Bishop, to, us);
+                break;
+            case PROMOTE_ROOK:
+                promote(Rook, to, us);
+                break;
+            case PROMOTE_KNIGHT:
+                promote(Knight, to, us);
+                break;
+        }
     }
 
     // Add move to ongoing movelist

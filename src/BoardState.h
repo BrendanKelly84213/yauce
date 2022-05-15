@@ -136,6 +136,8 @@ private:
     void remove_piece(Square sq);
     void put_piece(Square sq, Piece p);
 
+    void promote(PieceType pt, Square sq, Colour us);
+
     bool board_ok();
     // Attacks 
     // FIXME: int p -> Piece p
@@ -163,6 +165,7 @@ public:
     Square get_ep_square() const;
     Square get_king_square(Colour us) const;
     Piece get_piece(Square s) const;
+    int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
 
     Bitboard attacks_to(Square sq) const;
     bool attacked(Square sq, Colour by) const;
