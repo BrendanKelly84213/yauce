@@ -39,7 +39,7 @@ inline Bitboard get_sliding_until_ni(PieceType pt, Square from, Square to)
 }
 #endif 
 
-// For Pretty Printing and debugging
+// For Pretty Printing and debugging mostly
 struct MoveInfo {
     BMove m;
     PieceType moved;
@@ -47,7 +47,7 @@ struct MoveInfo {
     Colour side;
     std::string algebraic;
 
-    MoveInfo(BMove _m, PieceType _moved, PieceType _captured, Colour _side) 
+    MoveInfo(BMove _m, PieceType _moved, PieceType _captured, Colour _side, bool check = false) 
         : m(_m), moved(_moved), captured(_captured), side(_side) 
     {
         // TODO: checks, other flags, etc...
@@ -56,12 +56,15 @@ struct MoveInfo {
         if(flag == OO || flag == OOO) {
             algebraic = flag_to_str(flag);
         } else if(_moved == Pawn) {
-            if(captured != Null) 
+            if(captured == Null) 
                 algebraic = tosq;
             else algebraic = "Px" + tosq;
         } else {
             algebraic = piecetype_to_algstr(_moved) + (captured != None ? "x" : "") + tosq;
         }
+
+        if(check) 
+            algebraic += "+";
     }
 };
 
@@ -75,16 +78,17 @@ public:
     void add(BMove m, 
             PieceType moved, 
             PieceType captured, 
-            Colour side) 
+            Colour side,
+            bool check = false) 
     { 
-        const MoveInfo mi(m, moved, captured, side);
+        const MoveInfo mi(m, moved, captured, side, check);
         movelist.push_back(mi); 
     }
 
     void remove() { movelist.pop_back(); }
     void print_moves() const;
 
-    MoveInfo get_latest() const { return  movelist.back(); }
+    MoveInfo get_latest() const { return movelist.back(); }
 };
 
 struct State {
@@ -163,6 +167,7 @@ public:
     Bitboard attacks_to(Square sq) const;
     bool attacked(Square sq, Colour by) const;
     bool in_check(Colour us) const;
+    bool in_checkmate(Colour us) const;
     bool can_castle(Colour us, Move type) const;
 
     void print_squares() const;

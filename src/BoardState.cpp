@@ -378,7 +378,7 @@ void BoardState::print_context(BMove m, bool capture, Move flag) const
 
     movelist.print_moves();
     print_squares();
-    print_occupied();
+    /* print_occupied(); */
 }
 
 // Assume legal
@@ -395,8 +395,6 @@ void BoardState::make_move(BMove m)
 
     assert(p != None);
 
-    // Add move to ongoing movelist
-    movelist.add(m, pt, piece_to_piecetype(cp), get_side_to_move());
 
     // save state in prev_state 
     prev_state = state;
@@ -439,6 +437,9 @@ void BoardState::make_move(BMove m)
         move_piece(from, to); 
     }
 
+    // Add move to ongoing movelist
+    movelist.add(m, pt, piece_to_piecetype(cp), get_side_to_move(), in_check(!us));
+
     // Update board state
     if(p == BK) {
         state.b_castle_ks = false;
@@ -474,12 +475,10 @@ void BoardState::make_move(BMove m)
         print_context(m, capture, flag);
         assert(board_ok());
     }
-
 }
 
 void BoardState::unmake_move(BMove m)
 {
-
     Square from = get_from(m);
     Square to = get_to(m);
     Move flag = get_flag(m);
@@ -767,6 +766,12 @@ bool BoardState::in_check(Colour us) const
     const Square kingsq = get_king_square(us);
     const bool king_attacked = attacked(kingsq, !us); 
     return king_attacked; 
+}
+
+// FIXME
+bool BoardState::in_checkmate(Colour us) const 
+{
+    return in_check(us);
 }
 
 Piece BoardState::get_piece(Square s) const 
