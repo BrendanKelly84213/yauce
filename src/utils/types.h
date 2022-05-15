@@ -36,7 +36,15 @@ enum Direction : int {
 }; 
 
 enum Move : BMove {
-    QUIET, DOUBLE_PAWN_PUSH, OO, OOO, EN_PASSANT
+    QUIET, 
+    DOUBLE_PAWN_PUSH, 
+    OO, 
+    OOO, 
+    EN_PASSANT, 
+    PROMOTE_QUEEN, 
+    PROMOTE_ROOK, 
+    PROMOTE_KNIGHT, 
+    PROMOTE_BISHOP 
 };
 
 constexpr Square operator+(Square a, Direction b) { return (Square)( (int)a + (int)b ); }

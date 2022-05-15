@@ -120,6 +120,23 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                     moves[i] = move(origin, tosq, EN_PASSANT); 
                     i++;
                 }
+
+                // Promotion
+                const int second_to_last_rank = us == White ? 6 : 1;
+                if(rank(origin) == second_to_last_rank) {
+
+                    const Move promotions[4] = { PROMOTE_QUEEN, PROMOTE_ROOK, PROMOTE_KNIGHT, PROMOTE_BISHOP };
+                    Bitboard to_squares = board_state.get_to_squares(Pawn, origin, us);
+                    while(to_squares) {
+
+                        Square tosq = pop_bit(to_squares);
+                        // For every available piece to promote to, add to movelist
+                        for(size_t pi = 0; pi < 4; ++pi) {
+                            moves[i] = move(origin, tosq, promotions[pi]); 
+                            i++;
+                        }
+                    }
+                }
             } 
 
             if(pt == King) {
