@@ -54,6 +54,8 @@ int perft(int depth, BoardState board_state, Stats &stats)
                if(num_opp_legal_moves == 0)
                    stats.checkmates++;
            }
+           if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP)
+               stats.promotions++;
            nodes += perft(depth - 1, board_state, stats);
        } 
 
@@ -93,6 +95,7 @@ void print_perft(int depth, BoardState board_state)
         curr_stats.castles -= prev_stats.castles;
         curr_stats.checks -= prev_stats.checks;
         curr_stats.checkmates -= prev_stats.checkmates;
+        curr_stats.promotions -= prev_stats.promotions;
 
         std::cout 
             << "depth: " << d 
@@ -102,6 +105,7 @@ void print_perft(int depth, BoardState board_state)
             << " | castles: " << curr_stats.castles 
             << " | checks: " << curr_stats.checks 
             << " | checkmates: " << curr_stats.checkmates 
+            << " | promotions: " << curr_stats.promotions 
             << '\n';
     }
 
