@@ -20,12 +20,12 @@ int main( int argc, char *argv[] )
     std::string kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
     std::string in_check = "rnb1kbnr/pppppppp/8/8/1q6/3P4/PPP1PPPP/RNBQKBNR w - - 0 1";
     std::string pos3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
-    
+    std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 
     BoardState board_state;
-    board_state.init(pos3);
+    board_state.init(kiwipete);
 
-    print_perft(6, board_state);
+    print_perft(4, board_state);
 
 	return 0;
 }
