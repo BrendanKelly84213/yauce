@@ -19,11 +19,13 @@ int main( int argc, char *argv[] )
     std::string test_special_ep_fen = "8/6bb/8/8/R1pP2k1/4P3/P7/K7 b - d3 0 0";
     std::string kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
     std::string in_check = "rnb1kbnr/pppppppp/8/8/1q6/3P4/PPP1PPPP/RNBQKBNR w - - 0 1";
+    std::string pos3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
+    
 
     BoardState board_state;
-    board_state.init(kiwipete);
+    board_state.init(pos3);
 
-    print_perft(4, board_state);
+    print_perft(6, board_state);
 
 	return 0;
 }
