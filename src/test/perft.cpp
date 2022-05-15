@@ -25,7 +25,6 @@ int perft(int depth, BoardState board_state, Stats &stats)
 
        board_state.make_move(m);
        if(!board_state.in_check(us)) {
-           nodes += perft(depth - 1, board_state, stats);
            if(capture) {
                stats.captures++;
                /* board_state.print_context(m, capture, flag); */
@@ -38,7 +37,24 @@ int perft(int depth, BoardState board_state, Stats &stats)
            } 
            if(board_state.in_check(!us)) {
                stats.checks++;
+               
+               // Calc checkmate (Naively but for testing its honestly fine for now)
+               BMove opp_psuedo_legal_moves[256];
+               BoardState copy_state = board_state;
+               size_t num_opp_legal_moves = 0;
+               const size_t num_opp_psuedo_legal_moves = psuedo_generator(board_state, opp_psuedo_legal_moves);
+               for(size_t j = 0; j < num_opp_psuedo_legal_moves ; ++j) {
+                   BMove m = opp_psuedo_legal_moves[j];
+                   copy_state.make_move(m);
+                   if(!copy_state.in_check(!us))
+                       num_opp_legal_moves++;
+                   copy_state.unmake_move(m);
+               }
+
+               if(num_opp_legal_moves == 0)
+                   stats.checkmates++;
            }
+           nodes += perft(depth - 1, board_state, stats);
        } 
 
        board_state.unmake_move(m);
