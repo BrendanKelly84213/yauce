@@ -11,11 +11,7 @@ int perft(int depth, BoardState board_state, Stats &stats)
        return 1ULL;
 
    Colour us = board_state.get_side_to_move();
-   if(board_state.in_check(us)) {
-       num_moves = in_check_generator(board_state, moves);
-   } else {
-       num_moves = psuedo_generator(board_state, moves);
-   }
+   num_moves = psuedo_generator(board_state, moves);
 
    for(int i=0; i<num_moves; ++i) {
        BMove m = moves[i];
@@ -27,12 +23,13 @@ int perft(int depth, BoardState board_state, Stats &stats)
 
        bool capture = (board_state.get_piece(to) != None);
 
-
        board_state.make_move(m);
        if(!board_state.in_check(us)) {
            nodes += perft(depth - 1, board_state, stats);
-           if(capture)
+           if(capture) {
                stats.captures++;
+               /* board_state.print_context(m, capture, flag); */
+           }
            if(flag == OO || flag == OOO) 
                stats.castles++;
            if(flag == EN_PASSANT) {
@@ -42,7 +39,8 @@ int perft(int depth, BoardState board_state, Stats &stats)
            if(board_state.in_check(!us)) {
                stats.checks++;
            }
-       }
+       } 
+
        board_state.unmake_move(m);
 
 #if 0
@@ -77,6 +75,7 @@ void print_perft(int depth, BoardState board_state)
         curr_stats.ep -= prev_stats.ep;
         curr_stats.captures -= prev_stats.captures;
         curr_stats.castles -= prev_stats.castles;
+        curr_stats.checks -= prev_stats.checks;
         curr_stats.checkmates -= prev_stats.checkmates;
 
         std::cout 
