@@ -56,6 +56,13 @@ PieceType piece_to_piecetype(Piece p)
     return piecetypes[p];
 }
 
+Piece piecetype_to_piece(PieceType pt, Colour us) 
+{
+    if(pt == Null || pt < Queen || pt > Pawn)
+        return None;
+    return static_cast<Piece>(static_cast<int>(pt) + static_cast<int>((!us)) * 6); // White == 0, Black == 1
+}
+
 std::string flag_to_str(int idx)
 {
     std::string strs[] = {
