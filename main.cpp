@@ -23,9 +23,9 @@ int main( int argc, char *argv[] )
     std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 
     BoardState board_state;
-    board_state.init(kiwipete);
+    board_state.init(initial_fen);
 
-    print_perft(4, board_state);
+    print_perft(5, board_state);
 
 	return 0;
 }
