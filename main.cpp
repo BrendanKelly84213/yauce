@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "utils/types.h"
-/* #include "GUI/PlayerView.h" */
 #include "test/perft.h"
 /* #include "utils/bits.h" */
 
