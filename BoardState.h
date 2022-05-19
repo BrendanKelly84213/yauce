@@ -170,6 +170,7 @@ public:
     Square get_king_square(Colour us) const;
     Piece get_piece(Square s) const;
     int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
+    size_t get_num_piece(Piece p) const { return popcount(piece_bbs[p]); } 
 
     Bitboard attacks_to(Square sq) const;
     bool attacked(Square sq, Colour by) const;
