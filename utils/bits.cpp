@@ -20,3 +20,9 @@ void print(Bitboard bb)
     std::cout << '\n';
 }
 
+void print16(BMove m)
+{
+    for(size_t i=0; i < 16; ++i)
+        std::cout << ( (m >> i) & 1ULL );
+    std::cout << '\n';
+}
