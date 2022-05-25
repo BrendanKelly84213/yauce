@@ -77,14 +77,19 @@ int psuedo_generator(BoardState board_state, BMove moves[])
 {   
     int i = 0; 
     Colour us = board_state.get_side_to_move();
+    const int second_to_last_rank = us == White ? 6 : 1;
+    const int last_rank = us == White ? 7 : 0;
 
     // TODO: If in check and no moves can be generated: checkmate 
     //         This can likely be handled outside of generator function, 
     //         then set as a value in BoardState (or something)
     //         Or just cut off the search there 
 
+
     for(PieceType pt = Queen; pt <= Pawn; ++pt) {
+
         Bitboard occ = board_state.get_friend_piece_bb(pt);
+
         while(occ) {
             Square origin = pop_bit(occ);
 
@@ -122,7 +127,6 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 }
 
                 // Promotion
-                const int second_to_last_rank = us == White ? 6 : 1;
                 if(rank(origin) == second_to_last_rank) {
 
                     const Move promotions[4] = { PROMOTE_QUEEN, PROMOTE_ROOK, PROMOTE_KNIGHT, PROMOTE_BISHOP };
@@ -155,14 +159,40 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 } 
             }
 
+
             // Regular attacks
             Bitboard to_squares = board_state.get_to_squares(pt, origin, us);
+
+
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
+                if(pt == Pawn &&  dest == last_rank)
+                    continue; // The pawn must promote if its on the second to last rank
+
                 moves[i] = move(origin, dest, QUIET); 
+
+                if(get_from(moves[i]) == a1 && get_to(moves[i]) == a8) {
+                    std::cout << "Caught a1 -> a8 on node: " << i << " Piece: " << piecetype_to_str(pt) << '\n';
+                    std::cout << "Origin: " << square_to_str(origin) << " Dest: " << square_to_str(dest) << '\n';
+                    std::cout << "move(origin, dest, QUIET): ";
+                    board_state.print_move(move(origin, dest, QUIET));
+                    std::cout << '\n';
+                    board_state.print_move(moves[i]);
+                    std::cout << '\n';
+                    std::cout << piecetype_to_str(pt) << " Bitboard" << '\n';
+                    print(board_state.get_friend_piece_bb(pt));
+                    std::cout << piecetype_to_str(pt) << " attack squares" << '\n';
+                    print(board_state.get_to_squares(pt, origin, us));
+                    board_state.print_context(moves[i], false, get_flag(moves[i]));
+                    assert(false);
+                }
+
                 i++;
             }
+
         }
+
+
     }
     return i;
 }
