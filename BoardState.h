@@ -42,14 +42,15 @@ inline Bitboard get_sliding_until_ni(PieceType pt, Square from, Square to)
 
 // For Pretty Printing and debugging mostly
 struct MoveInfo {
+    int score;
     BMove m;
     PieceType moved;
     PieceType captured;
     Colour side;
     std::string algebraic;
 
-    MoveInfo(BMove _m, PieceType _moved, PieceType _captured, Colour _side, bool check = false) 
-        : m(_m), moved(_moved), captured(_captured), side(_side) 
+    MoveInfo(BMove _m, PieceType _moved, PieceType _captured, Colour _side, bool check = false, int _score = 0) 
+        : m(_m), moved(_moved), captured(_captured), side(_side), score(score) 
     {
         // TODO: checks, other flags, etc...
         std::string tosq = square_to_str(get_to(m));
@@ -83,14 +84,18 @@ public:
             PieceType moved, 
             PieceType captured, 
             Colour side,
-            bool check = false) 
+            bool check = false,
+            int score = 0) 
     { 
-        const MoveInfo mi(m, moved, captured, side, check);
+        const MoveInfo mi(m, moved, captured, side, check, score);
         movelist.push_back(mi); 
     }
 
     void remove() { movelist.pop_back(); }
     void print_moves() const;
+    void print_moves_and_scores() const;
+
+    void sort_by_score(Colour us);
 
     MoveInfo get_latest() const { return movelist.back(); }
 };

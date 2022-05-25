@@ -330,6 +330,7 @@ void BoardState::promote(PieceType pt, Square sq, Colour us)
     assert(rank(sq) == get_opposite_end(us));
 
     Piece p = piecetype_to_piece(pt, us);
+    remove_piece(sq);
     put_piece(sq, p); // Put the promoted piece on the square
     /* assert(0); */
 }
@@ -357,6 +358,32 @@ void MoveList::print_moves() const
     std::cout << '\n';
 }
 
+void MoveList::print_moves_and_scores() const
+{
+    std::for_each( 
+            movelist.rbegin(),
+            movelist.rend(), 
+            [&](const auto &m) {
+                std::cout << " { " << m.algebraic << " : " << m.score << " } ";
+            }
+    );
+    std::cout << '\n';
+}
+
+void MoveList::sort_by_score(Colour us)
+{
+    // Sort scored_moves
+    std::sort(
+            movelist.begin(), 
+            movelist.end(), 
+            [&](MoveInfo a, MoveInfo b) { 
+                if(us == White)
+                    return a.score > b.score;
+                else return a.score < b.score;
+            }
+    ); 
+}
+
 void BoardState::print_occupied() const
 {
     std::cout << "occ";
@@ -381,6 +408,7 @@ void BoardState::print_context(BMove m, bool capture, Move flag) const
 
     std::cout 
         << "\n----------------------------------\n"
+        << "Printing context... \n" 
         << "from: " << square_to_str(from) 
         << " to: " << square_to_str(to) 
         << " type: " << flag_to_str(flag) 
@@ -391,6 +419,7 @@ void BoardState::print_context(BMove m, bool capture, Move flag) const
     movelist.print_moves();
     print_squares();
     /* print_occupied(); */
+    std::cout << "\n----------------------------------\n"; 
 }
 
 
@@ -406,6 +435,8 @@ void BoardState::make_move(BMove m)
     bool capture = ((cp != None) || (flag == EN_PASSANT));
     Colour us = state.side_to_move;
 
+    if(p == None) 
+        print_context(m, capture, flag); 
     assert(p != None);
 
     // save state in prev_state 
@@ -675,7 +706,6 @@ inline Bitboard BoardState::blockers_and_beyond(PieceType pt, Square from) const
         Square to = pop_bit(bb);
         ts &= ~behind[from][to];
     }
-    
     return ts;
 }
 
@@ -782,15 +812,11 @@ bool BoardState::attacked(Square sq, Colour by) const
 // Returns attacks of a given piece on a given square 
 Bitboard BoardState::get_to_squares(PieceType pt, Square from, Colour us) const 
 {
-    Bitboard ts = 0ULL; 
     Bitboard friend_occ = get_friend_occ(us);
     if(pt == Pawn) {
-        ts = pawn_squares(from, us);
-    } else {
-        ts = blockers_and_beyond(pt, from);
-    }
-    ts &= ~friend_occ;
-    return ts;
+        return pawn_squares(from, us);
+    } 
+    return blockers_and_beyond(pt, from) & ~friend_occ;
 }
 
 Bitboard BoardState::checkers(Colour us) const 
