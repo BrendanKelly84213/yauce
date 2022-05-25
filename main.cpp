@@ -2,9 +2,9 @@
 #include <string>
 #include <iostream>
 
+#include "search.h"
 #include "utils/types.h"
 #include "test/perft.h"
-/* #include "utils/bits.h" */
 
 //TODO: 
 
@@ -22,9 +22,13 @@ int main( int argc, char *argv[] )
     std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 
     BoardState board_state;
-    board_state.init(initial_fen);
+    board_state.init(pos4);
 
-    print_perft(5, board_state);
+    std::cout << "Evaluating position... : " << '\n';
+    board_state.print_squares();
+
+    std::cout << colour_to_str(board_state.get_side_to_move()) << " to move. moves and scores" << '\n';
+    MoveList movelist = sorted_moves(board_state, 4); 
 
 	return 0;
 }
