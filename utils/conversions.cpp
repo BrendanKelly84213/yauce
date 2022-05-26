@@ -83,6 +83,6 @@ std::string promote_flag_to_str(Move flag)
 
 std::string colour_to_str(Colour c)
 {
-    return c ? "White" : "Black";
+    return c ? "Black" : "White";
 }
 

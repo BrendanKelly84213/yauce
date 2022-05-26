@@ -22,13 +22,23 @@ int main( int argc, char *argv[] )
     std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 
     BoardState board_state;
-    board_state.init(pos4);
+    board_state.init(pos3);
 
     std::cout << "Evaluating position... : " << '\n';
+    /* BMove m = move(f3, h3, QUIET); */
+    /* board_state.make_move(m); */
     board_state.print_squares();
+    /* int score = search(board_state, 3); */
+    /* std::cout << "Score after Qxh3: " << score << '\n'; */
 
-    std::cout << colour_to_str(board_state.get_side_to_move()) << " to move. moves and scores" << '\n';
-    MoveList movelist = sorted_moves(board_state, 4); 
+    /* std::cout << colour_to_str(board_state.get_side_to_move()) << " to move. moves and scores" << '\n'; */
+
+    /* print_moves_and_scores(board_state, 3); */
+
+    ScoredMove _best_move = best_move(board_state, 6);
+    std::cout << '\n';
+    std::cout << "{ move: " << _best_move.alg << ", score: " << _best_move.score << " }" << '\n';
+    std::cout << '\n';
 
 	return 0;
 }
