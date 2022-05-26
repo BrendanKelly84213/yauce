@@ -16,7 +16,12 @@ int alphabeta_max(BoardState board, int alpha, int beta, int depth)
     size_t num_moves = psuedo_generator(board, moves);
     Colour us = board.get_side_to_move();
 
-	if(depth == 0) return eval(board);
+	if(depth == 0) {
+        /* board.print_squares(); */
+        /* std::cout << "Depth 0 " << eval(board) << '\n'; */
+        /* board.print_moves(); */
+        return eval(board);
+    }
 
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
@@ -39,7 +44,12 @@ int alphabeta_min(BoardState board, int alpha, int beta, int depth)
     size_t num_moves = psuedo_generator(board, moves);
     Colour us = board.get_side_to_move();
 
-	if(depth == 0) return -1 * eval(board);
+	if(depth == 0) { 
+        /* board.print_squares(); */
+        /* std::cout << "Depth 0 " << eval(board) << '\n'; */
+        /* board.print_moves(); */
+        return eval(board);
+    }
 
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
@@ -56,7 +66,7 @@ int alphabeta_min(BoardState board, int alpha, int beta, int depth)
     return beta;
 }
 
-MoveList sorted_moves(BoardState board, int depth)
+void print_moves_and_scores(BoardState board, int depth)
 {
     BMove moves[256];
     MoveList movelist;
@@ -79,18 +89,55 @@ MoveList sorted_moves(BoardState board, int depth)
         if(!board.in_check(us)) {
             int move_score = search(board, depth);
             MoveInfo mi(m, pt, cpt, us, board.in_check(!us), move_score);
-            std::cout << " { " << mi.algebraic << " : " << move_score << " } ";
-            movelist.add(m, pt, cpt, us, board.in_check(!us), move_score);
+            std::cout << i << ". { " << mi.algebraic << " : " << move_score << " } ";
         }
         board.unmake_move(m);
     }
+}
 
-    movelist.sort_by_score(us);
+ScoredMove best_move(BoardState board, int depth) 
+{
+    BMove moves[256];
+    MoveList movelist;
+    
+    size_t num_moves = psuedo_generator(board, moves);
+    Colour us = board.get_side_to_move();
+    ScoredMove _best_move;
+    
+    if(us == White)
+        _best_move = { 0, INT_MIN, "" };
+    else _best_move = { 0, INT_MAX, "" }; 
+    
+    for(size_t i = 0; i < num_moves; ++i) {
 
-    return movelist;
+        BMove m = moves[i];
+        Square from = get_from(m);
+        Square to = get_to(m); 
+        Piece p = board.get_piece(from);
+        Piece cp = board.get_piece(to);
+
+        PieceType pt = piece_to_piecetype(p);
+        PieceType cpt = piece_to_piecetype(cp);
+        
+        board.make_move(m);
+        if(!board.in_check(us)) {
+            int move_score = search(board, depth);
+            MoveInfo mi(m, pt, cpt, us, board.in_check(!us), move_score);
+            std::cout << i << ". { " << mi.algebraic << " : " << move_score << " } ";
+            if(
+                (us == White && move_score > _best_move.score) || 
+                (us == Black && move_score < _best_move.score)
+            )
+                _best_move = { m, move_score, mi.algebraic };  
+        }
+        board.unmake_move(m);
+    }
+    return _best_move;
 }
 
 int search(BoardState board, int depth) 
 {
-    return alphabeta_max(board, INT_MIN, INT_MAX, depth);
+    return board.get_side_to_move() == White
+        ? alphabeta_max(board, INT_MIN, INT_MAX, depth)
+        : alphabeta_min(board, INT_MIN, INT_MAX, depth);
 }
