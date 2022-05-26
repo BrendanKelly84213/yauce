@@ -166,28 +166,10 @@ int psuedo_generator(BoardState board_state, BMove moves[])
 
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
-                if(pt == Pawn &&  dest == last_rank)
-                    continue; // The pawn must promote if its on the second to last rank
-
-                moves[i] = move(origin, dest, QUIET); 
-
-                if(get_from(moves[i]) == a1 && get_to(moves[i]) == a8) {
-                    std::cout << "Caught a1 -> a8 on node: " << i << " Piece: " << piecetype_to_str(pt) << '\n';
-                    std::cout << "Origin: " << square_to_str(origin) << " Dest: " << square_to_str(dest) << '\n';
-                    std::cout << "move(origin, dest, QUIET): ";
-                    board_state.print_move(move(origin, dest, QUIET));
-                    std::cout << '\n';
-                    board_state.print_move(moves[i]);
-                    std::cout << '\n';
-                    std::cout << piecetype_to_str(pt) << " Bitboard" << '\n';
-                    print(board_state.get_friend_piece_bb(pt));
-                    std::cout << piecetype_to_str(pt) << " attack squares" << '\n';
-                    print(board_state.get_to_squares(pt, origin, us));
-                    board_state.print_context(moves[i], false, get_flag(moves[i]));
-                    assert(false);
+                if(!(pt == Pawn &&  dest == last_rank)) {
+                    moves[i] = move(origin, dest, QUIET); 
+                    i++;
                 }
-
-                i++;
             }
 
         }
