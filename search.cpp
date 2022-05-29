@@ -7,19 +7,27 @@
 
 // NOTE: Tired, refactor later
 // TODO: Count number of nodes searched, speed, etc...
-int alphabeta_max(BoardState board, int alpha, int beta, int depth);
-int alphabeta_min(BoardState board, int alpha, int beta, int depth);
 
-int alphabeta_max(BoardState board, int alpha, int beta, int depth)
+int Search::alphabeta_max(
+        BoardState board,
+        int alpha, 
+        int beta, 
+        size_t depth 
+) 
 {
+    auto now = std::chrono::steady_clock::now();
+    Duration elapsed = now - search_start;
+
+    if(elapsed.count() >= allotted) {
+        searching = false;
+        return eval(board);
+    }
+
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
     Colour us = board.get_side_to_move();
 
 	if(depth == 0) {
-        /* board.print_squares(); */
-        /* std::cout << "Depth 0 " << eval(board) << '\n'; */
-        /* board.print_moves(); */
         return eval(board);
     }
 
@@ -28,6 +36,8 @@ int alphabeta_max(BoardState board, int alpha, int beta, int depth)
         board.make_move(m);
         if(!board.in_check(us)) {
             int score = alphabeta_min(board, alpha, beta, depth - 1); 
+
+            nodes_searched++;
             if(score >= beta)
                 return beta; // fail hard
             if(score > alpha)
@@ -38,16 +48,27 @@ int alphabeta_max(BoardState board, int alpha, int beta, int depth)
     return alpha;
 }
 
-int alphabeta_min(BoardState board, int alpha, int beta, int depth)
+int Search::alphabeta_min(
+        BoardState board, 
+        int alpha, 
+        int beta, 
+        size_t depth
+) 
 {
+    auto now = std::chrono::steady_clock::now();
+    Duration elapsed = now - search_start;
+
+    if(elapsed.count() >= allotted) {
+        searching = false;
+        return eval(board);
+    }
+
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
     Colour us = board.get_side_to_move();
 
-	if(depth == 0) { 
-        /* board.print_squares(); */
-        /* std::cout << "Depth 0 " << eval(board) << '\n'; */
-        /* board.print_moves(); */
+
+	if(depth == 0) {
         return eval(board);
     }
 
@@ -56,6 +77,7 @@ int alphabeta_min(BoardState board, int alpha, int beta, int depth)
         board.make_move(m);
         if(!board.in_check(us)) {
             int score = alphabeta_max(board, alpha, beta, depth - 1); 
+            nodes_searched++;
             if(score <= alpha)
                 return alpha; // fail hard
             if(score < beta)
@@ -66,36 +88,7 @@ int alphabeta_min(BoardState board, int alpha, int beta, int depth)
     return beta;
 }
 
-void print_moves_and_scores(BoardState board, int depth)
-{
-    BMove moves[256];
-    MoveList movelist;
-    
-    size_t num_moves = psuedo_generator(board, moves);
-    Colour us = board.get_side_to_move();
-    
-    for(size_t i = 0; i < num_moves; ++i) {
-
-        BMove m = moves[i];
-        Square from = get_from(m);
-        Square to = get_to(m); 
-        Piece p = board.get_piece(from);
-        Piece cp = board.get_piece(to);
-
-        PieceType pt = piece_to_piecetype(p);
-        PieceType cpt = piece_to_piecetype(cp);
-        
-        board.make_move(m);
-        if(!board.in_check(us)) {
-            int move_score = search(board, depth);
-            MoveInfo mi(m, pt, cpt, us, board.in_check(!us), move_score);
-            std::cout << i << ". { " << mi.algebraic << " : " << move_score << " } ";
-        }
-        board.unmake_move(m);
-    }
-}
-
-ScoredMove best_move(BoardState board, int depth) 
+ScoredMove Search::best_move(BoardState board, size_t depth) 
 {
     BMove moves[256];
     MoveList movelist;
@@ -123,19 +116,35 @@ ScoredMove best_move(BoardState board, int depth)
         if(!board.in_check(us)) {
             int move_score = search(board, depth);
             MoveInfo mi(m, pt, cpt, us, board.in_check(!us), move_score);
-            std::cout << i << ". { " << mi.algebraic << " : " << move_score << " } ";
+            /* std::cout << i << ". { " << mi.algebraic << " : " << move_score << " } "; */
             if(
                 (us == White && move_score > _best_move.score) || 
                 (us == Black && move_score < _best_move.score)
             )
-                _best_move = { m, move_score, mi.algebraic };  
+                _best_move = { m, move_score, mi.algebraic, board.get_movelist() };  
         }
         board.unmake_move(m);
     }
     return _best_move;
 }
 
-int search(BoardState board, int depth) 
+std::vector<ScoredMove> Search::iterative_search(BoardState board)
+{
+    size_t d = 0;
+    std::vector<ScoredMove> best_move_at;
+    search_start = std::chrono::steady_clock::now();
+    searching = true;
+
+    while(searching) {
+        best_move_at.push_back(best_move(board, d));
+        d++;
+        depth_searched = d;
+    }
+
+    return best_move_at;
+}
+
+int Search::search(BoardState board, size_t depth) 
 {
     return board.get_side_to_move() == White
         ? alphabeta_max(board, INT_MIN, INT_MAX, depth)

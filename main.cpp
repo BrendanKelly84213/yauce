@@ -21,24 +21,19 @@ int main( int argc, char *argv[] )
     std::string pos3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
     std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 
-    BoardState board_state;
-    board_state.init(pos3);
+    BoardState board;
+    board.init(kiwipete);
+    Search s(10);
+    auto start = std::chrono::steady_clock::now();
+    std::vector<ScoredMove> best_moves = s.iterative_search(board);
+    auto end = std::chrono::steady_clock::now();
 
-    std::cout << "Evaluating position... : " << '\n';
-    /* BMove m = move(f3, h3, QUIET); */
-    /* board_state.make_move(m); */
-    board_state.print_squares();
-    /* int score = search(board_state, 3); */
-    /* std::cout << "Score after Qxh3: " << score << '\n'; */
+    Duration elapsed = end - start; 
 
-    /* std::cout << colour_to_str(board_state.get_side_to_move()) << " to move. moves and scores" << '\n'; */
-
-    /* print_moves_and_scores(board_state, 3); */
-
-    ScoredMove _best_move = best_move(board_state, 6);
-    std::cout << '\n';
-    std::cout << "{ move: " << _best_move.alg << ", score: " << _best_move.score << " }" << '\n';
-    std::cout << '\n';
+    for(auto m : best_moves) {
+        std::cout << '\n' << "{ move: " << m.alg << ", score: " << m.score << " } " << '\n';
+    }
+    std::cout << "searched " << s.get_depth_searched() << " depth and " << s.get_nodes_searched() << " in " << elapsed.count() << '\n'; 
 
 	return 0;
 }
