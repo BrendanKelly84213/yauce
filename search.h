@@ -6,6 +6,7 @@
 
 typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
+typedef std::vector<MoveInfo> Line; // Refactor 
 
 struct ScoredMove {
     BMove m;
@@ -22,8 +23,8 @@ public:
     {
     }
 
-    int search(BoardState board, size_t depth);
-    ScoredMove best_move(BoardState board, size_t depth);
+    int search(BoardState board, size_t depth, Line & line);
+    ScoredMove best_move(BoardState board, size_t depth, Line & line);
     std::vector<ScoredMove> iterative_search(BoardState board);
 
     size_t get_depth_searched() const { return depth_searched; }
@@ -41,14 +42,16 @@ private:
             BoardState board,
             int alpha, 
             int beta, 
-            size_t depth
+            size_t depth,
+            Line & line
     );
 
     int alphabeta_min(
             BoardState board,
             int alpha, 
             int beta, 
-            size_t depth
+            size_t depth, 
+            Line & line
     );
 };
 
