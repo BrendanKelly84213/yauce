@@ -23,7 +23,11 @@ int main( int argc, char *argv[] )
 
     BoardState board;
     board.init(kiwipete);
-    Search s(10);
+    Search s(2);
+    
+    std::cout << "Evaluating..." << '\n';
+    board.print_squares();
+
     auto start = std::chrono::steady_clock::now();
     std::vector<ScoredMove> best_moves = s.iterative_search(board);
     auto end = std::chrono::steady_clock::now();
@@ -33,7 +37,7 @@ int main( int argc, char *argv[] )
     for(auto m : best_moves) {
         std::cout << '\n' << "{ move: " << m.alg << ", score: " << m.score << " } " << '\n';
     }
-    std::cout << "searched " << s.get_depth_searched() << " depth and " << s.get_nodes_searched() << " in " << elapsed.count() << '\n'; 
+    std::cout << "searched  depth " << s.get_depth_searched() << " and " << s.get_nodes_searched() << " nodes in " << elapsed.count() << "s" << '\n'; 
 
 	return 0;
 }

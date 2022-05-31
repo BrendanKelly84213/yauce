@@ -18,7 +18,7 @@ class Search {
 public: 
 
     Search(double _allotted)
-        : allotted(_allotted), searching(false)
+        : allotted(_allotted), searching(false), depth_searched(0), nodes_searched(0)
     {
     }
 
