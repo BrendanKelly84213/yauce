@@ -49,8 +49,28 @@ struct MoveInfo {
     Colour side;
     std::string algebraic;
 
+    MoveInfo(const MoveInfo & mi) 
+        : score(mi.score), m(mi.m), moved(mi.moved), captured(mi.captured), side(mi.side), algebraic(mi.algebraic) 
+    {
+    }
+
+    /* MoveInfo(const MoveInfo & mi) */
+    /* { */
+    /*     score = mi.score; */
+    /*     m = mi.m; */
+    /*     moved = mi.moved; */
+    /*     captured = mi.captured; */
+    /*     side = mi.side; */
+    /*     algebraic = mi.algebraic; */
+    /* } */
+
+    MoveInfo() 
+        : score(0), m(0), moved(Null), captured(Null), side(White), algebraic("") 
+    {
+    }
+
     MoveInfo(BMove _m, PieceType _moved, PieceType _captured, Colour _side, bool check = false, int _score = 0) 
-        : m(_m), moved(_moved), captured(_captured), side(_side), score(score) 
+        : m(_m), moved(_moved), captured(_captured), side(_side), score(_score) 
     {
         // TODO: checks, other flags, etc...
         std::string tosq = square_to_str(get_to(m));
@@ -80,6 +100,14 @@ class MoveList {
 private: 
     std::vector<MoveInfo> movelist;
 public: 
+
+    MoveList() {}
+
+    MoveList(size_t size)
+    {
+        movelist.reserve(size);
+    }
+
     void add(BMove m, 
             PieceType moved, 
             PieceType captured, 
@@ -91,6 +119,7 @@ public:
         movelist.push_back(mi); 
     }
 
+    void insert(size_t i, MoveInfo mi) { movelist[i] = mi; };
     void remove() { movelist.pop_back(); }
     void print_moves() const;
     void print_moves_and_scores() const;
