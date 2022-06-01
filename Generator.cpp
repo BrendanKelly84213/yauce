@@ -121,7 +121,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                      (bit(origin + W) & bit(epsq) & ~FileHBB) ||
                      (bit(origin + E) & bit(epsq) & ~FileABB);
                      
-                if(epsq != None && pawn_adj) {
+                if(epsq != NullSquare  && pawn_adj) {
                     moves[i] = move(origin, tosq, EN_PASSANT); 
                     i++;
                 }
