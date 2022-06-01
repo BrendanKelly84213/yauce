@@ -89,7 +89,7 @@ int Search::alphabeta(
     return value;
 }
 
-void print_line(BoardState board, Line line)
+void Search::print_line(BoardState board, Line line)
 {
     BoardState copy = board;
     for(size_t i = 0; i < line.num_moves; ++i) {
@@ -98,6 +98,7 @@ void print_line(BoardState board, Line line)
         copy.make_move(m);
     }
     std::cout << '\n';
+    copy.print_squares();
 }
 
 void Search::iterative_search(BoardState board)
@@ -110,25 +111,24 @@ void Search::iterative_search(BoardState board)
     searching = true;
 
     while(searching) {
-        depth_searched = d;
         scores[d] = search(board, d, &lines[d]);
 
         d++;
     }
 
-    for(size_t j = 0; j < d; ++j) {
+    for(size_t j = 0; j < d - 1; ++j) {
         Line line = lines[j];
         print_line(board, line);
         
-        std::cout << '\n';
         std::cout << "Score: " << scores[j] << '\n';
+        std::cout << '\n';
     }
 
-    board.print_squares();
 }
 
 int Search::search(BoardState board, size_t depth, Line * pline) 
 {
+    depth_searched = depth;
     return board.get_side_to_move() == White
         ? alphabeta(board, INT_MIN, INT_MAX, depth, pline, true)
         : alphabeta(board, INT_MIN, INT_MAX, depth, pline, false);

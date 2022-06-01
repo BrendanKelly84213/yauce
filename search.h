@@ -31,6 +31,7 @@ public:
 
     int search(BoardState board, size_t depth, Line * pline);
     void iterative_search(BoardState board);
+    void print_line(BoardState board, Line line);
 
     size_t get_depth_searched() const { return depth_searched; }
     size_t get_nodes_searched() const { return nodes_searched; }
