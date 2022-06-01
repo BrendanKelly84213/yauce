@@ -2,4 +2,5 @@ run
 engine-interface.txt
 tt
 test.cpp
+.vscode/
 
