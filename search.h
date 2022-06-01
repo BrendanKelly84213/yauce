@@ -6,7 +6,27 @@
 
 typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
-typedef std::vector<MoveInfo> Line; // Refactor 
+/* typedef std::vector<MoveInfo> Line; // Refactor */ 
+
+MoveInfo get_moveinfo(BMove m, BoardState board);
+
+struct MoreMoveInfo : MoveInfo {
+    BoardState board; 
+
+    MoreMoveInfo() {}
+
+    MoreMoveInfo(BMove m, BoardState _board)
+        : MoveInfo(get_moveinfo(m, _board)), board(_board)
+    {
+    }
+};
+
+struct Line {
+    size_t num_moves;
+    MoreMoveInfo line[16]; 
+
+    Line() : num_moves(0) {}
+};
 
 struct ScoredMove {
     BMove m;
@@ -14,6 +34,7 @@ struct ScoredMove {
     std::string alg;
     MoveList movelist;
 };
+
 
 class Search {
 public: 
@@ -23,8 +44,8 @@ public:
     {
     }
 
-    int search(BoardState board, size_t depth, Line & line);
-    ScoredMove best_move(BoardState board, size_t depth, Line & line);
+    int search(BoardState board, size_t depth, Line * pline);
+    ScoredMove best_move(BoardState board, size_t depth, Line * pline);
     std::vector<ScoredMove> iterative_search(BoardState board);
 
     size_t get_depth_searched() const { return depth_searched; }
@@ -43,7 +64,7 @@ private:
             int alpha, 
             int beta, 
             size_t depth,
-            Line & line
+            Line * pline
     );
 
     int alphabeta_min(
@@ -51,7 +72,7 @@ private:
             int alpha, 
             int beta, 
             size_t depth, 
-            Line & line
+            Line * pline
     );
 };
 
