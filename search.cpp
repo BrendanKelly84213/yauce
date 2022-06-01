@@ -32,6 +32,14 @@ std::string get_algstring(BMove m, BoardState board)
     return mi.algebraic;
 }
 
+template <typename Func> 
+static void loop_moves(BMove moves[], size_t num_moves, Func cb)
+{
+    for(size_t i = 0; i < num_moves; ++i) {
+        cb();
+    }
+}
+
 int Search::alphabeta(
         BoardState board,
         int alpha, 
@@ -44,6 +52,13 @@ int Search::alphabeta(
     Line line;
     auto now = std::chrono::steady_clock::now();
     Duration elapsed = now - search_start;
+
+    auto append_line = [&](MoreMoveInfo chosen_move) -> void {
+        pline->line[0] = chosen_move;
+        for(size_t d = 0; d < line.num_moves; ++d) 
+            pline->line[d + 1] = line.line[d];
+        pline->num_moves = line.num_moves + 1;
+    };
 
     if(elapsed.count() >= allotted) {
         searching = false;
@@ -77,16 +92,14 @@ int Search::alphabeta(
 
                 if(score > alpha) {
                     alpha = score;
-                    pline->line[0] = chosen_move;
-                    for(size_t d = 0; d < line.num_moves; ++d) 
-                        pline->line[d + 1] = line.line[d];
-                    pline->num_moves = line.num_moves + 1;
+                    append_line(chosen_move);
                 }
             }
             board.unmake_move(m);
         }
         value = alpha;
     } else {
+        // Minimize
         for(size_t i = 0; i < num_moves; ++i) {
             BMove m = moves[i];
             MoreMoveInfo chosen_move(m, board);
@@ -102,10 +115,7 @@ int Search::alphabeta(
                 
                 if(score < beta) {
                     beta = score;
-                    pline->line[0] = chosen_move;
-                    for(size_t d = 0; d < line.num_moves; ++d) 
-                        pline->line[d + 1] = line.line[d];
-                    pline->num_moves = line.num_moves + 1;
+                    append_line(chosen_move);
                 }
             }
             board.unmake_move(m);
