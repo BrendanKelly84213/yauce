@@ -842,6 +842,38 @@ Piece BoardState::get_piece(Square s) const
     return squares[s];
 }
 
+std::string BoardState::get_algebraic(BMove m) const 
+{
+    if(m == 0) return "";
+
+    std::string algebraic = "";
+    Square from = get_from(m);
+    Square to = get_to(m);
+    Move flag = get_flag(m);
+    PieceType moved = piece_to_piecetype(get_piece(from));
+    PieceType captured = piece_to_piecetype(get_piece(to));
+    Colour us = get_side_to_move();
+    bool check = in_check(!us);
+
+    std::string tosq = square_to_str(to);
+    if(flag == OO || flag == OOO) {
+        algebraic = flag_to_str(flag);
+    } else if(moved == Pawn) {
+        if(captured == Null) 
+            algebraic = tosq;
+        else algebraic = "Px" + tosq;
+        if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP)
+            algebraic += promote_flag_to_str(flag);
+    } else {
+        algebraic = piecetype_to_algstr(moved) + (captured != Null ? "x" : "") + tosq;
+    }
+
+    if(check) 
+        algebraic += "+";
+
+    return algebraic;
+}
+
 bool BoardState::operator==(BoardState b) const
 {
     for(int p=BQ; p <= WP; ++p) {

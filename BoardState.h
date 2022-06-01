@@ -84,7 +84,7 @@ struct MoveInfo {
             if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP)
                 algebraic += promote_flag_to_str(flag);
         } else {
-            algebraic = piecetype_to_algstr(_moved) + (captured != None ? "x" : "") + tosq;
+            algebraic = piecetype_to_algstr(_moved) + (captured != Null ? "x" : "") + tosq;
         }
 
         if(check) 
@@ -146,6 +146,46 @@ struct State {
 };
 
 class BoardState {
+public: 
+    void init(std::string fen);
+
+    void make_move(BMove m);
+    void unmake_move(BMove m);
+
+    Bitboard get_occ() const; 
+    Bitboard get_friend_occ() const;
+    Bitboard get_friend_occ(Colour us) const;
+    Bitboard get_op_occ() const;
+    Bitboard get_op_occ(Colour us) const;
+    Bitboard get_friend_piece_bb(int pt) const;
+    Bitboard get_op_piece_bb(int pt) const;
+    Bitboard get_side_piece_bb(int pt, Colour side) const;
+    Bitboard get_to_squares(PieceType pt, Square from, Colour us) const;
+    Bitboard checkers(Colour us) const; 
+    Colour get_piece_colour(Piece p) const;
+    Colour get_side_to_move() const { return state.side_to_move; }
+    Square get_ep_square() const;
+    Square get_king_square(Colour us) const;
+    Piece get_piece(Square s) const;
+    MoveList get_movelist() const { return movelist; }
+    int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
+    size_t get_num_piece(Piece p) const { return popcount(piece_bbs[p]); } 
+    std::string get_algebraic(BMove m) const;
+
+    Bitboard attacks_to(Square sq) const;
+    bool attacked(Square sq, Colour by) const;
+    bool in_check(Colour us) const;
+    bool in_checkmate(Colour us) const;
+    bool can_castle(Colour us, Move type) const;
+
+    void print_squares() const;
+    void print_move(BMove m) const;
+    void print_moves() const { movelist.print_moves(); }
+    void print_occupied() const;
+    void print_context(BMove m, bool capture, Move flag) const;
+
+    bool operator==(BoardState b) const;
+
 private: 
     State state; 
     State prev_state;
@@ -180,46 +220,6 @@ private:
     // Attacks 
     inline Bitboard blockers_and_beyond(PieceType pt, Square from) const;
     inline Bitboard pawn_squares(Square origin, Colour us) const;
-
-public: 
-
-    void init(std::string fen);
-
-    void make_move(BMove m);
-    void unmake_move(BMove m);
-
-    Bitboard get_occ() const; 
-    Bitboard get_friend_occ() const;
-    Bitboard get_friend_occ(Colour us) const;
-    Bitboard get_op_occ() const;
-    Bitboard get_op_occ(Colour us) const;
-    Bitboard get_friend_piece_bb(int pt) const;
-    Bitboard get_op_piece_bb(int pt) const;
-    Bitboard get_side_piece_bb(int pt, Colour side) const;
-    Bitboard get_to_squares(PieceType pt, Square from, Colour us) const;
-    Bitboard checkers(Colour us) const; 
-    Colour get_piece_colour(Piece p) const;
-    Colour get_side_to_move() const { return state.side_to_move; }
-    Square get_ep_square() const;
-    Square get_king_square(Colour us) const;
-    Piece get_piece(Square s) const;
-    MoveList get_movelist() const { return movelist; }
-    int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
-    size_t get_num_piece(Piece p) const { return popcount(piece_bbs[p]); } 
-
-    Bitboard attacks_to(Square sq) const;
-    bool attacked(Square sq, Colour by) const;
-    bool in_check(Colour us) const;
-    bool in_checkmate(Colour us) const;
-    bool can_castle(Colour us, Move type) const;
-
-    void print_squares() const;
-    void print_move(BMove m) const;
-    void print_moves() const { movelist.print_moves(); }
-    void print_occupied() const;
-    void print_context(BMove m, bool capture, Move flag) const;
-
-    bool operator==(BoardState b) const;
 };
 
 #endif
