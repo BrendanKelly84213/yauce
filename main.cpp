@@ -23,7 +23,7 @@ int main( int argc, char *argv[] )
 
     BoardState board;
     board.init(kiwipete);
-    Search s(2);
+    Search s(17);
     
     std::cout << "Evaluating..." << '\n';
     board.print_squares();
@@ -34,7 +34,7 @@ int main( int argc, char *argv[] )
 
     Duration elapsed = end - start; 
 
-    std::cout << "searched  depth " << s.get_depth_searched() << " and " << s.get_nodes_searched() << " nodes in " << elapsed.count() << "s" << '\n'; 
+    std::cout << "searched  depth " << s.get_depth_searched() - 1 << " and " << s.get_nodes_searched() << " nodes in " << elapsed.count() << "s" << '\n'; 
 
 	return 0;
 }
