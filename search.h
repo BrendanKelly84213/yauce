@@ -18,6 +18,7 @@ struct MoreMoveInfo : MoveInfo {
     MoreMoveInfo(BMove m, BoardState _board)
         : MoveInfo(get_moveinfo(m, _board)), board(_board)
     {
+        board.make_move(m);
     }
 };
 
@@ -45,8 +46,7 @@ public:
     }
 
     int search(BoardState board, size_t depth, Line * pline);
-    ScoredMove best_move(BoardState board, size_t depth, Line * pline);
-    std::vector<ScoredMove> iterative_search(BoardState board);
+    void iterative_search(BoardState board);
 
     size_t get_depth_searched() const { return depth_searched; }
     size_t get_nodes_searched() const { return nodes_searched; }

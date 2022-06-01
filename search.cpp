@@ -137,40 +137,7 @@ int Search::alphabeta_min(
     return beta;
 }
 
-ScoredMove Search::best_move(BoardState board, size_t depth, Line * pline) 
-{
-    BMove moves[256];
-    MoveList movelist;
-    
-    size_t num_moves = psuedo_generator(board, moves);
-    Colour us = board.get_side_to_move();
-    ScoredMove _best_move;
-    
-    if(us == White)
-        _best_move = { 0, INT_MIN, "" };
-    else _best_move = { 0, INT_MAX, "" }; 
-    
-    for(size_t i = 0; i < num_moves; ++i) {
-        BMove m = moves[i];
-        
-        MoveInfo mi = get_moveinfo(m, board);
-        board.make_move(m);
-        if(!board.in_check(us)) {
-            int move_score = search(board, depth, pline);
-
-            if(
-                (us == White && move_score > _best_move.score) || 
-                (us == Black && move_score < _best_move.score)
-            ) { 
-                _best_move = { m, move_score, mi.algebraic, board.get_movelist() };  
-            }
-        }
-        board.unmake_move(m);
-    }
-    return _best_move;
-}
-
-std::vector<ScoredMove> Search::iterative_search(BoardState board)
+void Search::iterative_search(BoardState board)
 {
     size_t d = 0;
     std::vector<ScoredMove> best_move_at;
@@ -181,15 +148,14 @@ std::vector<ScoredMove> Search::iterative_search(BoardState board)
     //  lines[2] == "1. e4, 2. e5, 3. Nf3"
     // Or something...
     std::vector<Line> lines(7); 
-    /* Line * pline; */
+    std::vector<int> scores(7);
 
     search_start = std::chrono::steady_clock::now();
     searching = true;
 
     while(searching) {
         depth_searched = d;
-        ScoredMove bm = best_move(board, d, &lines[d]);
-        best_move_at.push_back(bm);
+        scores[d] = search(board, d, &lines[d]);
 
         d++;
     }
@@ -201,12 +167,11 @@ std::vector<ScoredMove> Search::iterative_search(BoardState board)
             m = line.line[i];
             
             std::cout << m.algebraic << " ";
-
         }
+        
         std::cout << '\n';
+        std::cout << "Score: " << scores[j] << '\n';
     }
-
-    return best_move_at;
 }
 
 int Search::search(BoardState board, size_t depth, Line * pline) 
