@@ -21,8 +21,7 @@ int Search::alphabeta(
 
     auto append_line = [&](BMove chosen_move) -> void {
         pline->line[0] = chosen_move;
-        for(size_t d = 0; d < line.num_moves; ++d) 
-            pline->line[d + 1] = line.line[d];
+        memcpy(pline->line + 1, line.line, line.num_moves * sizeof(BMove));
         pline->num_moves = line.num_moves + 1;
     };
 
@@ -34,6 +33,12 @@ int Search::alphabeta(
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
     Colour us = board.get_side_to_move();
+
+    std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
+        bool a_capture = board.get_piece(get_to(a)) != None;
+        bool b_capture = board.get_piece(get_to(b)) != None;
+        return a_capture > b_capture;
+    });
 
 	if(depth == 0) {
         pline->num_moves = 0;
