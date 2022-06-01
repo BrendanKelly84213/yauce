@@ -5,41 +5,7 @@
 /* #include "BoardState.h" */
 #include "search.h"
 
-// TODO: Store lines in MoveInfo or ScoredMove such that we can make iteratavely make moves and look at what the board looks like afterwords + further debugging
-
-
-// NOTE: Not ideal... 
-MoveInfo get_moveinfo(BMove m, BoardState board)
-{
-    Square from = get_from(m);
-    Square to = get_to(m); 
-    Piece p = board.get_piece(from);
-    Piece cp = board.get_piece(to);
-
-    PieceType pt = piece_to_piecetype(p);
-    PieceType cpt = piece_to_piecetype(cp);
-
-    Colour us = board.get_side_to_move();
-    bool check = board.in_check(!us);
-
-    MoveInfo mi(m, pt, cpt, us, check); 
-    return mi;
-}
-
-std::string get_algstring(BMove m, BoardState board) 
-{
-    MoveInfo mi = get_moveinfo(m, board);
-    return mi.algebraic;
-}
-
-template <typename Func> 
-static void loop_moves(BMove moves[], size_t num_moves, Func cb)
-{
-    for(size_t i = 0; i < num_moves; ++i) {
-        cb();
-    }
-}
-
+// FIXME: Hard to read, further refactors in order?
 int Search::alphabeta(
         BoardState board,
         int alpha, 
@@ -53,7 +19,7 @@ int Search::alphabeta(
     auto now = std::chrono::steady_clock::now();
     Duration elapsed = now - search_start;
 
-    auto append_line = [&](MoreMoveInfo chosen_move) -> void {
+    auto append_line = [&](BMove chosen_move) -> void {
         pline->line[0] = chosen_move;
         for(size_t d = 0; d < line.num_moves; ++d) 
             pline->line[d + 1] = line.line[d];
@@ -79,7 +45,6 @@ int Search::alphabeta(
         // Maximize
         for(size_t i = 0; i < num_moves; ++i) {
             BMove m = moves[i];
-            MoreMoveInfo chosen_move(m, board);
 
             board.make_move(m);
             if(!board.in_check(us)) {
@@ -92,7 +57,7 @@ int Search::alphabeta(
 
                 if(score > alpha) {
                     alpha = score;
-                    append_line(chosen_move);
+                    append_line(m);
                 }
             }
             board.unmake_move(m);
@@ -102,7 +67,6 @@ int Search::alphabeta(
         // Minimize
         for(size_t i = 0; i < num_moves; ++i) {
             BMove m = moves[i];
-            MoreMoveInfo chosen_move(m, board);
 
             board.make_move(m);
             if(!board.in_check(us)) {
@@ -115,7 +79,7 @@ int Search::alphabeta(
                 
                 if(score < beta) {
                     beta = score;
-                    append_line(chosen_move);
+                    append_line(m);
                 }
             }
             board.unmake_move(m);
@@ -125,16 +89,20 @@ int Search::alphabeta(
     return value;
 }
 
+void print_line(BoardState board, Line line)
+{
+    BoardState copy = board;
+    for(size_t i = 0; i < line.num_moves; ++i) {
+        BMove m = line.line[i];
+        std::cout << copy.get_algebraic(m) << " ";
+        copy.make_move(m);
+    }
+    std::cout << '\n';
+}
+
 void Search::iterative_search(BoardState board)
 {
     size_t d = 0;
-    std::vector<ScoredMove> best_move_at;
-    // Lines at each depth level
-    // Example: 
-    //  lines[0] == "1. e4"
-    //  lines[1] == "1. e4 2. e5"
-    //  lines[2] == "1. e4, 2. e5, 3. Nf3"
-    // Or something...
     std::vector<Line> lines(7); 
     std::vector<int> scores(7);
 
@@ -150,16 +118,13 @@ void Search::iterative_search(BoardState board)
 
     for(size_t j = 0; j < d; ++j) {
         Line line = lines[j];
-        MoreMoveInfo m;
-        for(size_t i = 0; i < 16; ++i) {
-            m = line.line[i];
-            
-            std::cout << m.algebraic << " ";
-        }
+        print_line(board, line);
         
         std::cout << '\n';
         std::cout << "Score: " << scores[j] << '\n';
     }
+
+    board.print_squares();
 }
 
 int Search::search(BoardState board, size_t depth, Line * pline) 

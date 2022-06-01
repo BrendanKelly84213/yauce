@@ -8,23 +8,9 @@ typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
 /* typedef std::vector<MoveInfo> Line; // Refactor */ 
 
-MoveInfo get_moveinfo(BMove m, BoardState board);
-
-struct MoreMoveInfo : MoveInfo {
-    BoardState board; 
-
-    MoreMoveInfo() {}
-
-    MoreMoveInfo(BMove m, BoardState _board)
-        : MoveInfo(get_moveinfo(m, _board)), board(_board)
-    {
-        board.make_move(m);
-    }
-};
-
 struct Line {
     size_t num_moves;
-    MoreMoveInfo line[16]; 
+    BMove line[16]; 
 
     Line() : num_moves(0) {}
 };
@@ -32,8 +18,6 @@ struct Line {
 struct ScoredMove {
     BMove m;
     int score;
-    std::string alg;
-    MoveList movelist;
 };
 
 
