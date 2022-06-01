@@ -29,14 +29,11 @@ int main( int argc, char *argv[] )
     board.print_squares();
 
     auto start = std::chrono::steady_clock::now();
-    std::vector<ScoredMove> best_moves = s.iterative_search(board);
+    s.iterative_search(board);
     auto end = std::chrono::steady_clock::now();
 
     Duration elapsed = end - start; 
 
-    for(auto m : best_moves) {
-        std::cout << '\n' << "{ move: " << m.alg << ", score: " << m.score << " } " << '\n';
-    }
     std::cout << "searched  depth " << s.get_depth_searched() << " and " << s.get_nodes_searched() << " nodes in " << elapsed.count() << "s" << '\n'; 
 
 	return 0;
