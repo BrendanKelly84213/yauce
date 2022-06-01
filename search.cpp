@@ -32,12 +32,13 @@ std::string get_algstring(BMove m, BoardState board)
     return mi.algebraic;
 }
 
-int Search::alphabeta_max(
+int Search::alphabeta(
         BoardState board,
         int alpha, 
         int beta, 
         size_t depth,
-        Line * pline
+        Line * pline,
+        bool max
 ) 
 {
     Line line;
@@ -58,83 +59,60 @@ int Search::alphabeta_max(
         return eval(board);
     }
 
-    for(size_t i = 0; i < num_moves; ++i) {
-        BMove m = moves[i];
-        MoreMoveInfo chosen_move(m, board);
-        board.make_move(m);
-        if(!board.in_check(us)) {
-            int score = alphabeta_min(board, alpha, beta, depth - 1, &line); 
+    int value;
+    if(max) {
+        // Maximize
+        for(size_t i = 0; i < num_moves; ++i) {
+            BMove m = moves[i];
+            MoreMoveInfo chosen_move(m, board);
 
-            nodes_searched++;
-            if(score >= beta) {
-                return beta; // fail hard
-            }
+            board.make_move(m);
+            if(!board.in_check(us)) {
+                nodes_searched++;
 
-            if(score > alpha) {
-                alpha = score;
-                pline->line[0] = chosen_move;
-                for(size_t d = 0; d < line.num_moves; ++d) 
-                    pline->line[d + 1] = line.line[d];
-                pline->num_moves = line.num_moves + 1;
+                int score = alphabeta(board, alpha, beta, depth - 1, &line, false); // Minimize
+
+                if(score >= beta) 
+                    return beta; // fail hard
+
+                if(score > alpha) {
+                    alpha = score;
+                    pline->line[0] = chosen_move;
+                    for(size_t d = 0; d < line.num_moves; ++d) 
+                        pline->line[d + 1] = line.line[d];
+                    pline->num_moves = line.num_moves + 1;
+                }
             }
+            board.unmake_move(m);
         }
-        board.unmake_move(m);
-    }
+        value = alpha;
+    } else {
+        for(size_t i = 0; i < num_moves; ++i) {
+            BMove m = moves[i];
+            MoreMoveInfo chosen_move(m, board);
 
-    return alpha;
-}
+            board.make_move(m);
+            if(!board.in_check(us)) {
+                nodes_searched++;
 
-int Search::alphabeta_min(
-        BoardState board, 
-        int alpha, 
-        int beta, 
-        size_t depth,
-        Line * pline
-) 
-{
-    Line line;
-    auto now = std::chrono::steady_clock::now();
-    Duration elapsed = now - search_start;
+                int score = alphabeta(board, alpha, beta, depth - 1, &line, true); // Maximize
 
-    if(elapsed.count() >= allotted) {
-        searching = false;
-        return eval(board);
-    }
-
-    BMove moves[256];
-    size_t num_moves = psuedo_generator(board, moves);
-    Colour us = board.get_side_to_move();
-
-	if(depth == 0) {
-        pline->num_moves = 0;
-        return eval(board);
-    }
-
-    for(size_t i = 0; i < num_moves; ++i) {
-        BMove m = moves[i];
-
-        MoreMoveInfo chosen_move(m, board); 
-
-        board.make_move(m);
-        if(!board.in_check(us)) {
-            int score = alphabeta_max(board, alpha, beta, depth - 1, &line); 
-
-            nodes_searched++;
-            if(score <= alpha) {
-                return alpha; // fail hard
+                if(score <= alpha) 
+                    return alpha; // fail hard
+                
+                if(score < beta) {
+                    beta = score;
+                    pline->line[0] = chosen_move;
+                    for(size_t d = 0; d < line.num_moves; ++d) 
+                        pline->line[d + 1] = line.line[d];
+                    pline->num_moves = line.num_moves + 1;
+                }
             }
-            if(score < beta) {
-                beta = score;
-                pline->line[0] = chosen_move;
-                for(size_t d = 0; d < line.num_moves; ++d) 
-                    pline->line[d + 1] = line.line[d];
-                pline->num_moves = line.num_moves + 1;
-            }
+            board.unmake_move(m);
         }
-        board.unmake_move(m);
+        value = beta;
     }
-
-    return beta;
+    return value;
 }
 
 void Search::iterative_search(BoardState board)
@@ -177,6 +155,6 @@ void Search::iterative_search(BoardState board)
 int Search::search(BoardState board, size_t depth, Line * pline) 
 {
     return board.get_side_to_move() == White
-        ? alphabeta_max(board, INT_MIN, INT_MAX, depth, pline)
-        : alphabeta_min(board, INT_MIN, INT_MAX, depth, pline);
+        ? alphabeta(board, INT_MIN, INT_MAX, depth, pline, true)
+        : alphabeta(board, INT_MIN, INT_MAX, depth, pline, false);
 }

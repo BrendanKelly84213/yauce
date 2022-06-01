@@ -59,20 +59,13 @@ private:
     size_t depth_searched;
     size_t nodes_searched;
 
-    int alphabeta_max(
-            BoardState board,
-            int alpha, 
-            int beta, 
-            size_t depth,
-            Line * pline
-    );
-
-    int alphabeta_min(
-            BoardState board,
-            int alpha, 
-            int beta, 
-            size_t depth, 
-            Line * pline
+    int alphabeta(
+        BoardState board,
+        int alpha, 
+        int beta, 
+        size_t depth,
+        Line * pline,
+        bool max
     );
 };
 
