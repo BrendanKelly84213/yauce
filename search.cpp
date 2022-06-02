@@ -45,7 +45,7 @@ int Search::alphabeta(
         return eval(board);
     }
 
-    int value;
+    int value = max ? INT_MIN : INT_MAX;
     if(max) {
         // Maximize
         for(size_t i = 0; i < num_moves; ++i) {
@@ -69,6 +69,7 @@ int Search::alphabeta(
         }
         value = alpha;
     } else {
+        value = INT_MAX;
         // Minimize
         for(size_t i = 0; i < num_moves; ++i) {
             BMove m = moves[i];
@@ -109,8 +110,8 @@ void Search::print_line(BoardState board, Line line)
 void Search::iterative_search(BoardState board)
 {
     size_t d = 0;
-    std::vector<Line> lines(7); 
-    std::vector<int> scores(7);
+    std::vector<Line> lines(32); 
+    std::vector<int> scores(32);
 
     search_start = std::chrono::steady_clock::now();
     searching = true;
