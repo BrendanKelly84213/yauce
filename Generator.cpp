@@ -163,7 +163,6 @@ int psuedo_generator(BoardState board_state, BMove moves[])
             // Regular attacks
             Bitboard to_squares = board_state.get_to_squares(pt, origin, us);
 
-
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
                 if(!(pt == Pawn &&  dest == last_rank)) {
@@ -173,8 +172,6 @@ int psuedo_generator(BoardState board_state, BMove moves[])
             }
 
         }
-
-
     }
     return i;
 }

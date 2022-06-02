@@ -73,11 +73,10 @@ int b_queen_table[64];
 
 void init_black_tables()
 {
-    int num_rows = 7;
     for(Square s = a1; s <= h8; s = s + E) {
         int curr_row = s >> 3;
         int offset = s % 8;
-        int swap_row = num_rows - curr_row;
+        int swap_row = 7 - curr_row;
         int swap_idx = offset + 8*swap_row;
 
         b_pawn_table[s] = w_pawn_table[swap_idx];
@@ -115,42 +114,41 @@ void print_black_tables()
 int piece_weight(BoardState board, Piece p)
 {
     int weight = 0;
-    for(Square s = a1; s <= h8; s = s + E) {
-        Piece ps = board.get_piece(s);
-        if(p == ps) {
-            switch(p) {
-                case WP : 
-                    weight += (P_weight * w_pawn_table[s]);
-                    break;
-                case WB : 
-                    weight += (B_weight * w_bishop_table[s]);
-                    break;
-                case WR : 
-                    weight += (R_weight * w_rook_table[s]);
-                    break;
-                case WQ : 
-                    weight += (Q_weight * w_queen_table[s]);
-                    break;
-                case WN : 
-                    weight += (N_weight * w_knight_table[s]);
-                    break;
-                case BP : 
-                    weight += (P_weight * b_pawn_table[s]);
-                    break;
-                case BB : 
-                    weight += (B_weight * b_bishop_table[s]);
-                    break;
-                case BR : 
-                    weight += (R_weight * b_rook_table[s]);
-                    break;
-                case BQ : 
-                    weight += (Q_weight * b_queen_table[s]);
-                    break;
-                case BN : 
-                    weight += (N_weight * b_knight_table[s]);
-                    break;
-                default : break;
-            }
+    Bitboard piecebb = board.get_piece_bb(p);
+    while(piecebb) {
+        Square s = pop_bit(piecebb);
+        switch(p) {
+            case WP : 
+                weight += (P_weight * w_pawn_table[s]);
+                break;
+            case WB : 
+                weight += (B_weight * w_bishop_table[s]);
+                break;
+            case WR : 
+                weight += (R_weight * w_rook_table[s]);
+                break;
+            case WQ : 
+                weight += (Q_weight * w_queen_table[s]);
+                break;
+            case WN : 
+                weight += (N_weight * w_knight_table[s]);
+                break;
+            case BP : 
+                weight += (P_weight * b_pawn_table[s]);
+                break;
+            case BB : 
+                weight += (B_weight * b_bishop_table[s]);
+                break;
+            case BR : 
+                weight += (R_weight * b_rook_table[s]);
+                break;
+            case BQ : 
+                weight += (Q_weight * b_queen_table[s]);
+                break;
+            case BN : 
+                weight += (N_weight * b_knight_table[s]);
+                break;
+            default : break;
         }
     }
     return weight;
