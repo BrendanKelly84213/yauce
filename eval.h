@@ -4,5 +4,7 @@
 #include "BoardState.h"
 
 int eval(BoardState board);
+void init_black_tables();
+void print_black_tables();
 
 #endif 
