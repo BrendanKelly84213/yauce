@@ -20,7 +20,10 @@ void BoardState::print_squares() const
         for(int x = 0; x < 8; ++x) {
             Square s = (Square)(y*8 + x);
             if(squares[s] == None) {
-                std::cout << "|##";
+                if(!((y + x) % 2))
+                    std::cout << "|##";
+                else 
+                    std::cout << "|  ";
             } else {
                 std::cout << "|" << piece_to_str(squares[s]);
             }
@@ -916,7 +919,6 @@ bool is_piece_ch(char ch)
          || ch == 'B'
     );
 }
-
 
 Piece fen_to_piece(char ch) 
 {
