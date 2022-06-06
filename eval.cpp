@@ -7,6 +7,9 @@ const unsigned int R_weight = 500;
 const unsigned int Q_weight = 900;
 const unsigned int K_weight = 20000;
 
+
+// TODO: Balance tables.. Right now a knight in the center is worth more than a queen
+
 // Piece tables 
 
 const int w_pawn_table[] = {
@@ -28,7 +31,7 @@ const int w_knight_table[] = {
 -30,  0, 15, 20, 20, 15,  0,-30,
 -30,  5, 10, 15, 15, 10,  5,-30,
 -40,-20,  0,  5,  5,  0,-20,-40,
--50,-40,-30,-30,-30,-30,-40,-50
+-50,-40,-30,-30,-30,-30,-40,-50,
 };
 
 const int w_bishop_table[] = {
@@ -39,12 +42,12 @@ const int w_bishop_table[] = {
 -10,  0, 10, 10, 10, 10,  0,-10,
 -10, 10, 10, 10, 10, 10, 10,-10,
 -10,  5,  0,  0,  0,  0,  5,-10,
--20,-10,-10,-10,-10,-10,-10,-20
+-20,-10,-10,-10,-10,-10,-10,-20,
 };
 
 
 const int w_rook_table[] = {
-  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,
   5, 10, 10, 10, 10, 10, 10,  5,
  -5,  0,  0,  0,  0,  0,  0, -5,
  -5,  0,  0,  0,  0,  0,  0, -5,
@@ -55,7 +58,7 @@ const int w_rook_table[] = {
 };
 
 const int w_queen_table[] = {
- -20,-10,-10, -5, -5,-10,-10,-20,
+-20,-10,-10, -5, -5,-10,-10,-20,
 -10,  0,  0,  0,  0,  0,  0,-10,
 -10,  0,  5,  5,  5,  5,  0,-10,
  -5,  0,  5,  5,  5,  5,  0, -5,
@@ -119,34 +122,34 @@ int piece_weight(BoardState board, Piece p)
         Square s = pop_bit(piecebb);
         switch(p) {
             case WP : 
-                weight += (P_weight * w_pawn_table[s]);
+                weight += (P_weight + w_pawn_table[s]);
                 break;
             case WB : 
-                weight += (B_weight * w_bishop_table[s]);
+                weight += (B_weight + w_bishop_table[s]);
                 break;
             case WR : 
-                weight += (R_weight * w_rook_table[s]);
+                weight += (R_weight + w_rook_table[s]);
                 break;
             case WQ : 
-                weight += (Q_weight * w_queen_table[s]);
+                weight += (Q_weight + w_queen_table[s]);
                 break;
             case WN : 
-                weight += (N_weight * w_knight_table[s]);
+                weight += (N_weight + w_knight_table[s]);
                 break;
             case BP : 
-                weight += (P_weight * b_pawn_table[s]);
+                weight += (P_weight + b_pawn_table[s]);
                 break;
             case BB : 
-                weight += (B_weight * b_bishop_table[s]);
+                weight += (B_weight + b_bishop_table[s]);
                 break;
             case BR : 
-                weight += (R_weight * b_rook_table[s]);
+                weight += (R_weight + b_rook_table[s]);
                 break;
             case BQ : 
-                weight += (Q_weight * b_queen_table[s]);
+                weight += (Q_weight + b_queen_table[s]);
                 break;
             case BN : 
-                weight += (N_weight * b_knight_table[s]);
+                weight += (N_weight + b_knight_table[s]);
                 break;
             default : break;
         }
@@ -158,24 +161,11 @@ int piece_weight(BoardState board, Piece p)
 // NOTE: I am very tired and don't really gaf 
 int eval(BoardState board)
 {
-    const size_t num_white_pawns = board.get_num_piece(WP); 
-    const size_t num_white_bishops = board.get_num_piece(WB); 
-    const size_t num_white_knights = board.get_num_piece(WN); 
-    const size_t num_white_rooks = board.get_num_piece(WR); 
-    const size_t num_white_kings = board.get_num_piece(WK); 
-    const size_t num_white_queens = board.get_num_piece(WQ); 
-
-    const size_t num_black_pawns = board.get_num_piece(BP); 
-    const size_t num_black_bishops = board.get_num_piece(BB); 
-    const size_t num_black_knights = board.get_num_piece(BN); 
-    const size_t num_black_rooks = board.get_num_piece(BR); 
-    const size_t num_black_kings = board.get_num_piece(BK); 
-    const size_t num_black_queens = board.get_num_piece(BQ); 
-
-    return (piece_weight(board, WP) * num_white_pawns   - piece_weight(board, BP) * num_black_pawns)
-         + (piece_weight(board, WN) * num_white_knights - piece_weight(board, BN) * num_black_knights)
-         + (piece_weight(board, WB) * num_white_bishops - piece_weight(board, BB) * num_black_bishops)
-         + (piece_weight(board, WR) * num_white_rooks   - piece_weight(board, BR) * num_black_rooks)
-         + (piece_weight(board, WQ) * num_white_queens  - piece_weight(board, BQ) * num_black_queens)
-         + K_weight * (num_white_kings - num_black_kings);
+    return (
+     (piece_weight(board, WP) - piece_weight(board, BP))
+    + (piece_weight(board, WB) - piece_weight(board, BB))
+    + (piece_weight(board, WR) - piece_weight(board, BR))
+    + (piece_weight(board, WQ) - piece_weight(board, BQ))
+    + (piece_weight(board, WN) - piece_weight(board, BN))
+    );
 }
