@@ -1,7 +1,13 @@
-#include "BoardPiece.h"
-#include "helpers.h"
 #include <SDL2/SDL_image.h>
 
+#include "BoardPiece.h"
+#include "../utils/bits.h"
+
+void BoardPiece::update(Square _s, int w)
+{
+    s = _s;
+    update(w);
+}
 
 void BoardPiece::update(int x, int y, int w)
 {

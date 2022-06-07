@@ -27,6 +27,7 @@ public:
     }
 
     void init(Piece _p, Square _s, int w, SDL_Renderer * renderer);
+    void update(Square s, int w);
     void update(int x, int y, int w);
     void update(int w);
 
