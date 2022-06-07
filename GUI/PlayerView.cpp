@@ -140,7 +140,9 @@ void PlayerView::update_pieces()
         if(board_pieces[i].is_being_dragged()) {
             int x, y; 
             SDL_GetMouseState(&x, &y);
-            board_pieces[i].update(x - (0.5 * square_w) , y - (0.5 * square_w) , square_w);
+            int center_x = x - (0.5 * square_w);
+            int center_y = y - (0.5 * square_w);
+            board_pieces[i].update(center_x, center_y , square_w);
         } else {
             board_pieces[i].update(square_w);
         }
@@ -166,7 +168,6 @@ void PlayerView::set_dragging(bool dragging)
             }
         }
     }
-
 }
 
 void PlayerView::run()
@@ -174,21 +175,20 @@ void PlayerView::run()
     running = true;
     while(running) {
 
+        uint64_t start = SDL_GetPerformanceCounter();
+
         // Handle events 
         if(SDL_PollEvent(&e)) {
             if(e.type == SDL_QUIT) 
                 running = false;
-            else if(e.type == SDL_MOUSEBUTTONDOWN && !piece_being_dragged) {
+            else if(e.type == SDL_MOUSEBUTTONDOWN && !piece_being_dragged) 
                 set_dragging(true);
-            } else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) {
+            else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) 
                 set_dragging(false);
-            }
         }
 
         update_window();
         update_pieces();
-
-        uint64_t start = SDL_GetPerformanceCounter();
 
         // Rendering
         SDL_SetRenderDrawColor(board_renderer, 0x00, 0x00, 0x00, 0x00);
@@ -203,7 +203,6 @@ void PlayerView::run()
 
         // Cap frames
         // SDL_Delay(floor(16.66f - elapsed));
-
     }
 
     SDL_DestroyRenderer(board_renderer);
@@ -274,11 +273,6 @@ static Piece fen_to_piece(char ch)
         default: break;
     }
     return None;
-}
-
-constexpr Square square(int rank, int file)
-{
-    return (Square)(rank * 8 + file);
 }
 
 void PlayerView::init_squares(std::string fen)

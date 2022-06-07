@@ -9,6 +9,12 @@ void BoardPiece::update(int x, int y, int w)
     rect.h = w; 
     rect.x = x;
     rect.y = y;
+
+    int center_x = x + (0.5 * w);
+    int center_y = y + (0.5 * w);
+    size_t rank = y_to_rank(center_y, w);
+    size_t file = x_to_file(center_x, w);
+    s = square(rank, file);
 }
 
 void BoardPiece::update(int w)
