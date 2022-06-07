@@ -4,18 +4,10 @@
 //  Clicking
 // Update state 
 
-// Seperate windows for board and info
-// Show available moves on piece selection
-
 #include <SDL2/SDL_image.h>
 #include <iostream>
 #include "PlayerView.h"
-#include "helpers.h"
-
-// Init piece clipes relative to piece_sprite_sheet texture
-void init_piece_clips()
-{
-}
+#include "../eval.h"
 
 void PlayerView::draw_grid()
 {
@@ -82,14 +74,6 @@ void PlayerView::on_player_move_piece()
     // Something like this...
 }
 
-// XY coordinates on the screen to square on the board 
-Square PlayerView::xy_to_square(int x, int y)
-{
-    int rank = 7 - (int)(y / square_w);
-    int file = (int)(x / square_w);
-    return (Square)(rank * 8 + file);
-}
-
 // Draw in available moves
 void PlayerView::draw_available_moves()
 {
@@ -115,9 +99,13 @@ bool PlayerView::init(std::string fen)
     IMG_Init(IMG_INIT_PNG);
 
     // Init position
-
     init_squares(fen);
     init_pieces();
+
+    // Init engine 
+    board.init(fen);
+    init_black_tables();
+    search.init(1);
      
     return true;
 } 
@@ -142,7 +130,7 @@ void PlayerView::update_pieces()
             SDL_GetMouseState(&x, &y);
             int center_x = x - (0.5 * square_w);
             int center_y = y - (0.5 * square_w);
-            board_pieces[i].update(center_x, center_y , square_w);
+            board_pieces[i].update(center_x, center_y, square_w);
         } else {
             board_pieces[i].update(square_w);
         }
@@ -155,16 +143,29 @@ void PlayerView::update_window()
     square_w = window_w < window_h ? window_w >> 3 : window_h >> 3;
 }
 
+void PlayerView::clear_current_move()
+{
+    current_move.from = NullSquare;
+    current_move.to = NullSquare;
+}
+
 void PlayerView::set_dragging(bool dragging) 
 {
     int x, y;
     SDL_GetMouseState(&x, &y);
     for(size_t i = 0; i < 32; ++i) {
         BoardPiece bp = board_pieces[i];
-        if(bp.get_piece() != None && bp.is_being_dragged() != dragging) {
+        if(bp.get_piece() != None && bp.is_being_dragged() != dragging ) {
             if(bp.in_piece(x, y)) {
+                Square sq = xy_to_square(x, y, square_w);
                 board_pieces[i].set_dragging(dragging);
                 piece_being_dragged = dragging;
+
+                // Set the current move 
+                if(dragging) 
+                    current_move.from = sq;
+                else 
+                    current_move.to = sq;
             }
         }
     }
@@ -179,14 +180,29 @@ void PlayerView::run()
 
         // Handle events 
         if(SDL_PollEvent(&e)) {
-            if(e.type == SDL_QUIT) 
+            if(e.type == SDL_QUIT) {
                 running = false;
-            else if(e.type == SDL_MOUSEBUTTONDOWN && !piece_being_dragged) 
+            } else if(e.type == SDL_MOUSEBUTTONDOWN && !piece_being_dragged) {
+                clear_current_move();
                 set_dragging(true);
-            else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) 
+            } else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) {
                 set_dragging(false);
+                printf("moved %s%s\n", square_to_str(current_move.from).c_str(), square_to_str(current_move.to).c_str());
+                BMove m = move(current_move.from, current_move.to, QUIET);
+                board.make_move(m);
+                BMove reply = search.iterative_search(board);
+                Square from = get_from(reply);
+                Square to = get_to(reply);
+                for(size_t i = 0; i < 32; ++i) {
+                    if(board_pieces[i].get_square() == from) {
+                        board_pieces[i].update(to, square_w);
+                    }
+                }
+                board.make_move(reply);
+            }
         }
 
+        // Updating
         update_window();
         update_pieces();
 

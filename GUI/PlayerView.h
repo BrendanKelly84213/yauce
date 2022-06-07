@@ -3,22 +3,12 @@
 
 #include <SDL2/SDL.h>
 #include <string>
+#include "../BoardState.h"
 #include "BoardPiece.h"
+#include "../search.h"
 
-struct State {
-    Colour side_to_move = White; 
-    // TODO: Castle can be a lot more lightweight...
-    bool w_castle_ks = false; 
-    bool w_castle_qs = false; 
-    bool b_castle_ks = false; 
-    bool b_castle_qs = false; 
-    Square ep_square = NullSquare;
-    // FIXME: int -> size_t
-    int halfmove_clock = 0;
-    int ply_count = 0;     
-    Piece last_captured = None;
-
-    bool operator==(State &b) const;
+struct GMove {
+    Square from, to; 
 };
 
 class PlayerView {
@@ -46,6 +36,13 @@ private:
 
     State state;
 
+    // Engine 
+    BoardState board;
+    Search search;
+
+    GMove current_move;
+
+
     void draw_grid();
     void draw_piece(BoardPiece p);
     void draw_pieces();
@@ -57,10 +54,9 @@ private:
     void update_pieces();
     void update_window(); 
 
+    void clear_current_move();
+
     void set_dragging(bool dragging);
-
-
-    Square xy_to_square(int x, int y);
 
     SDL_Texture * piece_texture(Piece p);
 };
