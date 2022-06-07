@@ -24,13 +24,20 @@ struct ScoredMove {
 class Search {
 public: 
 
+    Search()
+        : allotted(0), searching(false), depth_searched(0), nodes_searched(0)
+    {
+    }
+
     Search(double _allotted)
         : allotted(_allotted), searching(false), depth_searched(0), nodes_searched(0)
     {
     }
 
+    void init(double _allotted) { allotted = _allotted; }
+
     int search(BoardState board, size_t depth, Line * pline);
-    void iterative_search(BoardState board);
+    BMove iterative_search(BoardState board);
     void print_line(BoardState board, Line line);
 
     size_t get_depth_searched() const { return depth_searched; }

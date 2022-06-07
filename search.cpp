@@ -107,11 +107,12 @@ void Search::print_line(BoardState board, Line line)
     copy.print_squares();
 }
 
-void Search::iterative_search(BoardState board)
+BMove Search::iterative_search(BoardState board)
 {
     size_t d = 0;
     std::vector<Line> lines(32); 
     std::vector<int> scores(32);
+    BMove best_move;
 
     search_start = std::chrono::steady_clock::now();
     searching = true;
@@ -121,15 +122,15 @@ void Search::iterative_search(BoardState board)
 
         d++;
     }
-
+    Line line;
     for(size_t j = 0; j < d - 1; ++j) {
-        Line line = lines[j];
-        print_line(board, line);
+        line = lines[j];
+        // print_line(board, line);
         
-        std::cout << "Score: " << scores[j] << '\n';
-        std::cout << '\n';
+        // std::cout << '\n';
     }
-
+    std::cout << "Score: " << scores[d - 2] << '\n';
+    return line.line[0];
 }
 
 int Search::search(BoardState board, size_t depth, Line * pline) 
