@@ -171,3 +171,28 @@ constexpr int file(Square s)
     return s % 8;
 }
 
+// NOTE: These functions are only relevant to the GUI,
+// Could not figure out linker errors, so I'm copping out
+
+inline int square_to_x(Square s, int square_w) 
+{
+    size_t f = file(s);
+    return f * square_w;
+}
+
+inline int square_to_y(Square s, int square_w) 
+{
+    size_t r = rank(s);
+    return (7 - r) * square_w;
+}
+
+inline size_t x_to_file(int x, int square_w) { return floor(x / square_w); }
+inline size_t y_to_rank(int y, int square_w) { return 7 - floor(y / square_w); }
+
+inline Square xy_to_square(int x, int y, int square_w)
+{
+    size_t rank = y_to_rank(y, square_w);
+    size_t file = x_to_file(x, square_w);
+    return square(rank, file);
+}
+
