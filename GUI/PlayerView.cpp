@@ -7,8 +7,10 @@
 // Seperate windows for board and info
 // Show available moves on piece selection
 
-#include "PlayerView.h"
 #include <SDL2/SDL_image.h>
+#include <iostream>
+#include "PlayerView.h"
+#include "helpers.h"
 
 // Init piece clipes relative to piece_sprite_sheet texture
 void init_piece_clips()
@@ -17,8 +19,6 @@ void init_piece_clips()
 
 void PlayerView::draw_grid()
 {
-    SDL_GetWindowSize(board_window, &window_w, &window_h);
-    square_w = window_w < window_h ? window_w >> 3 : window_h >> 3;
     for(int i=0; i<8; ++i) {
         for(int j=0; j<8; ++j){
             SDL_Rect square;
@@ -37,36 +37,9 @@ void PlayerView::draw_grid()
     }
 }
 
-// Top left hand corner of square in 
-int PlayerView::square_to_x(Square s) const 
-{
-    size_t f = file(s);
-    return f * square_w;
-}
-
-int PlayerView::square_to_y(Square s) const 
-{
-    size_t r = rank(s);
-    return (7 - r) * square_w;
-}
 
 // BQ, BK, BR, BN, BB, BP, 
 // WQ, WK, WR, WN, WB, WP,None=-1
-
-std::string svg_path[] = {
-    "assets/piece/svg/pixel/bQ.svg",
-    "assets/piece/svg/pixel/bK.svg",
-    "assets/piece/svg/pixel/bR.svg",
-    "assets/piece/svg/pixel/bN.svg",
-    "assets/piece/svg/pixel/bB.svg",
-    "assets/piece/svg/pixel/bP.svg",
-    "assets/piece/svg/pixel/wQ.svg",
-    "assets/piece/svg/pixel/wK.svg",
-    "assets/piece/svg/pixel/wR.svg",
-    "assets/piece/svg/pixel/wN.svg",
-    "assets/piece/svg/pixel/wB.svg",
-    "assets/piece/svg/pixel/wP.svg"
-};
 
 SDL_Texture * PlayerView::piece_texture(Piece p)
 {
@@ -85,26 +58,22 @@ SDL_Texture * PlayerView::piece_texture(Piece p)
         exit(1);
         return NULL;
     }
+
     return texture;
 }
 
-void PlayerView::draw_piece(Piece p, Square s)
+void PlayerView::draw_piece(BoardPiece bp)
 {
-    int x = square_to_x(s);
-    int y = square_to_y(s);
+    SDL_Texture * texture = bp.get_texture();
+    SDL_Rect r = bp.get_rect();
 
-    SDL_Texture * texture = piece_graphics[p];
-
-    SDL_Rect rect = { x, y, square_w, square_w };
-    SDL_RenderCopy(board_renderer, texture, NULL, &rect);
+    SDL_RenderCopy(board_renderer, texture, NULL, &r);
 }
 
 void PlayerView::draw_pieces()
 { 
-    for(Square s = a1; s <= h8; ++s) {
-        Piece p = squares[s];
-        if(p != None)
-            draw_piece(p, s);
+    for(size_t i = 0; i < 32; ++i) {
+        draw_piece(board_pieces[i]);
     }
 }
 
@@ -114,11 +83,11 @@ void PlayerView::on_player_move_piece()
 }
 
 // XY coordinates on the screen to square on the board 
-int PlayerView::xy_to_square(int x, int y)
+Square PlayerView::xy_to_square(int x, int y)
 {
     int rank = 7 - (int)(y / square_w);
     int file = (int)(x / square_w);
-    return rank * 8 + file;
+    return (Square)(rank * 8 + file);
 }
 
 // Draw in available moves
@@ -128,14 +97,11 @@ void PlayerView::draw_available_moves()
 
 void PlayerView::handle_events(SDL_Event e)
 {
-    if(e.type == SDL_QUIT) 
-        running = false;
 }
-
 
 bool PlayerView::init(std::string fen)
 { 
-    SDL_GetWindowSize(board_window, &window_w, &window_h);
+    update_window();
 
     // Init SDL
     if(SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -149,6 +115,7 @@ bool PlayerView::init(std::string fen)
     IMG_Init(IMG_INIT_PNG);
 
     // Init position
+
     init_squares(fen);
     init_pieces();
      
@@ -157,12 +124,49 @@ bool PlayerView::init(std::string fen)
 
 void PlayerView::init_pieces()
 {
+    size_t i = 0;
     for(Square s = a1; s <= h8; ++s) {
         Piece p = squares[s];
         if(p != None) {
-            piece_graphics[p] =  piece_texture(p);
+            board_pieces[i].init(p, s, square_w, board_renderer);
+            i++;
         }
     }
+}
+
+void PlayerView::update_pieces()
+{
+    for(size_t i = 0; i < 32; ++i) {
+        if(board_pieces[i].is_being_dragged()) {
+            int x, y; 
+            SDL_GetMouseState(&x, &y);
+            board_pieces[i].update(x - (0.5 * square_w) , y - (0.5 * square_w) , square_w);
+        } else {
+            board_pieces[i].update(square_w);
+        }
+    }
+}
+
+void PlayerView::update_window()
+{
+    SDL_GetWindowSize(board_window, &window_w, &window_h);
+    square_w = window_w < window_h ? window_w >> 3 : window_h >> 3;
+}
+
+void PlayerView::set_dragging(bool dragging) 
+{
+    int x, y;
+    SDL_GetMouseState(&x, &y);
+    for(size_t i = 0; i < 32; ++i) {
+        BoardPiece bp = board_pieces[i];
+        if(bp.get_piece() != None && bp.is_being_dragged() != dragging) {
+            if(bp.in_piece(x, y)) {
+                board_pieces[i].set_dragging(dragging);
+                piece_being_dragged = dragging;
+            }
+        }
+    }
+
 }
 
 void PlayerView::run()
@@ -170,26 +174,36 @@ void PlayerView::run()
     running = true;
     while(running) {
 
-        uint64_t start = SDL_GetPerformanceCounter();
-
         // Handle events 
         if(SDL_PollEvent(&e)) {
-            handle_events(e);
+            if(e.type == SDL_QUIT) 
+                running = false;
+            else if(e.type == SDL_MOUSEBUTTONDOWN && !piece_being_dragged) {
+                set_dragging(true);
+            } else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) {
+                set_dragging(false);
+            }
         }
+
+        update_window();
+        update_pieces();
+
+        uint64_t start = SDL_GetPerformanceCounter();
+
         // Rendering
         SDL_SetRenderDrawColor(board_renderer, 0x00, 0x00, 0x00, 0x00);
         SDL_RenderClear(board_renderer);
         draw_grid();
         draw_pieces(); 
-        /* draw_available_moves(); */
         SDL_RenderPresent(board_renderer);
 
         uint64_t end = SDL_GetPerformanceCounter();
 
         float elapsed = (end - start) / (float)(SDL_GetPerformanceFrequency() * 1000.0f);
-        
+
         // Cap frames
-        SDL_Delay(floor(16.66f - elapsed));
+        // SDL_Delay(floor(16.66f - elapsed));
+
     }
 
     SDL_DestroyRenderer(board_renderer);
