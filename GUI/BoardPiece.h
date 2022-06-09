@@ -41,6 +41,8 @@ public:
     void toggle_dragging() { dragging = !dragging; }
     void set_dragging(bool _dragging) { dragging = _dragging; }
 
+    void remove() { p = None; }
+
 private:
 
     bool dragging;

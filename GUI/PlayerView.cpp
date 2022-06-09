@@ -65,7 +65,8 @@ void PlayerView::draw_piece(BoardPiece bp)
 void PlayerView::draw_pieces()
 { 
     for(size_t i = 0; i < 32; ++i) {
-        draw_piece(board_pieces[i]);
+        if(board_pieces[i].get_piece() != None)
+            draw_piece(board_pieces[i]);
     }
 }
 
@@ -171,6 +172,42 @@ void PlayerView::set_dragging(bool dragging)
     }
 }
 
+void PlayerView::engine_make_move()
+{
+    BMove reply = search.iterative_search(board);
+    Square from = get_from(reply);
+    Square to = get_to(reply);
+    Colour us = board.get_side_to_move();
+    for(size_t i = 0; i < 32; ++i) {
+        BoardPiece bp = board_pieces[i];
+        Piece p = bp.get_piece();
+
+        if(board_pieces[i].get_square() == from) {
+            board_pieces[i].update(to, square_w);
+        }
+
+        if(p != None && bp.get_square() == to && board.get_piece_colour(p) != us)
+            board_pieces[i].remove();
+    }
+    board.make_move(reply);
+}
+
+void PlayerView::player_make_move()
+{
+    printf("moved %s%s\n", square_to_str(current_move.from).c_str(), square_to_str(current_move.to).c_str());
+
+    BMove m = move(current_move.from, current_move.to, QUIET);
+    Colour us = board.get_side_to_move();
+    board.make_move(m);
+    for(size_t i = 0; i < 32; ++i) {
+        BoardPiece bp = board_pieces[i];
+        Piece p = bp.get_piece();
+        if(p != None && bp.get_square() == current_move.to && board.get_piece_colour(p) != us)
+            board_pieces[i].remove();
+    }
+
+}
+
 void PlayerView::run()
 {
     running = true;
@@ -187,22 +224,12 @@ void PlayerView::run()
                 set_dragging(true);
             } else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) {
                 set_dragging(false);
-                printf("moved %s%s\n", square_to_str(current_move.from).c_str(), square_to_str(current_move.to).c_str());
-                BMove m = move(current_move.from, current_move.to, QUIET);
-                board.make_move(m);
-                BMove reply = search.iterative_search(board);
-                Square from = get_from(reply);
-                Square to = get_to(reply);
-                for(size_t i = 0; i < 32; ++i) {
-                    if(board_pieces[i].get_square() == from) {
-                        board_pieces[i].update(to, square_w);
-                    }
-                }
-                board.make_move(reply);
+                player_make_move();
             }
         }
 
         // Updating
+
         update_window();
         update_pieces();
 
@@ -212,6 +239,9 @@ void PlayerView::run()
         draw_grid();
         draw_pieces(); 
         SDL_RenderPresent(board_renderer);
+
+        if(board.get_side_to_move() != state.side_to_move)
+            engine_make_move();
 
         uint64_t end = SDL_GetPerformanceCounter();
 

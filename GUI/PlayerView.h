@@ -54,6 +54,9 @@ private:
     void update_pieces();
     void update_window(); 
 
+    void engine_make_move();
+    void player_make_move();
+
     void clear_current_move();
 
     void set_dragging(bool dragging);
