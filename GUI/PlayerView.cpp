@@ -29,7 +29,6 @@ void PlayerView::draw_grid()
     }
 }
 
-
 // BQ, BK, BR, BN, BB, BP, 
 // WQ, WK, WR, WN, WB, WP,None=-1
 
@@ -99,14 +98,12 @@ bool PlayerView::init(std::string fen)
     // Init image
     IMG_Init(IMG_INIT_PNG);
 
-    // Init position
-    init_squares(fen);
-    init_pieces();
-
     // Init engine 
     board.init(fen);
     init_black_tables();
-    search.init(1);
+    search.init(3);
+
+    init_pieces();
      
     return true;
 } 
@@ -115,7 +112,7 @@ void PlayerView::init_pieces()
 {
     size_t i = 0;
     for(Square s = a1; s <= h8; ++s) {
-        Piece p = squares[s];
+        Piece p = board.get_piece(s);
         if(p != None) {
             board_pieces[i].init(p, s, square_w, board_renderer);
             i++;
@@ -177,18 +174,28 @@ void PlayerView::engine_make_move()
     BMove reply = search.iterative_search(board);
     Square from = get_from(reply);
     Square to = get_to(reply);
+    Move flag = get_flag(reply);
     Colour us = board.get_side_to_move();
     for(size_t i = 0; i < 32; ++i) {
         BoardPiece bp = board_pieces[i];
         Piece p = bp.get_piece();
 
-        if(board_pieces[i].get_square() == from) {
+        if(board_pieces[i].get_square() == from) 
             board_pieces[i].update(to, square_w);
-        }
 
-        if(p != None && bp.get_square() == to && board.get_piece_colour(p) != us)
+        bool capture = p != None && bp.get_square() == to && board.get_piece_colour(p) != us;
+        bool black_castle_kingside_rook = flag == OO && us == Black && bp.get_square() == h8;
+        bool white_castle_kingside_rook = flag == OO && us == White && bp.get_square() == h1;
+        bool black_castle_queenside_rook = flag == OOO && us == Black && bp.get_square() == a8;
+        bool white_castle_queenside_rook = flag == OOO && us == White && bp.get_square() == a1;
+        if(capture
+        || black_castle_kingside_rook 
+        || white_castle_kingside_rook
+        || black_castle_queenside_rook 
+        || white_castle_queenside_rook)
             board_pieces[i].remove();
     }
+    printf("Engine make move: %s%s\n", square_to_str(from).c_str(), square_to_str(to).c_str());
     board.make_move(reply);
 }
 
@@ -196,16 +203,35 @@ void PlayerView::player_make_move()
 {
     printf("moved %s%s\n", square_to_str(current_move.from).c_str(), square_to_str(current_move.to).c_str());
 
-    BMove m = move(current_move.from, current_move.to, QUIET);
     Colour us = board.get_side_to_move();
-    board.make_move(m);
+    Move flag = QUIET;
+    // Sketchy castles
+    bool moving_white_king = us == White && current_move.from == e1 && board.get_piece(current_move.from) == WK;
+    bool moving_black_king = us == Black && current_move.from == e8 && board.get_piece(current_move.from) == BK;
+    if(moving_white_king || moving_black_king) {
+        bool moving_to_g1 = current_move.to == g1 && board.get_piece(h1) == WR;
+        bool moving_to_g8 = current_move.to == g8 && board.get_piece(h8) == BR;
+        bool moving_to_b1 = current_move.to == b1 && board.get_piece(a1) == WR;
+        bool moving_to_b8 = current_move.to == b8 && board.get_piece(a8) == BR;
+
+        if(moving_to_g1 || moving_to_g8)
+            flag = OO;
+        else if(moving_to_b1 || moving_to_b8)
+            flag = OOO;
+    }
+
     for(size_t i = 0; i < 32; ++i) {
         BoardPiece bp = board_pieces[i];
         Piece p = bp.get_piece();
+        // Capture
         if(p != None && bp.get_square() == current_move.to && board.get_piece_colour(p) != us)
             board_pieces[i].remove();
+        else if(us == White && flag == OO && bp.get_square() == h1 && bp.get_piece() == WR) // Move white rook
+            board_pieces[i].update(f1, square_w);
     }
 
+    BMove m = move(current_move.from, current_move.to, flag);
+    board.make_move(m);
 }
 
 void PlayerView::run()
@@ -256,159 +282,4 @@ void PlayerView::run()
      
     // Close SDL 
     SDL_Quit(); 
-}
-
-// Following section borrowed from BoardState.h
-// In the future perhaps move to shared utility file, includes, something
-
-enum Section 
-{ 
-    Board, 
-    SideToMove, 
-    CastlingRights, 
-    EPSquare, 
-    HalfmoveClock, 
-    FullmoveCounter 
-};
-
-static bool is_piece_ch(char ch) 
-{
-    return (
-            ch == 'p'
-         || ch == 'r'
-         || ch == 'q'
-         || ch == 'k'
-         || ch == 'n'
-         || ch == 'b'
-         || ch == 'P'
-         || ch == 'R'
-         || ch == 'Q'
-         || ch == 'K'
-         || ch == 'N'
-         || ch == 'B'
-    );
-}
-
-static Piece fen_to_piece(char ch) 
-{
-    switch(ch) {
-        case 'p': 
-            return BP;
-        case 'r':
-            return BR;
-        case 'q':
-            return BQ;
-        case 'k':
-            return BK;
-        case 'n':
-            return BN;
-        case 'b':
-            return BB;
-        case 'P':
-            return WP;
-        case 'R':    
-            return WR;
-        case 'Q':    
-            return WQ;
-        case 'K':    
-            return WK;
-        case 'N':    
-            return WN;
-        case 'B':    
-            return WB;
-        default: break;
-    }
-    return None;
-}
-
-void PlayerView::init_squares(std::string fen)
-{
-    // Parse out pieces 
-    int rank=7;
-    int file=0;
-    int i=0;
-    int section=0;
-    
-    for(int i=a1; i<=h8; ++i) {
-        squares[i] = None;
-    }
-
-    while(fen[i] != ' ') {
-        int sq = (rank)*8 + file;
-
-        if(fen[i] == '/') {
-            rank--;
-            file=0;
-        }
-
-        if(fen[i] >= '0' && fen[i] <= '8') {
-            file += (fen[i] - 0x30);
-        }
-
-        if(is_piece_ch(fen[i])) {
-            squares[sq] = fen_to_piece(fen[i]);
-            file++;
-        } 
-
-        i++;
-    }
-
-    section++;
-
-    // Parse out info
-    std::string info = fen.substr(i + 1, fen.length());
-    for(int i=0; i<info.length(); ++i) {
-        if(info[i] == ' ') {
-            section++;
-            /* continue; */
-        }
-        switch(section) {
-            case SideToMove: 
-                if(info[i] == 'w') {
-                    state.side_to_move = White;
-                } else {
-                    state.side_to_move = Black;
-                }
-                break;
-            case CastlingRights:
-                switch(info[i]) {
-                    case '-':
-                        state.w_castle_ks = false; 
-                        state.w_castle_qs = false; 
-                        state.b_castle_ks = false; 
-                        state.b_castle_qs = false; 
-                        break;
-                    case 'k':
-                        state.b_castle_ks = true;
-                        break;
-                    case 'q':
-                        state.b_castle_qs = true;
-                        break;
-                    case 'K': 
-                        state.w_castle_ks = true;
-                        break;
-                    case 'Q':
-                        state.w_castle_qs = true;
-                        break;
-                    default: break;
-                }
-                break;
-            case EPSquare:
-                if(info[i] == '-') {
-                    state.ep_square = NullSquare;
-                } else if(info[i] >= 'a' && info[i] <= 'h') {
-                    int ep_file = static_cast<int>(info[i] - 0x61);
-                    int ep_rank = state.side_to_move == White ? 4 : 5;
-                    state.ep_square = square(ep_rank, ep_file);
-                } 
-                break;
-            case HalfmoveClock:
-                state.halfmove_clock = static_cast<int>(info[i] - 0x30);
-                break;
-            case FullmoveCounter:
-                state.ply_count = static_cast<int>(info[i] - 0x30);
-                break;
-            default: break;
-        }
-    }
 }

@@ -30,7 +30,6 @@ private:
     int window_h;
     int square_w;
 
-    Piece squares[64];
     BoardPiece board_pieces[32]; 
     SDL_Texture * piece_graphics[12];
 
