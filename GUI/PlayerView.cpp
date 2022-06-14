@@ -29,30 +29,6 @@ void PlayerView::draw_grid()
     }
 }
 
-// BQ, BK, BR, BN, BB, BP, 
-// WQ, WK, WR, WN, WB, WP,None=-1
-
-SDL_Texture * PlayerView::piece_texture(Piece p)
-{
-    std::string path = svg_path[p];
-    printf("Got path: %s\n", path.c_str());
-    SDL_Surface * surface = IMG_Load(path.c_str());
-    if(surface == NULL) {
-        printf("Error getting surface from svg: %s, %s\n", path.c_str(), SDL_GetError());
-        exit(1);
-        return NULL;
-    }
-    SDL_Texture * texture = SDL_CreateTextureFromSurface(board_renderer, surface);
-    SDL_FreeSurface(surface);
-    if(texture == NULL) {
-        printf("Error creating texture from surface: %s\n", SDL_GetError());
-        exit(1);
-        return NULL;
-    }
-
-    return texture;
-}
-
 void PlayerView::draw_piece(BoardPiece bp)
 {
     SDL_Texture * texture = bp.get_texture();
@@ -69,17 +45,8 @@ void PlayerView::draw_pieces()
     }
 }
 
-void PlayerView::on_player_move_piece()
-{
-    // Something like this...
-}
-
 // Draw in available moves
 void PlayerView::draw_available_moves()
-{
-}
-
-void PlayerView::handle_events(SDL_Event e)
 {
 }
 
@@ -180,23 +147,36 @@ void PlayerView::engine_make_move()
         BoardPiece bp = board_pieces[i];
         Piece p = bp.get_piece();
 
-        if(board_pieces[i].get_square() == from) 
-            board_pieces[i].update(to, square_w);
-
         bool capture = p != None && bp.get_square() == to && board.get_piece_colour(p) != us;
         bool black_castle_kingside_rook = flag == OO && us == Black && bp.get_square() == h8;
         bool white_castle_kingside_rook = flag == OO && us == White && bp.get_square() == h1;
         bool black_castle_queenside_rook = flag == OOO && us == Black && bp.get_square() == a8;
         bool white_castle_queenside_rook = flag == OOO && us == White && bp.get_square() == a1;
-        if(capture
-        || black_castle_kingside_rook 
-        || white_castle_kingside_rook
-        || black_castle_queenside_rook 
-        || white_castle_queenside_rook)
+        bool promotion = flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP && piece_to_piecetype(p) == Pawn && on_opposite_rank(to, us);
+
+        if(board_pieces[i].get_square() == from) 
+            board_pieces[i].update(to, square_w);
+
+        if(capture)
             board_pieces[i].remove();
+        else if(black_castle_kingside_rook) 
+            board_pieces[i].update(f8, square_w);
+        else if(white_castle_kingside_rook)
+            board_pieces[i].update(f1, square_w);
+        else if(black_castle_queenside_rook)
+            board_pieces[i].update(f8, square_w);
+        else if(white_castle_queenside_rook)
+            board_pieces[i].update(f1, square_w);
+        else if(promotion && bp.get_square() == from) {
+            printf("Promoting!\n");
+            PieceType promotion_pt = promotion_to_piecetype(flag);
+            Piece promotion = piecetype_to_piece(promotion_pt, us);
+            board_pieces[i].promote(promotion, board_renderer);
+        }
     }
     printf("Engine make move: %s%s\n", square_to_str(from).c_str(), square_to_str(to).c_str());
     board.make_move(reply);
+    board.print_squares();
 }
 
 void PlayerView::player_make_move()
@@ -232,6 +212,7 @@ void PlayerView::player_make_move()
 
     BMove m = move(current_move.from, current_move.to, flag);
     board.make_move(m);
+    board.print_squares();
 }
 
 void PlayerView::run()
@@ -255,7 +236,6 @@ void PlayerView::run()
         }
 
         // Updating
-
         update_window();
         update_pieces();
 
