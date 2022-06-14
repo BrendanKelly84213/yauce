@@ -86,3 +86,18 @@ std::string colour_to_str(Colour c)
     return c ? "Black" : "White";
 }
 
+PieceType promotion_to_piecetype(Move flag)
+{
+    switch(flag) {
+        case PROMOTE_QUEEN:
+            return Queen;
+        case PROMOTE_ROOK:
+            return Rook;
+        case PROMOTE_KNIGHT:
+            return Knight;
+        case PROMOTE_BISHOP:
+            return Bishop;
+        default: break;
+    }
+    return Null;
+}
