@@ -221,6 +221,12 @@ bool BoardState::can_castle(Colour us, Move type) const
 
 void BoardState::do_castle(Square rook_from, Square rook_to, Square king_from, Square king_to)
 {
+    if(squares[rook_from] == None || squares[king_from] == None) {
+        std::cout << "failed to castle \n";
+        print_squares();
+        print_moves();
+        assert(squares[rook_from] != None && squares[king_from] != None);
+    }
     Piece rook = state.side_to_move == White ? WR : BR;
     Piece king = state.side_to_move == White ? WK : BK;
 
@@ -278,7 +284,9 @@ void BoardState::move_piece(Square from, Square to, Piece p)
 
 void BoardState::move_piece(Square from, Square to) 
 {
-    move_piece(from, to, squares[from]);
+    Piece p = squares[from];
+    assert(p != None);
+    move_piece(from, to, p);
 }
 
 bool BoardState::board_ok()
@@ -299,7 +307,15 @@ bool BoardState::board_ok()
 void BoardState::remove_piece(Square sq)
 {
     Piece p = squares[sq];
-    assert(p != None);
+
+    if(p == None) {
+        std::cout << "failed to remove piece on " << square_to_str(sq) << '\n';
+        print_squares();
+        print_moves();
+
+        assert(p != None);
+    }
+
     Colour pc = get_piece_colour(p);
     squares[sq] = None;
     clear_bit(piece_bbs[p], sq); 
@@ -445,7 +461,7 @@ void BoardState::make_move(BMove m)
     // save state in prev_state 
     prev_state = state;
 
-    state.last_captured = None; 
+    state.last_captured = cp;  // ??
 
     // En Passant Possibility
     bool pawn_adj = 
@@ -480,7 +496,7 @@ void BoardState::make_move(BMove m)
     } else if(flag == OOO) {
         castle_queenside();
     } else {
-        move_piece(from, to); 
+        move_piece(from, to, p); 
     }
 
     // Promotions
@@ -506,6 +522,7 @@ void BoardState::make_move(BMove m)
     movelist.add(m, pt, piece_to_piecetype(cp), get_side_to_move(), in_check(!us));
 
     // Update board state
+    // Is rook or king move 
     if(p == BK) {
         state.b_castle_ks = false;
         state.b_castle_qs = false;
@@ -525,6 +542,14 @@ void BoardState::make_move(BMove m)
         else if(from == a1)
             state.w_castle_qs = false;
     }
+    if(us == White && cp == BR && to == h8)
+        state.b_castle_ks = false;
+    else if(us == White && cp == BR && to == a8)
+        state.b_castle_qs = false;
+    else if(us == Black && cp == WR && to == h1) 
+        state.w_castle_ks = false;
+    else if(us == Black && cp == WR && to == a1) 
+        state.w_castle_qs = false;
     if(state.side_to_move == Black) 
         state.ply_count++;
     if(pt != Pawn && !capture && flag != EN_PASSANT)
@@ -555,9 +580,11 @@ void BoardState::unmake_move(BMove m)
     Square capsq = to;
     Colour us = get_side_to_move();
 
-    assert(p != None);
+    if(p == None) {
+        print_context(m, capture, flag); 
+        assert(p != None);
+    }
 
-    movelist.remove();
 
     // Unpromote
     if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
@@ -572,7 +599,7 @@ void BoardState::unmake_move(BMove m)
         uncastle_queenside();
     } else {
         // Unmove piece if its not a castle
-        move_piece(to, from); 
+        move_piece(to, from, p); 
     }
     
     if(capture) {
@@ -589,6 +616,7 @@ void BoardState::unmake_move(BMove m)
         assert(board_ok());
     }
 
+    movelist.remove();
 }
 
 // FIXME: Return get_friend_occ(state.side_to_move)
