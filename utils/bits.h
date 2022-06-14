@@ -171,6 +171,11 @@ constexpr int file(Square s)
     return s % 8;
 }
 
+constexpr bool on_opposite_rank(Square s, Colour c)
+{
+    return (c == White && rank(s) == 7) || (c == Black && rank(s) == 0);
+}
+
 // NOTE: These functions are only relevant to the GUI,
 // Could not figure out linker errors, so I'm copping out
 
