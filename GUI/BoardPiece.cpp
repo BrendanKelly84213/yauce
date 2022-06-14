@@ -62,3 +62,11 @@ void BoardPiece::make_piece_texture(SDL_Renderer * renderer)
         exit(1);
     }
 }
+
+// FIXME: Maintaining renderer and texture in same object too annoying
+void BoardPiece::promote(Piece _p, SDL_Renderer* renderer)
+{ 
+    assert(piece_to_piecetype(p) == Pawn);
+    p = _p;
+    make_piece_texture(renderer);
+}

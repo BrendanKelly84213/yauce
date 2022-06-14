@@ -2,7 +2,9 @@
 #define PIECE_H
 
 #include <string>
+#include <cassert>
 #include "../utils/types.h"
+#include "../utils/conversions.h"
 
 const std::string svg_path[] = {
     "assets/piece/png/cburnett/bQ.png",
@@ -30,6 +32,13 @@ public:
     void update(Square s, int w);
     void update(int x, int y, int w);
     void update(int w);
+    void promote(Piece _p, SDL_Renderer* renderer);
+
+    void toggle_dragging() { dragging = !dragging; }
+    void set_dragging(bool _dragging) { dragging = _dragging; }
+
+    void remove() { p = None; }
+
 
     bool is_being_dragged() const { return dragging; }
     bool in_piece(int x, int y) const { return x > rect.x && x < (rect.x + rect.w) && y > rect.y && y < (rect.y + rect.w); }
@@ -37,11 +46,6 @@ public:
     Square get_square() const { return s; }
     SDL_Texture * get_texture() const { return texture; }
     SDL_Rect get_rect() const { return rect; }
-
-    void toggle_dragging() { dragging = !dragging; }
-    void set_dragging(bool _dragging) { dragging = _dragging; }
-
-    void remove() { p = None; }
 
 private:
 
