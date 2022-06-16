@@ -24,7 +24,7 @@ private:
     bool editing = true; // are we currently creating a board 
 
     Colour player_colour;
-    bool board_inverted;
+    bool board_inverted = false;
 
     SDL_Event e;
     SDL_Window * board_window = NULL;

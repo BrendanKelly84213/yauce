@@ -286,8 +286,13 @@ void PlayerView::run()
                 set_dragging(false);
                 player_make_move();
             } else if(e.type == SDL_KEYUP) {
-                if(e.key.keysym.sym == SDLK_e) 
+                if(e.key.keysym.sym == SDLK_e) {
                     editing = !editing;
+                    if(editing)
+                        printf("No engine. board inverted? %s\n", board_inverted ? "Yes" : "No");
+                    else   
+                        printf("Engine playing %s. board inverted? %s\n", colour_to_str(!player_colour).c_str(), board_inverted ? "Yes" : "No");
+                }
                 else if(e.key.keysym.sym == SDLK_ESCAPE)
                     running = false;
             }

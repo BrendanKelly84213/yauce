@@ -28,7 +28,7 @@ int main( int argc, char *argv[] )
     } 
 
     bool board_inverted = false;
-    if(argv[2] && strcmp(argv[2], "invert") == 0);
+    if(argv[2] != NULL && strcmp(argv[2], "invert") == 0)
         board_inverted = true;
 
 
