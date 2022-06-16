@@ -14,13 +14,17 @@ struct GMove {
 class PlayerView {
 public:
 
-    bool init(std::string fen);
+    bool init(std::string fen, Colour pc, bool bi);
     void run();
 
 private: 
 
     bool running = false;
     bool piece_being_dragged = false;
+    bool editing = true; // are we currently creating a board 
+
+    Colour player_colour;
+    bool board_inverted;
 
     SDL_Event e;
     SDL_Window * board_window = NULL;
