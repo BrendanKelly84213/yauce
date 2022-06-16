@@ -101,3 +101,8 @@ PieceType promotion_to_piecetype(Move flag)
     }
     return Null;
 }
+
+Colour piece_to_colour(Piece p)
+{
+    return (Colour)(p >= BQ && p <= BP);
+}

@@ -3,13 +3,13 @@
 #include "BoardPiece.h"
 #include "../utils/bits.h"
 
-void BoardPiece::update(Square _s, int w)
+void BoardPiece::update(Square _s, int w, Colour pc)
 {
     s = _s;
-    update(w);
+    update(w, pc);
 }
 
-void BoardPiece::update(int x, int y, int w)
+void BoardPiece::update(int x, int y, int w, Colour pc)
 {
     rect.w = w; 
     rect.h = w; 
@@ -18,25 +18,25 @@ void BoardPiece::update(int x, int y, int w)
 
     int center_x = x + (0.5 * w);
     int center_y = y + (0.5 * w);
-    size_t rank = y_to_rank(center_y, w);
-    size_t file = x_to_file(center_x, w);
+    size_t rank = y_to_rank(center_y, w, pc);
+    size_t file = x_to_file(center_x, w, pc);
     s = square(rank, file);
 }
 
-void BoardPiece::update(int w)
+void BoardPiece::update(int w, Colour pc)
 {
-    int x = square_to_x(s, w);
-    int y = square_to_y(s, w);
+    int x = square_to_x(s, w, pc);
+    int y = square_to_y(s, w, pc);
     rect.w = w;
     rect.h = w;
     rect.x = x;
     rect.y = y;
 }
 
-void BoardPiece::init(Piece _p, Square _s, int w, SDL_Renderer * renderer)
+void BoardPiece::init(Piece _p, Square _s, int w, SDL_Renderer * renderer, Colour pc)
 {
-    int x = square_to_x(s, w);
-    int y = square_to_y(s, w);
+    int x = square_to_x(s, w, pc);
+    int y = square_to_y(s, w, pc);
     p = _p;
     s = _s;
     rect.x = x;

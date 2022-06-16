@@ -28,10 +28,10 @@ public:
     {
     }
 
-    void init(Piece _p, Square _s, int w, SDL_Renderer * renderer);
-    void update(Square s, int w);
-    void update(int x, int y, int w);
-    void update(int w);
+    void init(Piece _p, Square _s, int w, SDL_Renderer * renderer, Colour pc);
+    void update(Square s, int w, Colour pc );
+    void update(int x, int y, int w, Colour pc);
+    void update(int w, Colour pc);
     void promote(Piece _p, SDL_Renderer* renderer);
 
     void toggle_dragging() { dragging = !dragging; }
@@ -54,6 +54,7 @@ private:
     Square s;
     SDL_Texture * texture;
     SDL_Rect rect;
+    Colour player_colour = White;
 
     void make_piece_texture(SDL_Renderer * renderer);
 };

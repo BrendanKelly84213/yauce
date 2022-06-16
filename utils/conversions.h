@@ -14,6 +14,7 @@ std::string flag_to_str(int idx);
 std::string promote_flag_to_str(Move flag);
 std::string colour_to_str(Colour c);
 PieceType promotion_to_piecetype(Move flag);
+Colour piece_to_colour(Piece p);
 
 
 #endif
