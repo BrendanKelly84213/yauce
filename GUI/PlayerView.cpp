@@ -9,6 +9,9 @@
 #include "PlayerView.h"
 #include "../eval.h"
 
+constexpr int SCREEN_FPS = 60;
+constexpr int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
+
 void PlayerView::draw_grid()
 {
     for(int i=0; i<8; ++i) {
@@ -56,12 +59,16 @@ bool PlayerView::init(std::string fen, Colour pc, bool bi)
     update_window();
 
     // Init SDL
-    if(SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if(SDL_Init(SDL_INIT_VIDEO) < 0) 
         return false;
-    }
-    if(SDL_CreateWindowAndRenderer(640, 640, SDL_WINDOW_RESIZABLE, &board_window, &board_renderer)) {
+
+    board_window = SDL_CreateWindow("Chess!", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 640, SDL_WINDOW_RESIZABLE);
+    if(board_window == NULL)
         return false;
-    }
+
+    board_renderer = SDL_CreateRenderer(board_window, -1, SDL_RENDERER_ACCELERATED);
+    if(board_renderer == NULL)
+        return false;
 
     // Init image
     IMG_Init(IMG_INIT_PNG);
@@ -192,6 +199,9 @@ void PlayerView::engine_make_move()
 
 void PlayerView::player_make_move()
 {
+    if(current_move.from == current_move.to)
+        return;
+
     printf("moved %s%s\n", square_to_str(current_move.from).c_str(), square_to_str(current_move.to).c_str());
 
     Colour us = board.get_side_to_move();
@@ -294,15 +304,18 @@ void PlayerView::run()
         draw_pieces(); 
         SDL_RenderPresent(board_renderer);
 
-        if( ((board_inverted && board.get_side_to_move() == player_colour) || (!board_inverted && board.get_side_to_move() != player_colour)) && !editing)
-            engine_make_move();
-
         uint64_t end = SDL_GetPerformanceCounter();
 
         float elapsed = (end - start) / (float)(SDL_GetPerformanceFrequency() * 1000.0f);
 
         // Cap frames
-        // SDL_Delay(floor(16.66f - elapsed));
+        // if(!piece_being_dragged)
+        // unsigned int ticks = SDL_GetTicks(); 
+        // if(ticks < SCREEN_TICKS_PER_FRAME)
+        //     SDL_Delay(SCREEN_TICKS_PER_FRAME - ticks);
+
+        if( ((board_inverted && board.get_side_to_move() == player_colour) || (!board_inverted && board.get_side_to_move() != player_colour)) && !editing)
+            engine_make_move();
     }
 
     SDL_DestroyRenderer(board_renderer);
