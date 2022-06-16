@@ -15,9 +15,26 @@ int main( int argc, char *argv[] )
     std::string pos3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
     std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
     std::string weird_queen = "4K3/8/1q6/8/8/7Q/8/2k5 b - - 0 1";
+    std::string en_passant_next_turn = "rnbqkbnr/pppppppp/8/6P1/8/8/PPPPPP1P/RNBQKBNR b KQkq - 0 1";
+
+    Colour player_side = White;
+    if(argv[1]) {
+        if(strcmp(argv[1], "white") == 0)
+            player_side = White;
+        else if(strcmp(argv[1], "black") == 0)
+            player_side = Black;
+        else 
+            printf("Player side not Known. defaulting to white. %s", argv[1]);
+    } 
+
+    bool board_inverted = false;
+    if(argv[2] && strcmp(argv[2], "invert") == 0);
+        board_inverted = true;
+
 
     PlayerView game;
-    game.init(initial_fen);
+    printf("Playing as %s!", colour_to_str(player_side).c_str());
+    game.init(initial_fen, player_side, board_inverted);
     game.run();
 
     return 0;
