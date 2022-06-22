@@ -141,12 +141,14 @@ struct State {
     int halfmove_clock = 0;
     int ply_count = 0;     
     Piece last_captured = None;
+    bool endgame = false;
 
     bool operator==(State &b) const;
 };
 
 class BoardState {
 public: 
+
     void init(std::string fen);
 
     void make_move(BMove m);
@@ -172,12 +174,13 @@ public:
     int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
     size_t get_num_piece(Piece p) const { return popcount(piece_bbs[p]); } 
     std::string get_algebraic(BMove m) const;
-
     Bitboard attacks_to(Square sq) const;
+
     bool attacked(Square sq, Colour by) const;
     bool in_check(Colour us) const;
     bool in_checkmate(Colour us) const;
     bool can_castle(Colour us, Move type) const;
+    bool in_endgame() const { return state.endgame; }
 
     void print_squares() const;
     void print_move(BMove m) const;
@@ -188,6 +191,7 @@ public:
     bool operator==(BoardState b) const;
 
 private: 
+
     State state; 
     State prev_state;
     MoveList movelist;
