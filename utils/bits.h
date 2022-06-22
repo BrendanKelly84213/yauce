@@ -179,40 +179,40 @@ constexpr bool on_opposite_rank(Square s, Colour c)
 // NOTE: These functions are only relevant to the GUI,
 // Could not figure out linker errors, so I'm copping out
 
-inline int square_to_x(Square s, int square_w, Colour player_colour) 
+inline int square_to_x(Square s, int square_w, Colour bottom_colour) 
 {
     size_t f = file(s);
-    if(player_colour == White)
+    if(bottom_colour == White)
         return f * square_w;
     return (7 - f) * square_w;
 }
 
-inline int square_to_y(Square s, int square_w, Colour player_colour) 
+inline int square_to_y(Square s, int square_w, Colour bottom_colour) 
 {
 
     size_t r = rank(s);
-    if(player_colour == White)
+    if(bottom_colour == White)
         return (7 - r) * square_w;
     return r * square_w; 
 }
 
-inline size_t x_to_file(int x, int square_w, Colour player_colour) 
+inline size_t x_to_file(int x, int square_w, Colour bottom_colour) 
 { 
-    if(player_colour == White)
+    if(bottom_colour == White)
         return floor(x / square_w); 
     return 7 - floor(x / square_w);
 }
-inline size_t y_to_rank(int y, int square_w, Colour player_colour) 
+inline size_t y_to_rank(int y, int square_w, Colour bottom_colour) 
 { 
-    if(player_colour == White)
+    if(bottom_colour == White)
         return 7 - floor(y / square_w); 
     return floor(y / square_w);
 }
 
-inline Square xy_to_square(int x, int y, int square_w, Colour player_colour)
+inline Square xy_to_square(int x, int y, int square_w, Colour bottom_colour)
 {
-    size_t rank = y_to_rank(y, square_w, player_colour);
-    size_t file = x_to_file(x, square_w, player_colour);
+    size_t rank = y_to_rank(y, square_w, bottom_colour);
+    size_t file = x_to_file(x, square_w, bottom_colour);
     return square(rank, file);
 }
 
