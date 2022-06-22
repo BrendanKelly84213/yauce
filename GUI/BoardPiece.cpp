@@ -3,64 +3,37 @@
 #include "BoardPiece.h"
 #include "../utils/bits.h"
 
-void BoardPiece::update(Square _s, int w, Colour pc)
-{
-    s = _s;
-    update(w, pc);
-}
+const std::string svg_path[] = {
+    "assets/piece/png/cburnett/bQ.png",
+    "assets/piece/png/cburnett/bK.png",
+    "assets/piece/png/cburnett/bR.png",
+    "assets/piece/png/cburnett/bN.png",
+    "assets/piece/png/cburnett/bB.png",
+    "assets/piece/png/cburnett/bP.png",
+    "assets/piece/png/cburnett/wQ.png",
+    "assets/piece/png/cburnett/wK.png",
+    "assets/piece/png/cburnett/wR.png",
+    "assets/piece/png/cburnett/wN.png",
+    "assets/piece/png/cburnett/wB.png",
+    "assets/piece/png/cburnett/wP.png"
+};
 
-void BoardPiece::update(int x, int y, int w, Colour pc)
+void BoardPiece::init(Piece _p, Square _s, int w, Colour bottom_colour)
 {
-    rect.w = w; 
-    rect.h = w; 
-    rect.x = x;
-    rect.y = y;
-
-    int center_x = x + (0.5 * w);
-    int center_y = y + (0.5 * w);
-    size_t rank = y_to_rank(center_y, w, pc);
-    size_t file = x_to_file(center_x, w, pc);
-    s = square(rank, file);
-}
-
-void BoardPiece::update(int w, Colour pc)
-{
-    int x = square_to_x(s, w, pc);
-    int y = square_to_y(s, w, pc);
-    rect.w = w;
-    rect.h = w;
-    rect.x = x;
-    rect.y = y;
-}
-
-void BoardPiece::init(Piece _p, Square _s, int w, SDL_Renderer * renderer, Colour pc)
-{
-    int x = square_to_x(s, w, pc);
-    int y = square_to_y(s, w, pc);
+    int x = square_to_x(s, w, bottom_colour);
+    int y = square_to_y(s, w, bottom_colour);
     p = _p;
     s = _s;
-    rect.x = x;
-    rect.y = y;
-    rect.w = w;
-    rect.h = w;
-    make_piece_texture(renderer);
 }
 
-void BoardPiece::make_piece_texture(SDL_Renderer * renderer)
+// Update square given x and y
+void BoardPiece::update_square(int x, int y, int w, Colour bottom_colour)
 {
-    std::string path = svg_path[p];
-    printf("Got path: %s\n", path.c_str());
-    SDL_Surface * surface = IMG_Load(path.c_str());
-    if(surface == NULL) {
-        printf("Error getting surface from svg: %s, %s\n", path.c_str(), SDL_GetError());
-        exit(1);
-    }
-    texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
-    if(texture == NULL) {
-        printf("Error creating texture from surface: %s\n", SDL_GetError());
-        exit(1);
-    }
+    int center_x = x + (0.5 * w);
+    int center_y = y + (0.5 * w);
+    size_t rank = y_to_rank(center_y, w, bottom_colour);
+    size_t file = x_to_file(center_x, w, bottom_colour);
+    s = square(rank, file);
 }
 
 // FIXME: Maintaining renderer and texture in same object too annoying
@@ -68,5 +41,11 @@ void BoardPiece::promote(Piece _p, SDL_Renderer* renderer)
 { 
     assert(piece_to_piecetype(p) == Pawn);
     p = _p;
-    make_piece_texture(renderer);
 }
+
+bool BoardPiece::in_piece(int x, int y, int square_w, Colour bottom_colour) const 
+{
+    int px = square_to_x(s, square_w, bottom_colour);
+    int py = square_to_y(s, square_w, bottom_colour); 
+    return x > px && x < (px + square_w) && y > py && y < (py + square_w);  
+}   
