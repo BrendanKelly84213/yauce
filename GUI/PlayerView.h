@@ -24,6 +24,7 @@ private:
     bool editing = true; // are we currently creating a board 
 
     Colour player_colour;
+    Colour bottom_colour;
     bool board_inverted = false;
 
     SDL_Event e;
@@ -34,8 +35,8 @@ private:
     int window_h;
     int square_w;
 
-    BoardPiece board_pieces[32]; 
-    SDL_Texture * piece_graphics[12];
+    BoardPiece board_pieces[64]; 
+    SDL_Texture * piece_textures[12];
 
     State state;
 
@@ -45,15 +46,16 @@ private:
 
     GMove current_move;
 
-
     void draw_grid();
-    void draw_piece(BoardPiece p);
+    void draw_static_piece(BoardPiece p);
+    void draw_dragging_piece(BoardPiece p, int x, int y);
     void draw_pieces();
     void on_player_move_piece();
     void draw_available_moves();
     void handle_events(SDL_Event e);
     void init_squares(std::string fen);
     void init_pieces();
+    void init_piece_textures();
     void update_pieces();
     void update_window(); 
 
@@ -62,7 +64,8 @@ private:
 
     void clear_current_move();
 
-    void set_dragging(bool dragging);
+    bool drag_selected_piece(int x, int y);
+    bool undrag_selected_piece(int x, int y);
 
     SDL_Texture * piece_texture(Piece p);
 };

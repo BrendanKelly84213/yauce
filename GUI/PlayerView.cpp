@@ -12,6 +12,22 @@
 constexpr int SCREEN_FPS = 60;
 constexpr int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
 
+// FIXME: Don't hardcode svg_path
+const std::string svg_path[] = {
+    "assets/piece/png/cburnett/bQ.png",
+    "assets/piece/png/cburnett/bK.png",
+    "assets/piece/png/cburnett/bR.png",
+    "assets/piece/png/cburnett/bN.png",
+    "assets/piece/png/cburnett/bB.png",
+    "assets/piece/png/cburnett/bP.png",
+    "assets/piece/png/cburnett/wQ.png",
+    "assets/piece/png/cburnett/wK.png",
+    "assets/piece/png/cburnett/wR.png",
+    "assets/piece/png/cburnett/wN.png",
+    "assets/piece/png/cburnett/wB.png",
+    "assets/piece/png/cburnett/wP.png"
+};
+
 void PlayerView::draw_grid()
 {
     for(int i=0; i<8; ++i) {
@@ -23,29 +39,54 @@ void PlayerView::draw_grid()
             square.y = j*square_w;
 
             if(((i+j)%2)){ 
-                    SDL_SetRenderDrawColor(board_renderer, 15,50,20,0);
+                SDL_SetRenderDrawColor(board_renderer, 15,50,20,0);
             } else {
-                    SDL_SetRenderDrawColor(board_renderer, 200,200,255,0);
+                SDL_SetRenderDrawColor(board_renderer, 200,200,255,0);
             }
             SDL_RenderFillRect(board_renderer, &square);
         }
     }
 }
 
-void PlayerView::draw_piece(BoardPiece bp)
+void PlayerView::draw_static_piece(BoardPiece bp)
 {
-    SDL_Texture * texture = bp.get_texture();
-    SDL_Rect r = bp.get_rect();
-    
+    if(bp.dragging)
+       printf("Warning! Attempting to draw a dragging piece as if it is static: %s, %s\n", piece_to_str(bp.p).c_str(), square_to_str(bp.s).c_str());
 
+    SDL_Texture * texture = piece_textures[bp.p];
+    int x = square_to_x(bp.s, square_w, bottom_colour); 
+    int y = square_to_y(bp.s, square_w, bottom_colour); 
+    SDL_Rect r = { x, y, square_w, square_w }; 
+
+    SDL_RenderCopy(board_renderer, texture, NULL, &r);
+}
+
+void PlayerView::draw_dragging_piece(BoardPiece bp, int x, int y) 
+{
+    if(!bp.dragging)
+       printf("Warning! Attempting to draw a static piece as if it is being dragged: %s, %s\n", piece_to_str(bp.p).c_str(), square_to_str(bp.s).c_str());
+               
+    SDL_Texture * texture = piece_textures[bp.p];
+
+    SDL_Rect r = { x, y, square_w, square_w };
     SDL_RenderCopy(board_renderer, texture, NULL, &r);
 }
 
 void PlayerView::draw_pieces()
 { 
-    for(size_t i = 0; i < 32; ++i) {
-        if(board_pieces[i].get_piece() != None)
-            draw_piece(board_pieces[i]);
+    for(Square s = a1; s <= h8; ++s) {
+        BoardPiece bp = board_pieces[s];
+        if(bp.p != None) {
+            if(!bp.dragging)
+                draw_static_piece(bp);
+            else  {
+                int x, y;
+                SDL_GetMouseState(&x, &y);
+                int center_x = x - (square_w * 0.5);
+                int center_y = y - (square_w * 0.5);
+                draw_dragging_piece(bp, center_x, center_y);
+            }
+        }
     }
 }
 
@@ -54,7 +95,32 @@ void PlayerView::draw_available_moves()
 {
 }
 
-bool PlayerView::init(std::string fen, Colour pc, bool bi)
+SDL_Texture* PlayerView::piece_texture(Piece p)
+{
+    std::string path = svg_path[p];
+    SDL_Surface * surface = IMG_Load(path.c_str());
+    if(surface == NULL) {
+        printf("Error getting surface from svg: %s, %s\n", path.c_str(), SDL_GetError());
+        exit(1);
+    }
+
+    SDL_Texture * texture = SDL_CreateTextureFromSurface(board_renderer, surface);
+    SDL_FreeSurface(surface);
+    if(texture == NULL) {
+        printf("Error creating texture from surface: %s\n", SDL_GetError());
+        exit(1);
+    }
+    return texture;
+}
+
+void PlayerView::init_piece_textures()
+{
+    for(Piece p = BQ; p <= WP; ++p) {
+        piece_textures[p] = piece_texture(p);
+    }
+}
+
+bool PlayerView::init(std::string fen, Colour bc, bool bi)
 { 
     update_window();
 
@@ -76,40 +142,37 @@ bool PlayerView::init(std::string fen, Colour pc, bool bi)
     // Init engine 
     board.init(fen);
     init_black_tables();
-    search.init(3);
+    search.init(4);
 
     init_pieces();
 
+    init_piece_textures();
      
-    player_colour = pc;
+    bottom_colour = bc;
     board_inverted = bi;
     return true;
 } 
 
 void PlayerView::init_pieces()
 {
-    size_t i = 0;
     for(Square s = a1; s <= h8; ++s) {
         Piece p = board.get_piece(s);
         if(p != None) {
-            board_pieces[i].init(p, s, square_w, board_renderer, player_colour);
-            i++;
+            board_pieces[s].init(p, s, square_w, bottom_colour);
         }
     }
 }
 
 void PlayerView::update_pieces()
 {
-    for(size_t i = 0; i < 32; ++i) {
-        if(board_pieces[i].is_being_dragged()) {
+    for(Square s = a1; s <= h8; ++s) {
+        if(board_pieces[s].dragging) {
             int x, y; 
             SDL_GetMouseState(&x, &y);
             int center_x = x - (0.5 * square_w);
             int center_y = y - (0.5 * square_w);
-            board_pieces[i].update(center_x, center_y, square_w, player_colour);
-        } else {
-            board_pieces[i].update(square_w, player_colour);
-        }
+            board_pieces[s].update_square(center_x, center_y, square_w, bottom_colour);
+        } 
     }
 }
 
@@ -125,173 +188,67 @@ void PlayerView::clear_current_move()
     current_move.to = NullSquare;
 }
 
-void PlayerView::set_dragging(bool dragging) 
+bool PlayerView::drag_selected_piece(int x, int y) 
 {
-    int x, y;
-    SDL_GetMouseState(&x, &y);
-    for(size_t i = 0; i < 32; ++i) {
-        BoardPiece bp = board_pieces[i];
-        if(bp.get_piece() != None && bp.is_being_dragged() != dragging ) {
-            if(bp.in_piece(x, y)) {
-                Square sq = xy_to_square(x, y, square_w, player_colour);
-                board_pieces[i].set_dragging(dragging);
-                piece_being_dragged = dragging;
-
-                // Set the current move 
-                if(dragging) 
-                    current_move.from = sq;
-                else 
-                    current_move.to = sq;
-            }
-        }
+    Square s = xy_to_square(x, y, square_w, bottom_colour);
+    BoardPiece& bp = board_pieces[s];
+    if(bp.in_piece(x, y, square_w, bottom_colour) && bp.p != None && !bp.dragging) {
+        bp.dragging = true; 
+        return true;
     }
+    return false;
+}
+
+bool PlayerView::undrag_selected_piece(int x, int y)
+{
+
+    Square piece_id = current_move.from;
+    BoardPiece& bp = board_pieces[piece_id];
+    if(!bp.dragging)
+        return false;
+
+    bp.dragging = false;
+    return true;
 }
 
 void PlayerView::engine_make_move()
 {
-    BMove reply = search.iterative_search(board);
-    Square from = get_from(reply);
-    Square to = get_to(reply);
-    Move flag = get_flag(reply);
-    Colour us = board.get_side_to_move();
-    for(size_t i = 0; i < 32; ++i) {
-        BoardPiece bp = board_pieces[i];
-        Piece p = bp.get_piece();
-
-        bool capture = p != None && bp.get_square() == to && board.get_piece_colour(p) != us;
-        bool black_castle_kingside_rook = flag == OO && us == Black && bp.get_square() == h8;
-        bool white_castle_kingside_rook = flag == OO && us == White && bp.get_square() == h1;
-        bool black_castle_queenside_rook = flag == OOO && us == Black && bp.get_square() == a8;
-        bool white_castle_queenside_rook = flag == OOO && us == White && bp.get_square() == a1;
-        bool promotion = flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP && piece_to_piecetype(p) == Pawn && on_opposite_rank(to, us);
-        bool en_passant = 
-            flag == EN_PASSANT 
-            && piece_to_piecetype(bp.get_piece()) == Pawn 
-            && (
-                (us == White && bp.get_square() == board.get_ep_square() + S) 
-                || (us == Black && bp.get_square() == board.get_ep_square() + N)
-            );
-
-        if(board_pieces[i].get_square() == from) 
-            board_pieces[i].update(to, square_w, player_colour);
-
-        if(capture || en_passant)
-            board_pieces[i].remove();
-        else if(black_castle_kingside_rook) 
-            board_pieces[i].update(f8, square_w, player_colour);
-        else if(white_castle_kingside_rook)
-            board_pieces[i].update(f1, square_w, player_colour);
-        else if(black_castle_queenside_rook)
-            board_pieces[i].update(f8, square_w, player_colour);
-        else if(white_castle_queenside_rook)
-            board_pieces[i].update(f1, square_w, player_colour);
-        else if(promotion && bp.get_square() == from) {
-            printf("Promoting!\n");
-            PieceType promotion_pt = promotion_to_piecetype(flag);
-            Piece promotion = piecetype_to_piece(promotion_pt, us);
-            board_pieces[i].promote(promotion, board_renderer);
-        } 
-    }
-    printf("Engine make move: %s%s\n", square_to_str(from).c_str(), square_to_str(to).c_str());
-    board.make_move(reply);
-    board.print_squares();
 }
 
 void PlayerView::player_make_move()
 {
-    if(current_move.from == current_move.to)
-        return;
-
-    printf("moved %s%s\n", square_to_str(current_move.from).c_str(), square_to_str(current_move.to).c_str());
-
-    Colour us = board.get_side_to_move();
-    Move flag = QUIET;
-    // Sketchy castles
-    bool moving_white_king = us == White && current_move.from == e1 && board.get_piece(current_move.from) == WK;
-    bool moving_black_king = us == Black && current_move.from == e8 && board.get_piece(current_move.from) == BK;
-    if(moving_white_king || moving_black_king) {
-        bool moving_to_g1 = current_move.to == g1 && board.get_piece(h1) == WR;
-        bool moving_to_g8 = current_move.to == g8 && board.get_piece(h8) == BR;
-        bool moving_to_c1 = current_move.to == c1 && board.get_piece(a1) == WR;
-        bool moving_to_c8 = current_move.to == c8 && board.get_piece(a8) == BR;
-
-        if(moving_to_g1 || moving_to_g8)
-            flag = OO;
-        else if(moving_to_c1 || moving_to_c8)
-            flag = OOO;
-    }
-
-    bool pawn_adjacent_from = 
-        (board.get_op_piece_bb(Pawn) & bit(current_move.from + W) & ~FileHBB) ||
-        (board.get_op_piece_bb(Pawn) & bit(current_move.from + E) & ~FileABB);
-
-    bool pawn_above_to = (
-        us == White && board.get_piece(current_move.to + S) == BP 
-        || us == Black && board.get_piece(current_move.to + N) == WP
-    );
-
-    // Extremely loose en passant
-    bool en_passant = pawn_above_to && pawn_adjacent_from;
-
-    bool promotion = piece_to_piecetype(board.get_piece(current_move.from)) == Pawn && on_opposite_rank(current_move.to, us);
-
-    for(size_t i = 0; i < 32; ++i) {
-        BoardPiece bp = board_pieces[i];
-        Piece p = bp.get_piece();
-
-        bool pawn_on_ep_square = 
-            (us == Black && p == WP && (bp.get_square() + S) == board.get_ep_square())
-         || (us == White && p == BP && (bp.get_square() + N) == board.get_ep_square());
-
-        // Capture
-        if(p != None && bp.get_square() == current_move.to && board.get_piece_colour(p) != us)
-            board_pieces[i].remove();
-        else if(us == White && flag == OO && bp.get_square() == h1 && bp.get_piece() == WR) // Move white rook
-            board_pieces[i].update(f1, square_w, player_colour);
-        else if(us == White && flag == OOO && bp.get_square() == a1 && bp.get_piece() == WR) // Move white rook
-            board_pieces[i].update(d1, square_w, player_colour);
-        else if(us == Black && flag == OO && bp.get_square() == h8 && bp.get_piece() == BR) // Move white rook
-            board_pieces[i].update(f8, square_w, player_colour);
-        else if(us == Black && flag == OOO && bp.get_square() == a8 && bp.get_piece() == BR) // Move white rook
-            board_pieces[i].update(d8, square_w, player_colour);
-        else if(en_passant && pawn_on_ep_square) {
-            board_pieces[i].remove();
-            flag = EN_PASSANT;
-        } else if(promotion && piece_to_piecetype(bp.get_piece()) == Pawn && on_opposite_rank(bp.get_square(), us)) {
-            board_pieces[i].promote(piecetype_to_piece(Queen, us), board_renderer);
-            flag = PROMOTE_QUEEN;
-        }
-    }
-
-    BMove m = move(current_move.from, current_move.to, flag);
-    board.make_move(m);
-    board.print_squares();
 }
 
 void PlayerView::run()
 {
     running = true;
     while(running) {
-
-        uint64_t start = SDL_GetPerformanceCounter();
-
-        // Handle events 
         if(SDL_PollEvent(&e)) {
+            int x, y;
+
             if(e.type == SDL_QUIT) {
                 running = false;
             } else if(e.type == SDL_MOUSEBUTTONDOWN && !piece_being_dragged) {
+                SDL_GetMouseState(&x,&y);
                 clear_current_move();
-                set_dragging(true);
+                if(drag_selected_piece(x, y)) {
+                    piece_being_dragged = true;
+                    current_move.from = xy_to_square(x, y, square_w, bottom_colour);
+                }
             } else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) {
-                set_dragging(false);
+                SDL_GetMouseState(&x,&y);
+                Square piece_id = current_move.from;
+                board_pieces[piece_id].dragging = false;
+                piece_being_dragged = false;
+                current_move.to = xy_to_square(x, y, square_w, bottom_colour);
+
+                BoardPiece copy_bp = board_pieces[piece_id];
+                board_pieces[piece_id].p = None;
+                board_pieces[current_move.to] = copy_bp; // Watch if this breaks anything
                 player_make_move();
             } else if(e.type == SDL_KEYUP) {
                 if(e.key.keysym.sym == SDLK_e) {
                     editing = !editing;
-                    if(editing)
-                        printf("No engine. board inverted? %s\n", board_inverted ? "Yes" : "No");
-                    else   
-                        printf("Engine playing %s. board inverted? %s\n", colour_to_str(!player_colour).c_str(), board_inverted ? "Yes" : "No");
                 }
                 else if(e.key.keysym.sym == SDLK_ESCAPE)
                     running = false;
@@ -308,19 +265,6 @@ void PlayerView::run()
         draw_grid();
         draw_pieces(); 
         SDL_RenderPresent(board_renderer);
-
-        uint64_t end = SDL_GetPerformanceCounter();
-
-        float elapsed = (end - start) / (float)(SDL_GetPerformanceFrequency() * 1000.0f);
-
-        // Cap frames
-        // if(!piece_being_dragged)
-        // unsigned int ticks = SDL_GetTicks(); 
-        // if(ticks < SCREEN_TICKS_PER_FRAME)
-        //     SDL_Delay(SCREEN_TICKS_PER_FRAME - ticks);
-
-        if( ((board_inverted && board.get_side_to_move() == player_colour) || (!board_inverted && board.get_side_to_move() != player_colour)) && !editing)
-            engine_make_move();
     }
 
     SDL_DestroyRenderer(board_renderer);
