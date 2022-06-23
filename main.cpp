@@ -1,6 +1,8 @@
+#include <chrono>
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include <sstream>
 
 #include "search.h"
 #include "utils/types.h"
@@ -22,19 +24,48 @@ int main( int argc, char *argv[] )
     std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 
     BoardState board;
-    board.init(kiwipete);
-    Search s(17);
+    board.init(initial_fen);
+
+    bool running = true;
+    while(running) {
+        std::string cmd;
+        size_t param1;
+        std::cin >> cmd >> param1;
+        std::vector<std::string> tokens;
+        std::istringstream iss(cmd);
+
+        if(strcmp(cmd.c_str(), "stop") == 0) {
+            running = false;
+        }
     
-    std::cout << "Evaluating..." << '\n';
-    board.print_squares();
+        if(strcmp(cmd.c_str(), "go") == 0) {
+            printf("%s %u\n", cmd.c_str(), param1);
 
-    auto start = std::chrono::steady_clock::now();
-    s.iterative_search(board);
-    auto end = std::chrono::steady_clock::now();
+            Line pline;
+            Search s(1000);
 
-    Duration elapsed = end - start; 
+            auto search_start = std::chrono::steady_clock::now();
+            s.search(board, param1, &pline);
+            auto search_end = std::chrono::steady_clock::now();
+            std::chrono::duration<double> elapsed = search_end - search_start;
 
-    std::cout << "searched  depth " << s.get_depth_searched() - 1 << " and " << s.get_nodes_searched() << " nodes in " << elapsed.count() << "s" << '\n'; 
+            printf("Searched %u nodes at depth %u in %fs \n", s.get_nodes_searched(), param1, elapsed);       
+            s.print_line(board, pline);
+        }
 
-	return 0;
+        // Search s(2);
+        
+        // std::cout << "Evaluating..." << '\n';
+        // board.print_squares();
+
+        // auto start = std::chrono::steady_clock::now();
+        // s.iterative_search(board);
+        // auto end = std::chrono::steady_clock::now();
+
+        // Duration elapsed = end - start; 
+
+        // std::cout << "searched  depth " << s.get_depth_searched() - 1 << " and " << s.get_nodes_searched() << " nodes in " << elapsed.count() << "s" << '\n'; 
+
+    }
+    return 0;
 }
