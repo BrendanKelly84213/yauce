@@ -72,6 +72,11 @@ int in_check_generator(BoardState board_state, BMove moves[])
     return i;
 }
 
+int generate_captures(BoardState board, BMove captures[])
+{
+    return 0;
+}
+
 // Generate psuedo legal moves, return number of nodes 
 int psuedo_generator(BoardState board_state, BMove moves[]) 
 {   
@@ -79,12 +84,6 @@ int psuedo_generator(BoardState board_state, BMove moves[])
     Colour us = board_state.get_side_to_move();
     const int second_to_last_rank = us == White ? 6 : 1;
     const int last_rank = us == White ? 7 : 0;
-
-    // TODO: If in check and no moves can be generated: checkmate 
-    //         This can likely be handled outside of generator function, 
-    //         then set as a value in BoardState (or something)
-    //         Or just cut off the search there 
-
 
     for(PieceType pt = Queen; pt <= Pawn; ++pt) {
 

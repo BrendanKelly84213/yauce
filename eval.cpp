@@ -124,6 +124,13 @@ int piece_weights[] = {
     P_weight
 };
 
+int piece_weight(PieceType pt)
+{
+    if(pt == Null)
+        return 0;
+    return piece_weights[pt];
+}
+
 void init_black_tables()
 {
     for(Square s = a1; s <= h8; s = s + E) {

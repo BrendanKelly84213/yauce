@@ -8,5 +8,6 @@
 
 int in_check_generator(BoardState board_state, BMove moves[]);
 int psuedo_generator(BoardState board_state, BMove moves[]);
+int generate_captures(BoardState board, BMove captures[]);
 
 #endif
