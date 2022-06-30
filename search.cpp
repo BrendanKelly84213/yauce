@@ -34,9 +34,11 @@ int Search::alphabeta(
     size_t num_moves = psuedo_generator(board, moves);
     Colour us = board.get_side_to_move();
 
+    // Just sort by captures for now
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
         bool a_capture = board.get_piece(get_to(a)) != None;
         bool b_capture = board.get_piece(get_to(b)) != None;
+
         return a_capture > b_capture;
     });
 

@@ -27,11 +27,15 @@ public:
     Search()
         : allotted(0), searching(false), depth_searched(0), nodes_searched(0)
     {
+        // FIXME: 
+        search_start = std::chrono::steady_clock::now();
     }
 
     Search(double _allotted)
         : allotted(_allotted), searching(false), depth_searched(0), nodes_searched(0)
     {
+        // FIXME: 
+        search_start = std::chrono::steady_clock::now();
     }
 
     void init(double _allotted) { allotted = _allotted; }

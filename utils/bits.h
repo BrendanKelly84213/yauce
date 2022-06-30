@@ -36,7 +36,7 @@ constexpr Bitboard get_bit(Bitboard bb, int square)
 
 constexpr Bitboard get_bit(Bitboard bb, int x, int y) 
 { 
-    return (bb >> y*8 + x) & 1ULL;
+    return (bb >> (y*8 + x)) & 1ULL;
 }
 
 constexpr Bitboard bit(Square s)
