@@ -9,9 +9,6 @@
 #include "PlayerView.h"
 #include "../eval.h"
 
-constexpr int SCREEN_FPS = 60;
-constexpr int SCREEN_TICKS_PER_FRAME = 1000 / SCREEN_FPS;
-
 // FIXME: Don't hardcode svg_path
 const std::string svg_path[] = {
     "assets/piece/png/cburnett/bQ.png",
@@ -39,35 +36,31 @@ void PlayerView::draw_grid()
             square.y = j*square_w;
 
             if(((i+j)%2)){ 
-                SDL_SetRenderDrawColor(board_renderer, 15,50,20,0);
+                SDL_SetRenderDrawColor(board_renderer, 7, 54, 66,0);
             } else {
-                SDL_SetRenderDrawColor(board_renderer, 200,200,255,0);
+                SDL_SetRenderDrawColor(board_renderer, 88,110,117,0);
             }
             SDL_RenderFillRect(board_renderer, &square);
         }
     }
 }
 
-void PlayerView::draw_static_piece(BoardPiece bp)
+void PlayerView::draw_piece(BoardPiece bp)
 {
-    if(bp.dragging)
-       printf("Warning! Attempting to draw a dragging piece as if it is static: %s, %s\n", piece_to_str(bp.p).c_str(), square_to_str(bp.s).c_str());
+    if(bp.p == None) 
+        printf("Piece is None, nothing to draw\n");
+
+    int x, y;
+    if(!bp.dragging) {
+        x = square_to_x(bp.s, square_w, bottom_colour); 
+        y = square_to_y(bp.s, square_w, bottom_colour); 
+    } else {
+        SDL_GetMouseState(&x, &y);
+        x = x - (square_w * 0.5);
+        y = y - (square_w * 0.5);
+    }
 
     SDL_Texture * texture = piece_textures[bp.p];
-    int x = square_to_x(bp.s, square_w, bottom_colour); 
-    int y = square_to_y(bp.s, square_w, bottom_colour); 
-    SDL_Rect r = { x, y, square_w, square_w }; 
-
-    SDL_RenderCopy(board_renderer, texture, NULL, &r);
-}
-
-void PlayerView::draw_dragging_piece(BoardPiece bp, int x, int y) 
-{
-    if(!bp.dragging)
-       printf("Warning! Attempting to draw a static piece as if it is being dragged: %s, %s\n", piece_to_str(bp.p).c_str(), square_to_str(bp.s).c_str());
-               
-    SDL_Texture * texture = piece_textures[bp.p];
-
     SDL_Rect r = { x, y, square_w, square_w };
     SDL_RenderCopy(board_renderer, texture, NULL, &r);
 }
@@ -76,17 +69,8 @@ void PlayerView::draw_pieces()
 { 
     for(Square s = a1; s <= h8; ++s) {
         BoardPiece bp = board_pieces[s];
-        if(bp.p != None) {
-            if(!bp.dragging)
-                draw_static_piece(bp);
-            else  {
-                int x, y;
-                SDL_GetMouseState(&x, &y);
-                int center_x = x - (square_w * 0.5);
-                int center_y = y - (square_w * 0.5);
-                draw_dragging_piece(bp, center_x, center_y);
-            }
-        }
+        if(bp.p != None)
+            draw_piece(bp);
     }
 }
 
@@ -237,6 +221,7 @@ void PlayerView::run()
                 }
             } else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) {
                 SDL_GetMouseState(&x,&y);
+
                 Square piece_id = current_move.from;
                 board_pieces[piece_id].dragging = false;
                 piece_being_dragged = false;
@@ -244,7 +229,8 @@ void PlayerView::run()
 
                 BoardPiece copy_bp = board_pieces[piece_id];
                 board_pieces[piece_id].p = None;
-                board_pieces[current_move.to] = copy_bp; // Watch if this breaks anything
+                board_pieces[current_move.to] = copy_bp; 
+
                 player_make_move();
             } else if(e.type == SDL_KEYUP) {
                 if(e.key.keysym.sym == SDLK_e) {

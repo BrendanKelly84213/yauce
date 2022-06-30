@@ -47,8 +47,7 @@ private:
     GMove current_move;
 
     void draw_grid();
-    void draw_static_piece(BoardPiece p);
-    void draw_dragging_piece(BoardPiece p, int x, int y);
+    void draw_piece(BoardPiece bp);
     void draw_pieces();
     void on_player_move_piece();
     void draw_available_moves();

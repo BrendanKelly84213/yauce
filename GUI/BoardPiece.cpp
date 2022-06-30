@@ -3,21 +3,6 @@
 #include "BoardPiece.h"
 #include "../utils/bits.h"
 
-const std::string svg_path[] = {
-    "assets/piece/png/cburnett/bQ.png",
-    "assets/piece/png/cburnett/bK.png",
-    "assets/piece/png/cburnett/bR.png",
-    "assets/piece/png/cburnett/bN.png",
-    "assets/piece/png/cburnett/bB.png",
-    "assets/piece/png/cburnett/bP.png",
-    "assets/piece/png/cburnett/wQ.png",
-    "assets/piece/png/cburnett/wK.png",
-    "assets/piece/png/cburnett/wR.png",
-    "assets/piece/png/cburnett/wN.png",
-    "assets/piece/png/cburnett/wB.png",
-    "assets/piece/png/cburnett/wP.png"
-};
-
 void BoardPiece::init(Piece _p, Square _s, int w, Colour bottom_colour)
 {
     int x = square_to_x(s, w, bottom_colour);
@@ -26,7 +11,6 @@ void BoardPiece::init(Piece _p, Square _s, int w, Colour bottom_colour)
     s = _s;
 }
 
-// Update square given x and y
 void BoardPiece::update_square(int x, int y, int w, Colour bottom_colour)
 {
     int center_x = x + (0.5 * w);
@@ -36,8 +20,7 @@ void BoardPiece::update_square(int x, int y, int w, Colour bottom_colour)
     s = square(rank, file);
 }
 
-// FIXME: Maintaining renderer and texture in same object too annoying
-void BoardPiece::promote(Piece _p, SDL_Renderer* renderer)
+void BoardPiece::promote(Piece _p)
 { 
     assert(piece_to_piecetype(p) == Pawn);
     p = _p;

@@ -33,8 +33,11 @@ int main( int argc, char *argv[] )
 
 
     PlayerView game;
-    printf("Playing as %s!", colour_to_str(player_side).c_str());
+
+    printf("Playing as %s!\n", colour_to_str(player_side).c_str());
+
     game.init(initial_fen, player_side, board_inverted);
+
     game.run();
 
     return 0;

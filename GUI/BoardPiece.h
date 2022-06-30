@@ -19,7 +19,7 @@ struct BoardPiece {
 
     void init(Piece _p, Square _s, int w, Colour pc);
     void update_square(int x, int y, int w, Colour pc);
-    void promote(Piece _p, SDL_Renderer* renderer);
+    void promote(Piece _p);
 
     bool in_piece(int x, int y, int square_w, Colour bottom_colour) const; 
 };
