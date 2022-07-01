@@ -6,13 +6,22 @@
 #include "search.h"
 
 // FIXME: Hard to read, further refactors in order?
+
+int Search::quiescence(BoardState board, int alpha, int beta, Line * pline, int max)
+{
+    int score = eval(board); 
+    BMove captures[64];
+    size_t num_captures = generate_captures(board, captures);
+
+    return score;
+}
+
 int Search::alphabeta(
         BoardState board,
         int alpha, 
         int beta, 
         size_t depth,
-        Line * pline,
-        bool max
+        Line * pline
 ) 
 {
     Line line;
@@ -36,65 +45,42 @@ int Search::alphabeta(
 
     // Just sort by captures for now
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
-        bool a_capture = board.get_piece(get_to(a)) != None;
-        bool b_capture = board.get_piece(get_to(b)) != None;
+        uint8_t a_capture = (board.get_piece(get_to(a)) != None);
+        uint8_t b_capture = (board.get_piece(get_to(b)) != None);
 
         return a_capture > b_capture;
     });
 
+    int nega = us == White ? 1 : -1;
 	if(depth == 0) {
         pline->num_moves = 0;
-        return eval(board);
+        // printf("Depth 0. Score: %d\n", eval(board) * nega);
+        return eval(board) * nega;
     }
 
-    int value = max ? INT_MIN : INT_MAX;
-    if(max) {
-        // Maximize
-        for(size_t i = 0; i < num_moves; ++i) {
-            BMove m = moves[i];
+    // printf("Alpha before search: %d\n", alpha);
+    for(size_t i = 0; i < num_moves; ++i) {
+        BMove m = moves[i];
 
-            board.make_move(m);
-            if(!board.in_check(us)) {
-                nodes_searched++;
+        board.make_move(m);
+        if(!board.in_check(us)) {
+            nodes_searched++;
+            int score = -alphabeta(board, -beta, -alpha, depth - 1, &line); 
 
-                int score = alphabeta(board, alpha, beta, depth - 1, &line, false); // Minimize
+            if(score >= beta) 
+                return beta; // fail hard
 
-                if(score >= beta) 
-                    return beta; // fail hard
-
-                if(score > alpha) {
-                    alpha = score;
-                    append_line(m);
-                }
+            if(score > alpha) {
+                alpha = score;
+                append_line(m);
             }
-            board.unmake_move(m);
         }
-        value = alpha;
-    } else {
-        value = INT_MAX;
-        // Minimize
-        for(size_t i = 0; i < num_moves; ++i) {
-            BMove m = moves[i];
-
-            board.make_move(m);
-            if(!board.in_check(us)) {
-                nodes_searched++;
-
-                int score = alphabeta(board, alpha, beta, depth - 1, &line, true); // Maximize
-
-                if(score <= alpha) 
-                    return alpha; // fail hard
-                
-                if(score < beta) {
-                    beta = score;
-                    append_line(m);
-                }
-            }
-            board.unmake_move(m);
-        }
-        value = beta;
+        board.unmake_move(m);
     }
-    return value;
+
+    // printf("Alpha after search: %d\n", alpha);
+
+    return alpha;
 }
 
 void Search::print_line(BoardState board, Line line)
@@ -138,7 +124,9 @@ BMove Search::iterative_search(BoardState board)
 int Search::search(BoardState board, size_t depth, Line * pline) 
 {
     depth_searched = depth;
-    return board.get_side_to_move() == White
-        ? alphabeta(board, INT_MIN, INT_MAX, depth, pline, true)
-        : alphabeta(board, INT_MIN, INT_MAX, depth, pline, false);
+    Colour us = board.get_side_to_move(); 
+    int inf = 999999;
+    int alpha = us == White ? -inf : inf;
+    int beta = us == White ? inf : -inf;
+    return alphabeta(board, alpha, beta, depth, pline); 
 }

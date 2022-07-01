@@ -45,11 +45,11 @@ int main( int argc, char *argv[] )
             Search s(1000);
 
             auto search_start = std::chrono::steady_clock::now();
-            s.search(board, param1, &pline);
+            int score = s.search(board, param1, &pline);
             auto search_end = std::chrono::steady_clock::now();
             std::chrono::duration<double> elapsed = search_end - search_start;
 
-            printf("Searched %u nodes at depth %u in %fs \n", s.get_nodes_searched(), param1, elapsed);       
+            printf("Searched %u nodes at depth %u in %fs. Score: %d \n", s.get_nodes_searched(), param1, elapsed, score);       
             s.print_line(board, pline);
         }
 

@@ -60,9 +60,10 @@ private:
         int alpha, 
         int beta, 
         size_t depth,
-        Line * pline,
-        bool max
+        Line * pline
     );
+
+    int quiescence(BoardState board, int alpha, int beta, Line * pline, int max);
 };
 
 #endif
