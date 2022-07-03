@@ -39,96 +39,6 @@ inline Bitboard get_sliding_until_ni(PieceType pt, Square from, Square to)
 }
 #endif 
 
-
-// For Pretty Printing and debugging mostly
-struct MoveInfo {
-    int score;
-    BMove m;
-    PieceType moved;
-    PieceType captured;
-    Colour side;
-    std::string algebraic;
-
-    MoveInfo(const MoveInfo & mi) 
-        : score(mi.score), m(mi.m), moved(mi.moved), captured(mi.captured), side(mi.side), algebraic(mi.algebraic) 
-    {
-    }
-
-    /* MoveInfo(const MoveInfo & mi) */
-    /* { */
-    /*     score = mi.score; */
-    /*     m = mi.m; */
-    /*     moved = mi.moved; */
-    /*     captured = mi.captured; */
-    /*     side = mi.side; */
-    /*     algebraic = mi.algebraic; */
-    /* } */
-
-    MoveInfo() 
-        : score(0), m(0), moved(Null), captured(Null), side(White), algebraic("") 
-    {
-    }
-
-    MoveInfo(BMove _m, PieceType _moved, PieceType _captured, Colour _side, bool check = false, int _score = 0) 
-        : m(_m), moved(_moved), captured(_captured), side(_side), score(_score) 
-    {
-        // TODO: checks, other flags, etc...
-        std::string tosq = square_to_str(get_to(m));
-        Move flag = get_flag(m);
-        if(flag == OO || flag == OOO) {
-            algebraic = flag_to_str(flag);
-        } else if(_moved == Pawn) {
-            if(captured == Null) 
-                algebraic = tosq;
-            else algebraic = "Px" + tosq;
-            if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP)
-                algebraic += promote_flag_to_str(flag);
-        } else {
-            algebraic = piecetype_to_algstr(_moved) + (captured != Null ? "x" : "") + tosq;
-        }
-
-        if(check) 
-            algebraic += "+";
-    }
-
-};
-
-// Movelist wrapper class for ongoing game movelist
-// Not to be confused with our generated moves array, which is a raw C style array 
-// containing unsigned 16 bit encoded moves 
-class MoveList {
-private: 
-    std::vector<MoveInfo> movelist;
-public: 
-
-    MoveList() {}
-
-    MoveList(size_t size)
-    {
-        movelist.reserve(size);
-    }
-
-    void add(BMove m, 
-            PieceType moved, 
-            PieceType captured, 
-            Colour side,
-            bool check = false,
-            int score = 0) 
-    { 
-        const MoveInfo mi(m, moved, captured, side, check, score);
-        movelist.push_back(mi); 
-    }
-
-    void insert(size_t i, MoveInfo mi) { movelist[i] = mi; };
-    void remove() { movelist.pop_back(); }
-    void print_moves() const;
-    void print_moves_and_scores() const;
-
-    void sort_by_score(Colour us);
-
-    MoveInfo get_latest() const { return movelist.back(); }
-};
-
 struct State {
     Colour side_to_move = White; 
     // TODO: Castle can be a lot more lightweight...
@@ -171,7 +81,6 @@ public:
     Square get_ep_square() const;
     Square get_king_square(Colour us) const;
     Piece get_piece(Square s) const;
-    MoveList get_movelist() const { return movelist; }
     int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
     size_t get_num_piece(Piece p) const { return popcount(piece_bbs[p]); } 
     std::string get_algebraic(BMove m) const;
@@ -185,7 +94,7 @@ public:
 
     void print_squares() const;
     void print_move(BMove m) const;
-    void print_moves() const { movelist.print_moves(); }
+    void print_moves() const;
     void print_occupied() const;
     void print_context(BMove m, bool capture, Move flag) const;
 
@@ -195,7 +104,7 @@ private:
 
     State state; 
     State prev_state;
-    MoveList movelist;
+    std::vector<BMove> movelist;
     Bitboard piece_bbs[12];
     Piece squares[64]; // Square centric lookup 
     Bitboard occ = 0ULL;

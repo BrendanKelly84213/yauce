@@ -364,43 +364,12 @@ void BoardState::print_move(BMove m) const
             << square_to_str(to);
 }
 
-void MoveList::print_moves() const
+void BoardState::print_moves() const
 {
-    std::cout << " Previous moves: ";
-    std::for_each( 
-            movelist.rbegin(),
-            movelist.rend(), 
-            [&](const auto &m) {
-                std::cout << m.algebraic << " ";
-            }
-    );
+    for(size_t i = 0; i < movelist.size(); ++i) {
+        std::cout << get_algebraic(movelist[i]) << " ";  
+    }
     std::cout << '\n';
-}
-
-void MoveList::print_moves_and_scores() const
-{
-    std::for_each( 
-            movelist.rbegin(),
-            movelist.rend(), 
-            [&](const auto &m) {
-                std::cout << " { " << m.algebraic << " : " << m.score << " } ";
-            }
-    );
-    std::cout << '\n';
-}
-
-void MoveList::sort_by_score(Colour us)
-{
-    // Sort scored_moves
-    std::sort(
-            movelist.begin(), 
-            movelist.end(), 
-            [&](MoveInfo a, MoveInfo b) { 
-                if(us == White)
-                    return a.score > b.score;
-                else return a.score < b.score;
-            }
-    ); 
 }
 
 void BoardState::print_occupied() const
@@ -435,7 +404,6 @@ void BoardState::print_context(BMove m, bool capture, Move flag) const
         << " squares(to) " << piece_to_str(get_piece(to))
         << " squares(from) " << piece_to_str(get_piece(from)) << '\n';
 
-    movelist.print_moves();
     print_squares();
     /* print_occupied(); */
     std::cout << "\n----------------------------------\n"; 
@@ -519,7 +487,7 @@ void BoardState::make_move(BMove m)
     }
 
     // Add move to ongoing movelist
-    movelist.add(m, pt, piece_to_piecetype(cp), get_side_to_move(), in_check(!us));
+    movelist.push_back(m);
 
     // Update board state
     // Is rook or king move 
@@ -616,7 +584,7 @@ void BoardState::unmake_move(BMove m)
         assert(board_ok());
     }
 
-    movelist.remove();
+    movelist.pop_back();
 }
 
 // FIXME: Return get_friend_occ(state.side_to_move)
@@ -784,7 +752,7 @@ Square BoardState::get_king_square(Colour us) const
     if(popcount(king_bb) != 1) {
         print(king_bb);
         print_squares();
-        movelist.print_moves();
+        print_moves();
         assert(popcount(king_bb) == 1);
     }
     return lsb(king_bb);
@@ -884,6 +852,11 @@ bool BoardState::in_checkmate(Colour us) const
 
 Piece BoardState::get_piece(Square s) const 
 {
+    if(s > h8 || s < a1) {
+        printf("get_piece(%d)\n", s);
+        return None;
+    }
+
     return squares[s];
 }
 
