@@ -7,6 +7,7 @@
 #include "search.h"
 #include "utils/types.h"
 #include "test/perft.h"
+#include "utils/conversions.h"
 
 //TODO: 
 
@@ -24,33 +25,48 @@ int main( int argc, char *argv[] )
     std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
 
     BoardState board;
-    board.init(kiwipete);
+    board.init(initial_fen);
+            
+	// BMove captures[64];
+	// size_t num_captures = generate_captures(board, captures);
+	// printf("captures %d\n", num_captures);
+
+#if 1
 
     bool running = true;
     while(running) {
         std::string cmd;
-        size_t param1;
+        std::string param1;
         std::cin >> cmd >> param1;
-        std::vector<std::string> tokens;
-        std::istringstream iss(cmd);
 
         if(strcmp(cmd.c_str(), "stop") == 0) {
             running = false;
         }
     
         if(strcmp(cmd.c_str(), "go") == 0) {
-            printf("%s %u\n", cmd.c_str(), param1);
-
             Line pline;
             Search s(1000);
+            char paramc = param1.c_str()[0];
+            size_t param = (size_t)(paramc - 48);
+            printf("%lu\n", param);
 
             auto search_start = std::chrono::steady_clock::now();
-            int score = s.search(board, param1, &pline);
+            int score = s.search(board, param, &pline);
             auto search_end = std::chrono::steady_clock::now();
             std::chrono::duration<double> elapsed = search_end - search_start;
 
-            printf("Searched %u nodes at depth %u in %fs. Score: %d \n", s.get_nodes_searched(), param1, elapsed, score);       
+            printf("Searched %lu nodes at depth %lu in %fs. Score: %d \n", s.get_nodes_searched(), param, elapsed.count(), score);       
             s.print_line(board, pline);
+        }
+
+        if(strcmp(cmd.c_str(), "move") == 0) {
+           Square from = string_to_square(param1.substr(0,2)); 
+           Square to = string_to_square(param1.substr(2,2)); 
+           printf("%s %s\n", square_to_str(from).c_str(), square_to_str(to).c_str());
+           printf("%d %d\n", from, to);
+           BMove m = move(from, to, QUIET);
+           board.make_move(m);
+           board.print_squares();
         }
 
         // Search s(2);
@@ -67,5 +83,6 @@ int main( int argc, char *argv[] )
         // std::cout << "searched  depth " << s.get_depth_searched() - 1 << " and " << s.get_nodes_searched() << " nodes in " << elapsed.count() << "s" << '\n'; 
 
     }
+#endif
     return 0;
 }
