@@ -1,5 +1,13 @@
 #include "conversions.h"
 
+Square string_to_square(std::string str)
+{
+    int file = (int)str[0] - 97;
+    int rank = (int)str[1] - 49;
+
+    return (Square)(rank * 8 + file);  
+}
+
 std::string square_to_str(int idx)
 {
     std::string strs[64] = {  

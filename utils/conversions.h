@@ -4,6 +4,7 @@
 #include <string>
 #include "types.h"
 
+Square string_to_square(std::string str);
 std::string square_to_str(int idx);
 std::string piece_to_str(int idx);
 std::string piecetype_to_str(int idx);
