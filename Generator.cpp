@@ -74,7 +74,25 @@ int in_check_generator(BoardState board_state, BMove moves[])
 
 int generate_captures(BoardState board, BMove captures[])
 {
-    return 0;
+    int i = 0;
+    Colour us = board.get_side_to_move(); 
+
+    // Get squares attacking opponents pieces
+    // Opponents piece bb
+    Bitboard op_occ = board.get_op_occ();
+    while(op_occ) {
+        Square captured_square = pop_bit(op_occ);
+        Bitboard attacks_to_captured_square = board.attacks_to(captured_square) & board.get_friend_occ();
+        while(attacks_to_captured_square) {
+            Square attacking_square = pop_bit(attacks_to_captured_square);
+
+			// if(!(board.get_piece(captured_square) == WK || board.get_piece(captured_square) == BK)) {
+			captures[i] = move(attacking_square, captured_square, QUIET);
+			++i;
+			// }
+        }
+    }
+    return i;
 }
 
 // Generate psuedo legal moves, return number of nodes 
