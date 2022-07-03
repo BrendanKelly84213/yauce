@@ -160,6 +160,7 @@ public:
     Bitboard get_op_occ() const;
     Bitboard get_op_occ(Colour us) const;
     Bitboard get_piece_bb(Piece p) const { return piece_bbs[p]; }
+    Bitboard get_piecetype_bb(PieceType pt) const { return piece_bbs[piecetype_to_piece(pt, White)] | piece_bbs[piecetype_to_piece(pt, Black)]; }
     Bitboard get_friend_piece_bb(int pt) const;
     Bitboard get_op_piece_bb(int pt) const;
     Bitboard get_side_piece_bb(int pt, Colour side) const;
