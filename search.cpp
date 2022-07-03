@@ -5,15 +5,64 @@
 /* #include "BoardState.h" */
 #include "search.h"
 
-// FIXME: Hard to read, further refactors in order?
-
-int Search::quiescence(BoardState board, int alpha, int beta, Line * pline, int max)
+static inline void append_line(BMove chosen_move, Line line, Line * pline)
 {
+    pline->line[0] = chosen_move;
+    memcpy(pline->line + 1, line.line, line.num_moves * sizeof(BMove));
+    pline->num_moves = line.num_moves + 1;
+}
+
+int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
+{
+    // printf("In quiescence\n");
+    Colour us = board.get_side_to_move();
+	int nega = us == White ? 1 : -1;
+ 	int stand_pat = eval(board) * nega;
+    if( stand_pat >= beta )
+        return beta;
+    if( alpha < stand_pat )
+        alpha = stand_pat;
+    
+    Line line;
     int score = eval(board); 
-    BMove captures[64];
+    BMove captures[256];
     size_t num_captures = generate_captures(board, captures);
 
-    return score;
+    // Just sort by captures for now
+    std::sort(captures, captures + num_captures, [&](BMove a, BMove b) {
+		int a_capturing_weight = piece_weight(piece_to_piecetype(board.get_piece(get_from(a))));
+		int a_captured_weight = piece_weight(piece_to_piecetype(board.get_piece(get_to(a))));
+
+		int b_capturing_weight = piece_weight(piece_to_piecetype(board.get_piece(get_from(b))));
+		int b_captured_weight = piece_weight(piece_to_piecetype(board.get_piece(get_to(b))));
+
+        int a_diff = a_captured_weight - a_capturing_weight; 
+        int b_diff = b_captured_weight - b_capturing_weight ;  
+
+        return a_diff > b_diff;
+    });
+
+    for(size_t i = 0; i < num_captures; ++i) {
+        BMove m = captures[i];
+
+        board.make_move(m);
+
+        if(!board.in_check(us)) {
+            // nodes_searched++;
+            int score = -quiescence(board, -beta, -alpha, &line); 
+
+            if(score >= beta) 
+                return beta; // fail hard
+
+            if(score > alpha) {
+                alpha = score;
+                append_line(m, line, pline);
+            }
+        }
+        board.unmake_move(m);
+    }
+
+    return alpha;
 }
 
 int Search::alphabeta(
@@ -25,37 +74,36 @@ int Search::alphabeta(
 ) 
 {
     Line line;
-    auto now = std::chrono::steady_clock::now();
-    Duration elapsed = now - search_start;
+    // auto now = std::chrono::steady_clock::now();
+    // Duration elapsed = now - search_start;
 
-    auto append_line = [&](BMove chosen_move) -> void {
-        pline->line[0] = chosen_move;
-        memcpy(pline->line + 1, line.line, line.num_moves * sizeof(BMove));
-        pline->num_moves = line.num_moves + 1;
-    };
-
-    if(elapsed.count() >= allotted) {
-        searching = false;
-        return eval(board);
-    }
+    // if(elapsed.count() >= allotted) {
+    //     searching = false;
+    //     return eval(board);
+    // }
 
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
     Colour us = board.get_side_to_move();
 
-    // Just sort by captures for now
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
         uint8_t a_capture = (board.get_piece(get_to(a)) != None);
         uint8_t b_capture = (board.get_piece(get_to(b)) != None);
 
-        return a_capture > b_capture;
+		int a_capturing_weight = piece_weight(piece_to_piecetype(board.get_piece(get_from(a))));
+		int a_captured_weight = piece_weight(piece_to_piecetype(board.get_piece(get_to(a))));
+
+		int b_capturing_weight = piece_weight(piece_to_piecetype(board.get_piece(get_from(b))));
+		int b_captured_weight = piece_weight(piece_to_piecetype(board.get_piece(get_to(b))));
+
+        int a_diff = a_captured_weight - a_capturing_weight; 
+        int b_diff = b_captured_weight - b_capturing_weight;  
+
+        return (a_capture > b_capture) || (a_diff > b_diff);
     });
 
-    int nega = us == White ? 1 : -1;
 	if(depth == 0) {
-        pline->num_moves = 0;
-        // printf("Depth 0. Score: %d\n", eval(board) * nega);
-        return eval(board) * nega;
+        return quiescence(board, alpha, beta, pline);
     }
 
     // printf("Alpha before search: %d\n", alpha);
@@ -64,7 +112,7 @@ int Search::alphabeta(
 
         board.make_move(m);
         if(!board.in_check(us)) {
-            nodes_searched++;
+            // nodes_searched++;
             int score = -alphabeta(board, -beta, -alpha, depth - 1, &line); 
 
             if(score >= beta) 
@@ -72,7 +120,7 @@ int Search::alphabeta(
 
             if(score > alpha) {
                 alpha = score;
-                append_line(m);
+                append_line(m, line, pline);
             }
         }
         board.unmake_move(m);
@@ -125,8 +173,6 @@ int Search::search(BoardState board, size_t depth, Line * pline)
 {
     depth_searched = depth;
     Colour us = board.get_side_to_move(); 
-    int inf = 999999;
-    int alpha = us == White ? -inf : inf;
-    int beta = us == White ? inf : -inf;
-    return alphabeta(board, alpha, beta, depth, pline); 
+
+    return alphabeta(board, -999999, 999999, depth, pline); 
 }

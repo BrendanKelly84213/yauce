@@ -63,7 +63,7 @@ private:
         Line * pline
     );
 
-    int quiescence(BoardState board, int alpha, int beta, Line * pline, int max);
+    int quiescence(BoardState board, int alpha, int beta, Line * pline);
 };
 
 #endif
