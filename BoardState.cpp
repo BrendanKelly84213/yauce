@@ -797,7 +797,21 @@ Bitboard BoardState::attacks_to(Square sq) const
     // Build a hypothetical piece which has all piece attacks
     // place hypothetical piece on square, get its attacks
     // Intersection of attacking pieces and super_piece_attacks
-    return 0ULL;
+    
+    const Bitboard queen_attacks = blockers_and_beyond(Queen, sq);
+    const Bitboard bishop_attacks = blockers_and_beyond(Bishop, sq);
+    const Bitboard rook_attacks = blockers_and_beyond(Rook, sq);
+    
+    Bitboard super_piece = 
+          ( piece_attacks[King][sq] & get_piecetype_bb(King) )
+        | ( piece_attacks[Knight][sq] & get_piecetype_bb(Knight) )
+        | ( queen_attacks & get_piecetype_bb(Queen) )
+        | ( bishop_attacks & get_piecetype_bb(Bishop) )
+        | ( rook_attacks & get_piecetype_bb(Rook) )
+        | ( pawn_captures_mask(sq, White) & get_piece_bb(BP) )
+        | ( pawn_captures_mask(sq, Black) & get_piece_bb(WP) );
+
+    return super_piece;
 }
 
 // Is a square attacked
