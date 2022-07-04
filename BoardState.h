@@ -40,20 +40,17 @@ inline Bitboard get_sliding_until_ni(PieceType pt, Square from, Square to)
 #endif 
 
 struct State {
-    Colour side_to_move = White; 
+    Colour side_to_move; 
     // TODO: Castle can be a lot more lightweight...
-    bool w_castle_ks = false; 
-    bool w_castle_qs = false; 
-    bool b_castle_ks = false; 
-    bool b_castle_qs = false; 
-    Square ep_square = NullSquare;
-    // FIXME: int -> size_t
-    int halfmove_clock = 0;
-    int ply_count = 0;     
-    Piece last_captured = None;
-    bool endgame = false;
-
-    bool operator==(State &b) const;
+    bool w_castle_ks; 
+    bool w_castle_qs; 
+    bool b_castle_ks; 
+    bool b_castle_qs; 
+    Square ep_square;
+    size_t halfmove_clock;
+    size_t ply_count;     
+    Piece last_captured;
+    bool endgame;
 };
 
 class BoardState {
@@ -64,7 +61,7 @@ public:
     void make_move(BMove m);
     void unmake_move(BMove m);
 
-    Bitboard get_occ() const; 
+    Bitboard get_occ() const { return occ; }
     Bitboard get_friend_occ() const;
     Bitboard get_friend_occ(Colour us) const;
     Bitboard get_op_occ() const;
@@ -98,8 +95,6 @@ public:
     void print_occupied() const;
     void print_context(BMove m, bool capture, Move flag) const;
 
-    bool operator==(BoardState b) const;
-
 private: 
 
     State state; 
@@ -107,9 +102,9 @@ private:
     std::vector<BMove> movelist;
     Bitboard piece_bbs[12];
     Piece squares[64]; // Square centric lookup 
-    Bitboard occ = 0ULL;
-    Bitboard white_occ = 0ULL;
-    Bitboard black_occ = 0ULL;
+    Bitboard occ;
+    Bitboard white_occ;
+    Bitboard black_occ;
 
     void init_squares(std::string fen);
     void init_bbs();

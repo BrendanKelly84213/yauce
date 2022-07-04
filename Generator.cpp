@@ -79,17 +79,15 @@ int generate_captures(BoardState board, BMove captures[])
 
     // Get squares attacking opponents pieces
     // Opponents piece bb
-    Bitboard op_occ = board.get_op_occ();
+    Bitboard op_occ = board.get_op_occ(us);
     while(op_occ) {
         Square captured_square = pop_bit(op_occ);
-        Bitboard attacks_to_captured_square = board.attacks_to(captured_square) & board.get_friend_occ();
+        Bitboard attacks_to_captured_square = board.attacks_to(captured_square) & board.get_friend_occ(us);
         while(attacks_to_captured_square) {
             Square attacking_square = pop_bit(attacks_to_captured_square);
 
-			// if(!(board.get_piece(captured_square) == WK || board.get_piece(captured_square) == BK)) {
 			captures[i] = move(attacking_square, captured_square, QUIET);
 			++i;
-			// }
         }
     }
     return i;
@@ -176,18 +174,16 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 } 
             }
 
-
             // Regular attacks
             Bitboard to_squares = board_state.get_to_squares(pt, origin, us);
 
             while(to_squares) {
                 Square dest = pop_bit(to_squares);
-                if(!(pt == Pawn &&  dest == last_rank)) {
+                if(!(pt == Pawn && dest == last_rank)) {
                     moves[i] = move(origin, dest, QUIET); 
                     i++;
                 }
             }
-
         }
     }
     return i;

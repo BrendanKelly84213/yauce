@@ -71,7 +71,7 @@ void BoardState::init_squares(std::string fen)
 
     // Parse out info
     std::string info = fen.substr(i + 1, fen.length());
-    for(int i=0; i<info.length(); ++i) {
+    for(size_t i=0; i<info.length(); ++i) {
         if(info[i] == ' ') {
             section++;
             /* continue; */
@@ -140,7 +140,6 @@ void BoardState::init_bbs()
     for(Square s = a1; s <= h8; s = s + E) {
         Piece p = squares[s];
         if(p != None) { 
-            PieceType pt = piece_to_piecetype(p);
             set_bit(piece_bbs[p], s);
             set_bit(occ, s);
             if(get_piece_colour(p) == White) {
@@ -650,11 +649,6 @@ Colour BoardState::get_piece_colour(Piece p) const
     return White;
 }
 
-Bitboard BoardState::get_occ() const 
-{
-    return occ;
-}
-
 void BoardState::init_behind()
 {
     for(Square f=a1; f<=h8; f = f + E) {
@@ -890,31 +884,6 @@ std::string BoardState::get_algebraic(BMove m) const
         algebraic += "+";
 
     return algebraic;
-}
-
-bool BoardState::operator==(BoardState b) const
-{
-    for(int p=BQ; p <= WP; ++p) {
-        if(this->piece_bbs[p] != b.piece_bbs[p])
-            return false;
-    }
-    return this->white_occ == b.white_occ
-        && this->black_occ == b.black_occ  
-        && this->occ == b.occ
-        && this->state == b.state;
-}
-
-bool State::operator==(State &b) const
-{
-  return this->side_to_move   == b.side_to_move
-      && this->w_castle_ks    == b.w_castle_ks
-      && this->w_castle_qs    == b.w_castle_qs
-      && this->b_castle_ks    == b.b_castle_ks 
-      && this->b_castle_qs    == b.b_castle_qs
-      && this->ep_square      == b.ep_square
-      && this->halfmove_clock == b.halfmove_clock
-      && this->ply_count      == b.ply_count
-      && this->last_captured  == b.last_captured;
 }
 
 bool is_piece_ch(char ch) 
