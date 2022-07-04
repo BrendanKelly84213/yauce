@@ -35,9 +35,10 @@ int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
         Square bfrom = get_from(b);
 
         Piece acp = board.get_piece(ato);
-        Piece ap = board.get_piece(afrom);
         Piece bcp = board.get_piece(bto);
+
         Piece bp = board.get_piece(bfrom);
+        Piece ap = board.get_piece(afrom);
 
 		int a_capturing_weight = piece_weight(piece_to_piecetype(ap));
 		int a_captured_weight = piece_weight(piece_to_piecetype(acp));
@@ -102,38 +103,36 @@ int Search::alphabeta(
     Colour us = board.get_side_to_move();
 
     // NOTE: Doing this sort before checking if depth 0 and doing quiescence causes invalid read segfault
-    //       No clue as to why, look into later? Seems like the board object is being read
-#if 1
-    std::sort(std::begin(moves), std::end(moves), [board](BMove a, BMove b) {
+    //       No clue as to why, look into later? Seems like the board object is being read but not allocated 
+    std::sort(std::begin(moves), std::begin(moves) + num_moves, [board](BMove a, BMove b) {
+        Square ato = get_to(a);
+        Square bto = get_to(b);
 
+        Piece acp = board.get_piece(ato);
+        Piece bcp = board.get_piece(bto);
+        int a_captured_weight = piece_weight(piece_to_piecetype(acp));
+        int b_captured_weight = piece_weight(piece_to_piecetype(bcp));
+        
+        // Both are captures
+        if(acp != None && bcp != None) {
+            Square bfrom = get_from(b);
+            Square afrom = get_from(a);
+            Piece bp = board.get_piece(bfrom);
+            Piece ap = board.get_piece(afrom);
 
-        const Square afrom = get_from(a);
-        const Square ato = get_to(a);
+            int a_capturing_weight = piece_weight(piece_to_piecetype(ap));
 
-        const Square bfrom = get_from(b);
-        const Square bto = get_to(b);
+            int b_capturing_weight = piece_weight(piece_to_piecetype(bp));
 
-        const Piece ap = board.get_piece(afrom);
-        const Piece acp = board.get_piece(ato);
+            int a_diff = a_captured_weight - a_capturing_weight; 
+            int b_diff = b_captured_weight - b_capturing_weight;  
 
-        const Piece bp = board.get_piece(bfrom);
-        const Piece bcp = board.get_piece(bto);
-
-        const bool a_capture = (acp!= None);
-        const bool b_capture = (bcp!= None);
-
-		const int a_capturing_weight = piece_weight(piece_to_piecetype(ap));
-		const int a_captured_weight = piece_weight(piece_to_piecetype(acp));
-
-		const int b_capturing_weight = piece_weight(piece_to_piecetype(bp));
-		const int b_captured_weight = piece_weight(piece_to_piecetype(bcp));
-
-        const int a_diff = a_captured_weight - a_capturing_weight; 
-        const int b_diff = b_captured_weight - b_capturing_weight;  
-
-        return (a_capture > b_capture) || (a_diff > b_diff);
+            return a_diff > b_diff;
+        }
+        
+        // Only one is a capture
+        return a_captured_weight > b_captured_weight;
     });
-#endif
 
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
