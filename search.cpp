@@ -24,20 +24,29 @@ int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
         alpha = stand_pat;
     
     Line line;
-    int score = eval(board); 
     BMove captures[256];
     size_t num_captures = generate_captures(board, captures);
 
     // Just sort by captures for now
     std::sort(captures, captures + num_captures, [&](BMove a, BMove b) {
-		int a_capturing_weight = piece_weight(piece_to_piecetype(board.get_piece(get_from(a))));
-		int a_captured_weight = piece_weight(piece_to_piecetype(board.get_piece(get_to(a))));
+        Square ato = get_to(a);
+        Square afrom = get_from(a);
+        Square bto = get_to(b);
+        Square bfrom = get_from(b);
 
-		int b_capturing_weight = piece_weight(piece_to_piecetype(board.get_piece(get_from(b))));
-		int b_captured_weight = piece_weight(piece_to_piecetype(board.get_piece(get_to(b))));
+        Piece acp = board.get_piece(ato);
+        Piece ap = board.get_piece(afrom);
+        Piece bcp = board.get_piece(bto);
+        Piece bp = board.get_piece(bfrom);
+
+		int a_capturing_weight = piece_weight(piece_to_piecetype(ap));
+		int a_captured_weight = piece_weight(piece_to_piecetype(acp));
+
+		int b_capturing_weight = piece_weight(piece_to_piecetype(bp));
+		int b_captured_weight = piece_weight(piece_to_piecetype(bcp));
 
         int a_diff = a_captured_weight - a_capturing_weight; 
-        int b_diff = b_captured_weight - b_capturing_weight ;  
+        int b_diff = b_captured_weight - b_capturing_weight;  
 
         return a_diff > b_diff;
     });
@@ -73,7 +82,7 @@ int Search::alphabeta(
         Line * pline
 ) 
 {
-    Line line;
+
     // auto now = std::chrono::steady_clock::now();
     // Duration elapsed = now - search_start;
 
@@ -81,38 +90,61 @@ int Search::alphabeta(
     //     searching = false;
     //     return eval(board);
     // }
+    
+	if(depth == 0) {
+        return quiescence(board, alpha, beta, pline);
+    }
+
+    Line line;
 
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
     Colour us = board.get_side_to_move();
 
-    std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
-        uint8_t a_capture = (board.get_piece(get_to(a)) != None);
-        uint8_t b_capture = (board.get_piece(get_to(b)) != None);
+    // NOTE: Doing this sort before checking if depth 0 and doing quiescence causes invalid read segfault
+    //       No clue as to why, look into later? Seems like the board object is being read
+#if 1
+    std::sort(std::begin(moves), std::end(moves), [board](BMove a, BMove b) {
 
-		int a_capturing_weight = piece_weight(piece_to_piecetype(board.get_piece(get_from(a))));
-		int a_captured_weight = piece_weight(piece_to_piecetype(board.get_piece(get_to(a))));
 
-		int b_capturing_weight = piece_weight(piece_to_piecetype(board.get_piece(get_from(b))));
-		int b_captured_weight = piece_weight(piece_to_piecetype(board.get_piece(get_to(b))));
+        const Square afrom = get_from(a);
+        const Square ato = get_to(a);
 
-        int a_diff = a_captured_weight - a_capturing_weight; 
-        int b_diff = b_captured_weight - b_capturing_weight;  
+        const Square bfrom = get_from(b);
+        const Square bto = get_to(b);
+
+        const Piece ap = board.get_piece(afrom);
+        const Piece acp = board.get_piece(ato);
+
+        const Piece bp = board.get_piece(bfrom);
+        const Piece bcp = board.get_piece(bto);
+
+        const bool a_capture = (acp!= None);
+        const bool b_capture = (bcp!= None);
+
+		const int a_capturing_weight = piece_weight(piece_to_piecetype(ap));
+		const int a_captured_weight = piece_weight(piece_to_piecetype(acp));
+
+		const int b_capturing_weight = piece_weight(piece_to_piecetype(bp));
+		const int b_captured_weight = piece_weight(piece_to_piecetype(bcp));
+
+        const int a_diff = a_captured_weight - a_capturing_weight; 
+        const int b_diff = b_captured_weight - b_capturing_weight;  
 
         return (a_capture > b_capture) || (a_diff > b_diff);
     });
+#endif
 
-	if(depth == 0) {
-        return quiescence(board, alpha, beta, pline);
-    }
-
-    // printf("Alpha before search: %d\n", alpha);
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
+        
+        if(m == 0) {
+            printf("Null Move (m == 0) \n");
+            return 0;
+        }
 
         board.make_move(m);
         if(!board.in_check(us)) {
-            // nodes_searched++;
             int score = -alphabeta(board, -beta, -alpha, depth - 1, &line); 
 
             if(score >= beta) 
@@ -125,8 +157,6 @@ int Search::alphabeta(
         }
         board.unmake_move(m);
     }
-
-    // printf("Alpha after search: %d\n", alpha);
 
     return alpha;
 }
@@ -148,7 +178,6 @@ BMove Search::iterative_search(BoardState board)
     size_t d = 0;
     std::vector<Line> lines(32); 
     std::vector<int> scores(32);
-    BMove best_move;
 
     search_start = std::chrono::steady_clock::now();
     searching = true;
@@ -172,7 +201,5 @@ BMove Search::iterative_search(BoardState board)
 int Search::search(BoardState board, size_t depth, Line * pline) 
 {
     depth_searched = depth;
-    Colour us = board.get_side_to_move(); 
-
     return alphabeta(board, -999999, 999999, depth, pline); 
 }
