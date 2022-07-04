@@ -134,10 +134,6 @@ int piece_weight(PieceType pt)
 void init_black_tables()
 {
     for(Square s = a1; s <= h8; s = s + E) {
-        int curr_row = s >> 3;
-        int offset = s % 8;
-        int swap_row = 7 - curr_row;
-        int swap_idx = offset + 8*swap_row;
 
         for(PieceType pt = Queen; pt <= Pawn; ++pt) {
             black_mg_tables[pt][s] = white_mg_tables[pt][(s ^ 56)];
@@ -168,6 +164,7 @@ void print_black_tables()
     print_table(b_queen_table );
 } 
 
+#if 0
 int piece_weight(BoardState board, Piece p)
 {
     int weight = 0;
@@ -176,19 +173,33 @@ int piece_weight(BoardState board, Piece p)
     PieceType pt = piece_to_piecetype(p);
     Colour piece_colour = piece_to_colour(p);
 
+
     while(piecebb) {
         Square s = pop_bit(piecebb);
 
-        if(piece_colour == White) 
-            weight += piece_weights[pt] + (endgame ? white_eg_tables[pt][s] : white_mg_tables[pt][s]); 
-        else 
-            weight += piece_weights[pt] + (endgame ? black_eg_tables[pt][s] : black_mg_tables[pt][s]); 
+        // std::string pts = piecetype_to_str(pt);
+        // std::string ss = square_to_str(s);
+
+        // printf("endgame: %d, piece_weights[%s]: %d, white_eg_tables[%s][%s]: %d, white_mg_tables[%s][%s]: %d, black_eg_tables[%s][%s]: %d, black_mg_tables[%s][%s]: %d\n", endgame, pts.c_str(), piece_weights[pt], pts.c_str(), ss.c_str(), white_eg_tables[pt][s], pts.c_str(), ss.c_str(), white_mg_tables[pt][s], pts.c_str(), ss.c_str(), black_eg_tables[pt][s],  pts.c_str(), ss.c_str(), black_mg_tables[pt][s]);
+
+        if(piece_colour == White) {
+            weight += (piece_weights[pt] + (endgame ? white_eg_tables[pt][s] : white_mg_tables[pt][s])); 
+        } else  {
+            weight += (piece_weights[pt] + (endgame ? black_eg_tables[pt][s] : black_mg_tables[pt][s])); 
+        }
     }
+    
     return weight;
 }
+#endif 
 
-// Just return the material inbalance for now
-// NOTE: I am very tired and don't really gaf 
+int piece_weight(BoardState board, Piece p)
+{
+    PieceType pt = piece_to_piecetype(p);
+
+    return piece_weight(pt) * board.get_num_piece(p);
+}
+
 int eval(BoardState board)
 {
     return (
