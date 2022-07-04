@@ -28,7 +28,7 @@ int main( int argc, char *argv[] )
     std::string pos5 = "r1b1k1nr/1p3ppp/p2bp3/3pq3/8/2NBPQ2/PPPB1PPP/R4RK1 w kq - 0 1";
 
     BoardState board;
-    board.init(buggy_fen);
+    board.init(kiwipete);
     init_black_tables();
     board.print_squares();
 

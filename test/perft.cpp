@@ -16,10 +16,10 @@ int perft(int depth, BoardState board_state, Stats &stats)
    for(int i=0; i<num_moves; ++i) {
        BMove m = moves[i];
        Move flag = get_flag(m);
-       Square from = get_from(m);
+       // Square from = get_from(m);
        Square to = get_to(m);
 
-       Piece p = board_state.get_piece(from);
+       // Piece p = board_state.get_piece(from);
 
        bool capture = (board_state.get_piece(to) != None);
 
