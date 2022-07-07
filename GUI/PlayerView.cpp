@@ -199,9 +199,39 @@ void PlayerView::engine_make_move()
 {
 }
 
-void PlayerView::player_make_move()
+void PlayerView::player_make_move(Move flag)
 {
+
 }
+
+bool PlayerView::is_legal(PieceType pt, Square from, Square to) const
+{
+    Colour us = board.get_side_to_move();
+    if(board.get_piece_colour(board.get_piece(from)) != us)
+        return false;
+
+    Bitboard to_squares = board.get_to_squares(pt, from, us);
+    if(pt == Pawn) {
+        // Double pawn push
+        if(us == White && rank(from) == 1)
+            to_squares |= bit(from + N + N);
+        else if(us == Black && rank(from) == 6)
+            to_squares |= bit(from + S + S);
+
+        // TODO: En Passant
+
+    }
+
+    if(pt == King) {
+        if(board.can_castle(us, OO)) 
+            to_squares |= bit(from + E + E);
+        if(board.can_castle(us, OOO))
+            to_squares |= bit(from + W + W);
+    }
+
+    print(to_squares);
+    return bit(to) & to_squares;
+} 
 
 void PlayerView::run()
 {
@@ -209,32 +239,72 @@ void PlayerView::run()
     while(running) {
         if(SDL_PollEvent(&e)) {
             int x, y;
+            SDL_GetMouseState(&x,&y);
 
             if(e.type == SDL_QUIT) {
                 running = false;
             } else if(e.type == SDL_MOUSEBUTTONDOWN && !piece_being_dragged) {
-                SDL_GetMouseState(&x,&y);
                 clear_current_move();
                 if(drag_selected_piece(x, y)) {
                     piece_being_dragged = true;
                     current_move.from = xy_to_square(x, y, square_w, bottom_colour);
                 }
             } else if(e.type == SDL_MOUSEBUTTONUP && piece_being_dragged) {
-                SDL_GetMouseState(&x,&y);
 
+                // Stop dragging the piece 
                 Square piece_id = current_move.from;
                 board_pieces[piece_id].dragging = false;
                 piece_being_dragged = false;
-                current_move.to = xy_to_square(x, y, square_w, bottom_colour);
 
-                BoardPiece copy_bp = board_pieces[piece_id];
-                board_pieces[piece_id].p = None;
-                board_pieces[current_move.to] = copy_bp; 
+                Square potential_to = xy_to_square(x, y, square_w, bottom_colour);
+                PieceType moving_piecetype = piece_to_piecetype(board_pieces[piece_id].p);
+                Move flag = QUIET;
+                Colour us = board.get_side_to_move();
 
-                player_make_move();
+                if(editing || is_legal(moving_piecetype, current_move.from, potential_to)) {
+                    // Flag 
+                    current_move.to = potential_to;
+                    if(moving_piecetype == Pawn) {
+
+                        bool from_first_rank = us == White && rank(current_move.from) == 1 || us == Black && rank(current_move.from) == 6;
+                        bool double_push = us == White && rank(current_move.to) == 3 || us == Black && rank(current_move.to) == 4;
+                        if(from_first_rank && double_push)
+                            flag = DOUBLE_PAWN_PUSH;
+
+                        // TODO: En Passant
+                        // TODO: Promotions
+
+                    }  
+
+                    if(moving_piecetype == King) {
+                        bool white_ks = us == White && current_move.from == e1 && current_move.to == g1;
+                        bool black_ks = us == Black && current_move.from == e8 && current_move.to == g8;
+                        bool white_qs = us == White && current_move.from == e1 && current_move.to == c1;
+                        bool black_qs = us == Black && current_move.from == e8 && current_move.to == c8;
+                        if(white_ks || black_ks)
+                            flag = OO;
+                        else if(white_qs || black_qs)
+                            flag = OOO;
+                    }
+
+                    // Update board_piece index
+                    BoardPiece copy_bp = board_pieces[piece_id];
+                    board_pieces[piece_id].p = None;
+                    board_pieces[current_move.to] = copy_bp; 
+                    BMove m = move(current_move.from, current_move.to, flag); 
+                    player_make_move(flag);  
+                    board.make_move(m);
+                } else {
+                    board_pieces[piece_id].s = piece_id;
+                }
+                clear_current_move();
             } else if(e.type == SDL_KEYUP) {
                 if(e.key.keysym.sym == SDLK_e) {
                     editing = !editing;
+                    if(editing)
+                        printf("Editing\n");
+                    else 
+                        printf("Not Editing\n");
                 }
                 else if(e.key.keysym.sym == SDLK_ESCAPE)
                     running = false;

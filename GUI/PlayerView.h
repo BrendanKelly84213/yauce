@@ -21,7 +21,7 @@ private:
 
     bool running = false;
     bool piece_being_dragged = false;
-    bool editing = true; // are we currently creating a board 
+    bool editing = false; // are we currently creating a board 
 
     Colour player_colour;
     Colour bottom_colour;
@@ -46,6 +46,8 @@ private:
 
     GMove current_move;
 
+    bool is_legal(PieceType pt, Square from, Square to) const;
+
     void draw_grid();
     void draw_piece(BoardPiece bp);
     void draw_pieces();
@@ -59,7 +61,7 @@ private:
     void update_window(); 
 
     void engine_make_move();
-    void player_make_move();
+    void player_make_move(Move flag);
 
     void clear_current_move();
 
