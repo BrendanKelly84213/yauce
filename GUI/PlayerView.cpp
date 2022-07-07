@@ -199,9 +199,9 @@ void PlayerView::engine_make_move()
 {
 }
 
-void PlayerView::player_make_move(Move flag)
+void PlayerView::player_make_move(BMove m)
 {
-
+    Move flag = get_flag(m);
 }
 
 bool PlayerView::is_legal(PieceType pt, Square from, Square to) const
@@ -229,9 +229,17 @@ bool PlayerView::is_legal(PieceType pt, Square from, Square to) const
             to_squares |= bit(from + W + W);
     }
 
-    print(to_squares);
+    // print(to_squares);
     return bit(to) & to_squares;
 } 
+
+void PlayerView::move_piece(Square from, Square to)
+{
+    BoardPiece copy_bp = board_pieces[from];
+    board_pieces[from].p = None;
+    board_pieces[to] = copy_bp; 
+    board_pieces[to].s = to; 
+}
 
 void PlayerView::run()
 {
@@ -262,8 +270,9 @@ void PlayerView::run()
                 Colour us = board.get_side_to_move();
 
                 if(editing || is_legal(moving_piecetype, current_move.from, potential_to)) {
-                    // Flag 
                     current_move.to = potential_to;
+
+                    // Flag 
                     if(moving_piecetype == Pawn) {
 
                         bool from_first_rank = us == White && rank(current_move.from) == 1 || us == Black && rank(current_move.from) == 6;
@@ -288,11 +297,28 @@ void PlayerView::run()
                     }
 
                     // Update board_piece index
-                    BoardPiece copy_bp = board_pieces[piece_id];
-                    board_pieces[piece_id].p = None;
-                    board_pieces[current_move.to] = copy_bp; 
+                    move_piece(current_move.from, current_move.to);
+
                     BMove m = move(current_move.from, current_move.to, flag); 
-                    player_make_move(flag);  
+
+                    // Handle funny moves
+                    // Castles, move the rook
+                    if(flag == OO) {
+                        if(us == White) {
+                            move_piece(h1, f1);
+                        } else {
+                            move_piece(h8, f8);
+                        }
+                    }
+
+                    if(flag == OOO) {
+                        if(us == White) {
+                            move_piece(a1, d1);
+                        } else {
+                            move_piece(a8, d8);
+                        }
+                    }
+
                     board.make_move(m);
                 } else {
                     board_pieces[piece_id].s = piece_id;

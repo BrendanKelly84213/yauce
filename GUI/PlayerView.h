@@ -47,6 +47,7 @@ private:
     GMove current_move;
 
     bool is_legal(PieceType pt, Square from, Square to) const;
+    void move_piece(Square from, Square to);
 
     void draw_grid();
     void draw_piece(BoardPiece bp);
@@ -61,7 +62,7 @@ private:
     void update_window(); 
 
     void engine_make_move();
-    void player_make_move(Move flag);
+    void player_make_move(BMove m);
 
     void clear_current_move();
 
