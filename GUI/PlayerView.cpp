@@ -134,6 +134,10 @@ bool PlayerView::init(std::string fen, Colour bc, bool bi)
      
     bottom_colour = bc;
     board_inverted = bi;
+    if(!bi)
+        player_colour = bc;
+    else player_colour = !bc;
+
     return true;
 } 
 
@@ -197,6 +201,25 @@ bool PlayerView::undrag_selected_piece(int x, int y)
 
 void PlayerView::engine_make_move()
 {
+    
+    Line pline;
+    Search s(1000);
+
+    auto search_start = std::chrono::steady_clock::now();
+    // For now search to fixed depth of 6
+    // TODO: Iterative deepening
+    int score = s.search(board, 5, &pline);
+    auto search_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = search_end - search_start;
+
+    printf("Searched depth %lu in %fs. Score: %d \n", 6ul, elapsed.count(), score);       
+    s.print_line(board, pline);
+
+    BMove best_move = pline.line[0];
+    Square from = get_from(best_move);
+    Square to = get_to(best_move);
+    board.make_move(best_move);
+    move_piece(from, to);
 }
 
 void PlayerView::player_make_move(BMove m)
@@ -219,7 +242,6 @@ bool PlayerView::is_legal(PieceType pt, Square from, Square to) const
             to_squares |= bit(from + S + S);
 
         // TODO: En Passant
-
     }
 
     if(pt == King) {
@@ -229,7 +251,8 @@ bool PlayerView::is_legal(PieceType pt, Square from, Square to) const
             to_squares |= bit(from + W + W);
     }
 
-    // print(to_squares);
+
+
     return bit(to) & to_squares;
 } 
 
@@ -274,7 +297,6 @@ void PlayerView::run()
 
                     // Flag 
                     if(moving_piecetype == Pawn) {
-
                         bool from_first_rank = us == White && rank(current_move.from) == 1 || us == Black && rank(current_move.from) == 6;
                         bool double_push = us == White && rank(current_move.to) == 3 || us == Black && rank(current_move.to) == 4;
                         if(from_first_rank && double_push)
@@ -282,7 +304,6 @@ void PlayerView::run()
 
                         // TODO: En Passant
                         // TODO: Promotions
-
                     }  
 
                     if(moving_piecetype == King) {
@@ -301,7 +322,6 @@ void PlayerView::run()
 
                     BMove m = move(current_move.from, current_move.to, flag); 
 
-                    // Handle funny moves
                     // Castles, move the rook
                     if(flag == OO) {
                         if(us == White) {
@@ -319,7 +339,9 @@ void PlayerView::run()
                         }
                     }
 
-                    board.make_move(m);
+                    if(current_move.from != current_move.to)
+                        board.make_move(m);
+
                 } else {
                     board_pieces[piece_id].s = piece_id;
                 }
@@ -347,6 +369,12 @@ void PlayerView::run()
         draw_grid();
         draw_pieces(); 
         SDL_RenderPresent(board_renderer);
+
+        if(!editing && board.get_side_to_move() != player_colour) {
+            // printf("%d, %d\n", board.get_side_to_move(), player_colour);
+           printf("thinking...\n");
+           engine_make_move(); 
+        }
     }
 
     SDL_DestroyRenderer(board_renderer);

@@ -21,10 +21,10 @@ private:
 
     bool running = false;
     bool piece_being_dragged = false;
-    bool editing = false; // are we currently creating a board 
+    bool editing = true; // are we currently creating a board 
 
     Colour player_colour;
-    Colour bottom_colour;
+    Colour bottom_colour; 
     bool board_inverted = false;
 
     SDL_Event e;
