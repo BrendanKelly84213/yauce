@@ -10,8 +10,17 @@
 #include "utils/conversions.h"
 #include "eval.h"
 
-//TODO: 
+std::vector<std::string> words(std::string s)
+{
+    std::stringstream ss(s);
+    std::string word;
+    std::vector<std::string> vec;
 
+    while(ss >> word) {
+        vec.push_back(word);
+    }
+    return vec;
+}
 
 int main( int argc, char *argv[] )
 {
@@ -28,67 +37,60 @@ int main( int argc, char *argv[] )
     std::string pos5 = "r1b1kb1r/ppp2Npp/8/3pp3/2BnNq2/5P2/PPPP1K1P/R1BQ3R w kq - 0 1";
     std::string inpos;
 
+
     BoardState board;
-    if(argv[1])
-        board.init(std::string(argv[1]));
-
-    else 
-        board.init(pos5);
     init_black_tables();
-    board.print_squares();
-
-#if 1
 
     bool running = true;
+    std::string line;
+    std::vector<std::string> w;
+    Search s;
     while(running) {
-        std::string cmd;
-        std::string param1;
-        std::cin >> cmd >> param1;
+        // std::cin >> cmd;
+        std::getline(std::cin, line);
+        w = words(line);
 
-        if(strcmp(cmd.c_str(), "stop") == 0) {
-            running = false;
+        if(line == "uci") {
+            std::cout << "id name H80000000-1\nid author Brendan\nuciok\n";
+        } else if(line == "isready") {
+            std::cout << "readyok\n";
+        } else if(w[0] == "position") {
+            // FIXME: bad data causes segmentation fault 
+            if(1 < w.size()) {
+                if(w[1] == "fen") {
+                    // TODO 
+                } else if(w[1] == "startpos")
+                    board.init(initial_fen);
+            }
+        } else if(w[0] == "go") {
+            size_t depth = 0; // search depth
+            size_t movetime = 0; 
+            size_t nodes = 0;
+            bool infinite = false;
+                                 
+            for(size_t i = 1; i < w.size(); ++i) {
+                std::string param = w[i];
+                std::string val;
+                if(param == "depth") {
+                    if(i + 1 < w.size()) {
+                        depth = stoi(w[i + 1]);
+                    }
+                } else if(param == "movetime") {
+                    if(i + 1 < w.size()) {
+                        movetime = stoi(w[i + 1]);
+                    }
+                } else if(param == "infinite") {
+                    infinite = true; 
+                }
+            }
+            
+            // TODO: Start searching with given parameters
+            // Implement search that can do infinite, search n nodes, etc...
+
+        } else if(w[0] == "stop") {
+            s.stop_search();
         }
-    
-        if(strcmp(cmd.c_str(), "go") == 0) {
-            Line pline;
-            Search s(1000);
-            char paramc = param1.c_str()[0];
-            size_t param = (size_t)(paramc - 48);
-            printf("%lu\n", param);
-
-            auto search_start = std::chrono::steady_clock::now();
-            int score = s.search(board, param, &pline);
-            auto search_end = std::chrono::steady_clock::now();
-            std::chrono::duration<double> elapsed = search_end - search_start;
-
-            printf("Searched %lu nodes at depth %lu in %fs. Score: %d \n", s.get_nodes_searched(), param, elapsed.count(), score);       
-            s.print_line(board, pline);
-        }
-
-        if(strcmp(cmd.c_str(), "move") == 0) {
-           Square from = string_to_square(param1.substr(0,2)); 
-           Square to = string_to_square(param1.substr(2,2)); 
-           printf("%s %s\n", square_to_str(from).c_str(), square_to_str(to).c_str());
-           printf("%d %d\n", from, to);
-           BMove m = move(from, to, QUIET);
-           board.make_move(m);
-           board.print_squares();
-        }
-
-        // Search s(2);
-        
-        // std::cout << "Evaluating..." << '\n';
-        // board.print_squares();
-
-        // auto start = std::chrono::steady_clock::now();
-        // s.iterative_search(board);
-        // auto end = std::chrono::steady_clock::now();
-
-        // Duration elapsed = end - start; 
-
-        // std::cout << "searched  depth " << s.get_depth_searched() - 1 << " and " << s.get_nodes_searched() << " nodes in " << elapsed.count() << "s" << '\n'; 
 
     }
-#endif
     return 0;
 }
