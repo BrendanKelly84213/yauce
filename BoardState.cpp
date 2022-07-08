@@ -220,12 +220,12 @@ bool BoardState::can_castle(Colour us, Move type) const
 
 void BoardState::do_castle(Square rook_from, Square rook_to, Square king_from, Square king_to)
 {
-    if(squares[rook_from] == None || squares[king_from] == None) {
-        std::cout << "failed to castle \n";
-        print_squares();
-        print_moves();
-        assert(squares[rook_from] != None && squares[king_from] != None);
-    }
+    // if(squares[rook_from] == None || squares[king_from] == None) {
+    //     std::cout << "failed to castle \n";
+    //     print_squares();
+    //     print_moves();
+    //     // assert(squares[rook_from] != None && squares[king_from] != None);
+    // }
     Piece rook = state.side_to_move == White ? WR : BR;
     Piece king = state.side_to_move == White ? WK : BK;
 
@@ -307,13 +307,13 @@ void BoardState::remove_piece(Square sq)
 {
     Piece p = squares[sq];
 
-    if(p == None) {
-        std::cout << "failed to remove piece on " << square_to_str(sq) << '\n';
-        print_squares();
-        print_moves();
+    // if(p == None) {
+    //     std::cout << "failed to remove piece on " << square_to_str(sq) << '\n';
+    //     print_squares();
+    //     print_moves();
 
-        // assert(p != None);
-    }
+    //     // assert(p != None);
+    // }
 
     Colour pc = get_piece_colour(p);
     squares[sq] = None;
@@ -527,11 +527,11 @@ void BoardState::make_move(BMove m)
     state.side_to_move = static_cast<Colour>(!(bool)state.side_to_move); 
 
     // Make sure all is well afterwords 
-    if(!board_ok()) {
-        std::cout << "on make move" << '\n';
-        print_context(m, capture, flag);
-        assert(board_ok());
-    }
+    // if(!board_ok()) {
+    //     std::cout << "on make move" << '\n';
+    //     print_context(m, capture, flag);
+    //     assert(board_ok());
+    // }
 }
 
 void BoardState::unmake_move(BMove m)
@@ -577,11 +577,11 @@ void BoardState::unmake_move(BMove m)
         put_piece(capsq, cp);
     } 
 
-    if(!board_ok()) {
-        std::cout << "on unmake move" << '\n';
-        print_context(m, capture, flag);
-        assert(board_ok());
-    }
+    // if(!board_ok()) {
+    //     std::cout << "on unmake move" << '\n';
+    //     print_context(m, capture, flag);
+    //     assert(board_ok());
+    // }
 
     movelist.pop_back();
 }
