@@ -25,10 +25,15 @@ int main( int argc, char *argv[] )
     std::string pos3 = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
     std::string pos4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
     std::string randompos = "r1bqk1nr/pppp1p1p/2n5/2b3p1/2BpP3/2N2N2/PPP2PPP/R1BQK2R w KQkq - 0 6";
-    std::string pos5 = "r1b1k1nr/1p3ppp/p2bp3/3pq3/8/2NBPQ2/PPPB1PPP/R4RK1 w kq - 0 1";
+    std::string pos5 = "r1b1kb1r/ppp2Npp/8/3pp3/2BnNq2/5P2/PPPP1K1P/R1BQ3R w kq - 0 1";
+    std::string inpos;
 
     BoardState board;
-    board.init(kiwipete);
+    if(argv[1])
+        board.init(std::string(argv[1]));
+
+    else 
+        board.init(pos5);
     init_black_tables();
     board.print_squares();
 

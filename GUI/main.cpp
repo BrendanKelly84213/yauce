@@ -17,6 +17,11 @@ int main( int argc, char *argv[] )
     std::string weird_queen = "4K3/8/1q6/8/8/7Q/8/2k5 b - - 0 1";
     std::string en_passant_next_turn = "rnbqkbnr/pppppppp/8/6P1/8/8/PPPPPP1P/RNBQKBNR b KQkq - 0 1";
 
+    // std::string jams = "1k5r/pbp3p1/1p3q2/2b1nB2/4PP2/3P4/PPP3PP/R1BQ1RK1 w - - 1 16";
+    std::string jams = "1kb3q1/p1p5/1p6/n2P1P2/3QP1pr/6RB/PPP3PP/1R5K w - - 2 31";
+    std::string jams2 = "3r2k1/p4pp1/7p/4P3/3NQ3/2q5/PrP1KPPP/R6R w - - 3 23";
+
+
     Colour player_side = White;
     if(argv[1]) {
         if(strcmp(argv[1], "white") == 0)
@@ -37,7 +42,7 @@ int main( int argc, char *argv[] )
     printf("Playing as %s!\n", colour_to_str(player_side).c_str());
 
     game.init(initial_fen, player_side, board_inverted);
-
+            
     game.run();
 
     return 0;

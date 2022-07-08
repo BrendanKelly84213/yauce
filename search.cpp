@@ -87,11 +87,6 @@ int Search::alphabeta(
     // auto now = std::chrono::steady_clock::now();
     // Duration elapsed = now - search_start;
 
-    // if(elapsed.count() >= allotted) {
-    //     searching = false;
-    //     return eval(board);
-    // }
-    
 	if(depth == 0) {
         return quiescence(board, alpha, beta, pline);
     }

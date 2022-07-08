@@ -164,7 +164,7 @@ void print_black_tables()
     print_table(b_queen_table );
 } 
 
-#if 0
+#if 1
 int piece_weight(BoardState board, Piece p)
 {
     int weight = 0;
@@ -193,12 +193,14 @@ int piece_weight(BoardState board, Piece p)
 }
 #endif 
 
+#if 0
 int piece_weight(BoardState board, Piece p)
 {
     PieceType pt = piece_to_piecetype(p);
 
     return piece_weight(pt) * board.get_num_piece(p);
 }
+#endif
 
 int eval(BoardState board)
 {
