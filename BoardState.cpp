@@ -276,7 +276,7 @@ void BoardState::uncastle_queenside()
 // Remove from, add to
 void BoardState::move_piece(Square from, Square to, Piece p)
 {
-    assert(p != None);
+    // assert(p != None);
     put_piece(to, p);
     remove_piece(from);
 }
@@ -284,7 +284,7 @@ void BoardState::move_piece(Square from, Square to, Piece p)
 void BoardState::move_piece(Square from, Square to) 
 {
     Piece p = squares[from];
-    assert(p != None);
+    // assert(p != None);
     move_piece(from, to, p);
 }
 
@@ -312,7 +312,7 @@ void BoardState::remove_piece(Square sq)
         print_squares();
         print_moves();
 
-        assert(p != None);
+        // assert(p != None);
     }
 
     Colour pc = get_piece_colour(p);
@@ -423,7 +423,7 @@ void BoardState::make_move(BMove m)
 
     if(p == None) 
         print_context(m, capture, flag); 
-    assert(p != None);
+    // assert(p != None);
 
     // save state in prev_state 
     prev_state = state;
@@ -549,7 +549,7 @@ void BoardState::unmake_move(BMove m)
 
     if(p == None) {
         print_context(m, capture, flag); 
-        assert(p != None);
+        // assert(p != None);
     }
 
 
@@ -643,7 +643,7 @@ Bitboard BoardState::get_op_piece_bb(int pt) const
 
 Colour BoardState::get_piece_colour(Piece p) const
 {
-    assert(p != None);
+    // assert(p != None);
     if(p >= BQ && p <= BP)
         return Black;
     return White;
