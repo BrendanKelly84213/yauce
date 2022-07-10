@@ -21,39 +21,48 @@ struct ScoredMove {
 };
 
 
-class Search {
-public: 
+struct Search {
 
-    Search()
-        : allotted(0), searching(false), depth_searched(0), nodes_searched(0)
+    TimePoint search_start;
+    bool searching;
+    bool ready;
+    size_t depth_searched;
+    size_t nodes_searched;
+    size_t elapsed_time;
+    size_t depth;
+    size_t movetime;
+    size_t nodes;
+    bool infinite;
+
+    BMove best_move;
+    int score;
+
+    void init(size_t d, size_t mt, size_t ns, bool inf)
     {
-        // FIXME: 
-        search_start = std::chrono::steady_clock::now();
+        depth = d;
+        movetime = mt;
+        nodes = ns;
+        infinite = inf; 
     }
 
-    Search(double _allotted)
-        : allotted(_allotted), searching(false), depth_searched(0), nodes_searched(0)
+    void reset() 
     {
-        // FIXME: 
-        search_start = std::chrono::steady_clock::now();
+        depth_searched = 0;
+        nodes_searched = 0;
+        depth = 0;
+        movetime = 0;
+        nodes = 0;
+        infinite = false;
     }
-
-    void init(double _allotted) { allotted = _allotted; }
 
     int search(BoardState board, size_t depth, Line * pline);
-    BMove iterative_search(BoardState board);
+    void iterative_search(BoardState board);
     void print_line(BoardState board, Line line);
+    void print_info(Line pv);
+    void stop_search() { searching = false; }
 
     size_t get_depth_searched() const { return depth_searched; }
     size_t get_nodes_searched() const { return nodes_searched; }
-
-private:
-
-    double allotted;
-    TimePoint search_start;
-    bool searching;
-    size_t depth_searched;
-    size_t nodes_searched;
 
     int alphabeta(
         BoardState board,

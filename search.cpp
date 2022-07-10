@@ -1,3 +1,4 @@
+#include <chrono>
 #include <climits>
 
 #include "Generator.h"
@@ -14,7 +15,9 @@ static inline void append_line(BMove chosen_move, Line line, Line * pline)
 
 int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
 {
-    // printf("In quiescence\n");
+    if(!searching)
+        return 0;
+
     Colour us = board.get_side_to_move();
 	int nega = us == White ? 1 : -1;
  	int stand_pat = eval(board) * nega;
@@ -22,6 +25,8 @@ int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
         return beta;
     if( alpha < stand_pat )
         alpha = stand_pat;
+
+    nodes_searched++;
     
     Line line;
     BMove captures[256];
@@ -58,7 +63,6 @@ int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
         board.make_move(m);
 
         if(!board.in_check(us)) {
-            // nodes_searched++;
             int score = -quiescence(board, -beta, -alpha, &line); 
 
             if(score >= beta) 
@@ -83,13 +87,13 @@ int Search::alphabeta(
         Line * pline
 ) 
 {
+    if(!searching)
+        return 0;
 
-    // auto now = std::chrono::steady_clock::now();
-    // Duration elapsed = now - search_start;
-
-	if(depth == 0) {
+    if(depth == 0)
         return quiescence(board, alpha, beta, pline);
-    }
+
+    nodes_searched++;
 
     Line line;
 
@@ -129,6 +133,7 @@ int Search::alphabeta(
         return a_captured_weight > b_captured_weight;
     });
 
+
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
         
@@ -167,29 +172,56 @@ void Search::print_line(BoardState board, Line line)
     copy.print_squares();
 }
 
-BMove Search::iterative_search(BoardState board)
+std::string long_algebraic(BMove m)
 {
-    size_t d = 0;
-    std::vector<Line> lines(32); 
-    std::vector<int> scores(32);
+    Square from = get_from(m);
+    Square to = get_to(m);
+    return square_to_str(from) + square_to_str(to);
+}
 
+void Search::print_info(Line pv)
+{
+    std::string movestring;
+    for(size_t i = 0; i < pv.num_moves; ++i) {
+        movestring += long_algebraic(pv.line[i]) + " ";
+    }
+
+    elapsed_time++;
+    std::cout << "info depth " << depth_searched 
+              << " nodes " << nodes_searched
+              << " score " <<  score
+              << " time " << elapsed_time 
+              << " nps " << ( 1000 * ( nodes_searched / elapsed_time))
+              << " pv " << movestring << '\n';
+}
+
+void Search::iterative_search(BoardState board)
+{
     search_start = std::chrono::steady_clock::now();
     searching = true;
+    for(size_t d = 1; ; ++d) {
+        Line pv;
+        score = search(board, d, &pv);
 
-    while(searching) {
-        scores[d] = search(board, d, &lines[d]);
+        if(!searching)
+            break;
 
-        d++;
-    }
-    Line line;
-    for(size_t j = 0; j < d - 1; ++j) {
-        line = lines[j];
-        // print_line(board, line);
+        best_move = pv.line[0];
         
-        // std::cout << '\n';
+        elapsed_time =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - search_start).count();
+
+        print_info(pv); 
+
+        bool depth_reached = depth && d >= depth;
+        bool movetime_reached = movetime && elapsed_time >= (movetime / 2);
+        bool nodes_reached = nodes && nodes_searched >= nodes;
+
+        if(!infinite && (depth_reached || movetime_reached || nodes_reached))
+            break;
     }
-    std::cout << "Score: " << scores[d - 2] << '\n';
-    return line.line[0];
+    
+    std::cout << "bestmove " << long_algebraic(best_move) << '\n';  
 }
 
 int Search::search(BoardState board, size_t depth, Line * pline) 
