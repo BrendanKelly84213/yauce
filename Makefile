@@ -10,6 +10,7 @@ COMPILER_FLAGS = -g -Wall
 
 #LINKER_FLAGS specifies the libraries we're linking against
 # LINKER_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf
+LINKER_FLAGS = -pthread -lpthread
 
 #OBJ_NAME specifies the name of our exectuable
 OBJ_NAME = run 
