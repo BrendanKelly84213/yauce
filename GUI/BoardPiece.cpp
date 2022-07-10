@@ -5,8 +5,6 @@
 
 void BoardPiece::init(Piece _p, Square _s, int w, Colour bottom_colour)
 {
-    int x = square_to_x(s, w, bottom_colour);
-    int y = square_to_y(s, w, bottom_colour);
     p = _p;
     s = _s;
 }

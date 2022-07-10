@@ -47,8 +47,16 @@ void PlayerView::draw_grid()
 
 void PlayerView::draw_piece(BoardPiece bp)
 {
-    if(bp.p == None) 
+    if(bp.p == None) {
         printf("Piece is None, nothing to draw\n");
+        return;
+    }
+
+    SDL_Texture * texture = piece_textures[bp.p];
+    if(texture == NULL) {
+        printf("Piece texture at %s is NULL\n", piece_to_str(bp.p).c_str());
+        return;
+    }
 
     int x, y;
     if(!bp.dragging) {
@@ -60,9 +68,9 @@ void PlayerView::draw_piece(BoardPiece bp)
         y = y - (square_w * 0.5);
     }
 
-    SDL_Texture * texture = piece_textures[bp.p];
     SDL_Rect r = { x, y, square_w, square_w };
-    SDL_RenderCopy(board_renderer, texture, NULL, &r);
+    if(SDL_RenderCopy(board_renderer, texture, NULL, &r) != 0)
+        printf("Error piece : %s : %s", piece_to_str(bp.p).c_str(), SDL_GetError());
 }
 
 void PlayerView::draw_pieces()
@@ -224,7 +232,6 @@ void PlayerView::engine_make_move()
 
 void PlayerView::player_make_move(BMove m)
 {
-    Move flag = get_flag(m);
 }
 
 bool PlayerView::is_legal(PieceType pt, Square from, Square to) const
@@ -297,8 +304,8 @@ void PlayerView::run()
 
                     // Flag 
                     if(moving_piecetype == Pawn) {
-                        bool from_first_rank = us == White && rank(current_move.from) == 1 || us == Black && rank(current_move.from) == 6;
-                        bool double_push = us == White && rank(current_move.to) == 3 || us == Black && rank(current_move.to) == 4;
+                        bool from_first_rank = (us == White && rank(current_move.from) == 1) || (us == Black && rank(current_move.from) == 6);
+                        bool double_push = (us == White && rank(current_move.to) == 3) || (us == Black && rank(current_move.to) == 4);
                         if(from_first_rank && double_push)
                             flag = DOUBLE_PAWN_PUSH;
 
@@ -379,6 +386,10 @@ void PlayerView::run()
 
     SDL_DestroyRenderer(board_renderer);
     SDL_DestroyWindow(board_window);
+
+    for(size_t i = 0; i < 12; ++i) {
+        SDL_DestroyTexture(piece_textures[i]);
+    }
      
     // Close SDL 
     SDL_Quit(); 
