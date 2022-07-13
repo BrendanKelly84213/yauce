@@ -220,12 +220,6 @@ bool BoardState::can_castle(Colour us, Move type) const
 
 void BoardState::do_castle(Square rook_from, Square rook_to, Square king_from, Square king_to)
 {
-    // if(squares[rook_from] == None || squares[king_from] == None) {
-    //     std::cout << "failed to castle \n";
-    //     print_squares();
-    //     print_moves();
-    //     // assert(squares[rook_from] != None && squares[king_from] != None);
-    // }
     Piece rook = state.side_to_move == White ? WR : BR;
     Piece king = state.side_to_move == White ? WK : BK;
 
@@ -276,7 +270,6 @@ void BoardState::uncastle_queenside()
 // Remove from, add to
 void BoardState::move_piece(Square from, Square to, Piece p)
 {
-    // assert(p != None);
     put_piece(to, p);
     remove_piece(from);
 }
@@ -284,7 +277,6 @@ void BoardState::move_piece(Square from, Square to, Piece p)
 void BoardState::move_piece(Square from, Square to) 
 {
     Piece p = squares[from];
-    // assert(p != None);
     move_piece(from, to, p);
 }
 
@@ -306,14 +298,6 @@ bool BoardState::board_ok()
 void BoardState::remove_piece(Square sq)
 {
     Piece p = squares[sq];
-
-    // if(p == None) {
-    //     std::cout << "failed to remove piece on " << square_to_str(sq) << '\n';
-    //     print_squares();
-    //     print_moves();
-
-    //     // assert(p != None);
-    // }
 
     Colour pc = get_piece_colour(p);
     squares[sq] = None;
@@ -350,7 +334,6 @@ void BoardState::promote(PieceType pt, Square sq, Colour us)
     Piece p = piecetype_to_piece(pt, us);
     remove_piece(sq);
     put_piece(sq, p); // Put the promoted piece on the square
-    /* assert(0); */
 }
 
 void BoardState::print_move(BMove m) const
@@ -366,7 +349,7 @@ void BoardState::print_move(BMove m) const
 void BoardState::print_moves() const
 {
     for(size_t i = 0; i < movelist.size(); ++i) {
-        std::cout << get_algebraic(movelist[i]) << " ";  
+        std::cout << long_algebraic(movelist[i]) << " ";  
     }
     std::cout << '\n';
 }
@@ -404,7 +387,7 @@ void BoardState::print_context(BMove m, bool capture, Move flag) const
         << " squares(from) " << piece_to_str(get_piece(from)) << '\n';
 
     print_squares();
-    /* print_occupied(); */
+    print_occupied();
     std::cout << "\n----------------------------------\n"; 
 }
 
@@ -420,10 +403,6 @@ void BoardState::make_move(BMove m)
     Piece cp = get_piece(to);
     bool capture = ((cp != None) || (flag == EN_PASSANT));
     Colour us = state.side_to_move;
-
-    if(p == None) 
-        print_context(m, capture, flag); 
-    // assert(p != None);
 
     // save state in prev_state 
     prev_state = state;
@@ -521,17 +500,12 @@ void BoardState::make_move(BMove m)
         state.ply_count++;
     if(pt != Pawn && !capture && flag != EN_PASSANT)
         state.halfmove_clock++;
-    else 
+    else {
         state.halfmove_clock = 0;
+        state.last_irreversable = state.ply_count;
+    }
 
     state.side_to_move = static_cast<Colour>(!(bool)state.side_to_move); 
-
-    // Make sure all is well afterwords 
-    // if(!board_ok()) {
-    //     std::cout << "on make move" << '\n';
-    //     print_context(m, capture, flag);
-    //     assert(board_ok());
-    // }
 }
 
 void BoardState::unmake_move(BMove m)
@@ -546,12 +520,6 @@ void BoardState::unmake_move(BMove m)
     bool capture = (cp != None);
     Square capsq = to;
     Colour us = get_side_to_move();
-
-    if(p == None) {
-        print_context(m, capture, flag); 
-        // assert(p != None);
-    }
-
 
     // Unpromote
     if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
@@ -576,12 +544,6 @@ void BoardState::unmake_move(BMove m)
         // uncapture 
         put_piece(capsq, cp);
     } 
-
-    // if(!board_ok()) {
-    //     std::cout << "on unmake move" << '\n';
-    //     print_context(m, capture, flag);
-    //     assert(board_ok());
-    // }
 
     movelist.pop_back();
 }
@@ -742,24 +704,12 @@ Square BoardState::get_ep_square() const
 Square BoardState::get_king_square(Colour us) const 
 {
     const Bitboard king_bb = get_side_piece_bb(King, us);
-    // FIXME 
-    if(popcount(king_bb) != 1) {
-        print(king_bb);
-        print_squares();
-        print_moves();
-        assert(popcount(king_bb) == 1);
-    }
     return lsb(king_bb);
 }
 
+// NOTE: Ambiguous of attacking colour,
 Bitboard BoardState::attacks_to(Square sq) const
 {
-    //  - Maybe we can cache to squares on each move made 
-    // Naive implementation
-    // Build a hypothetical piece which has all piece attacks
-    // place hypothetical piece on square, get its attacks
-    // Intersection of attacking pieces and super_piece_attacks
-    
     const Bitboard queen_attacks = blockers_and_beyond(Queen, sq);
     const Bitboard bishop_attacks = blockers_and_beyond(Bishop, sq);
     const Bitboard rook_attacks = blockers_and_beyond(Rook, sq);
@@ -847,7 +797,6 @@ bool BoardState::in_checkmate(Colour us) const
 Piece BoardState::get_piece(Square s) const 
 {
     if(s > h8 || s < a1) {
-        printf("get_piece(%d)\n", s);
         return None;
     }
 

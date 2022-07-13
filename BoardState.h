@@ -51,6 +51,8 @@ struct State {
     size_t ply_count;     
     Piece last_captured;
     bool endgame;
+    bool repitition; // number of board repititions
+    size_t last_irreversable; // number of board repititions
 };
 
 class BoardState {
@@ -80,8 +82,10 @@ public:
     Piece get_piece(Square s) const;
     int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
     size_t get_num_piece(Piece p) const { return popcount(piece_bbs[p]); } 
+    size_t get_ply_count() const { return state.ply_count; } 
     std::string get_algebraic(BMove m) const;
     Bitboard attacks_to(Square sq) const;
+    bool is_repeat() const { return state.repitition; }
 
     bool attacked(Square sq, Colour by) const;
     bool in_check(Colour us) const;
