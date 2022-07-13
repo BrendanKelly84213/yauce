@@ -1,11 +1,24 @@
 #include "conversions.h"
+#include "bits.h"
+
+std::string long_algebraic(BMove m)
+{
+    Square from = get_from(m);
+    Square to = get_to(m);
+    return square_to_str(from) + square_to_str(to);
+}
 
 Square string_to_square(std::string str)
 {
     int file = (int)str[0] - 97;
     int rank = (int)str[1] - 49;
 
-    return (Square)(rank * 8 + file);  
+    Square s = (Square)(rank * 8 + file);  
+
+    if(s >= a1 && s <= h8)
+        return s;
+
+    return NullSquare;
 }
 
 std::string square_to_str(int idx)
