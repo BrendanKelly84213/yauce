@@ -29,8 +29,13 @@ struct Search {
     size_t depth_searched;
     size_t nodes_searched;
     size_t elapsed_time;
+    std::vector<size_t> d_times; // times per depth
     size_t depth;
     size_t movetime;
+    size_t wtime;
+    size_t btime;
+    size_t winc;
+    size_t binc;
     size_t nodes;
     bool infinite;
 
@@ -50,12 +55,17 @@ struct Search {
         depth_searched = 0;
         nodes_searched = 0;
         depth = 0;
+        d_times = {};
         movetime = 0;
+        wtime = 0;
+        btime = 0;
+        winc = 0;
+        binc = 0;
         nodes = 0;
         infinite = false;
     }
 
-    int search(BoardState board, size_t depth, Line * pline);
+    int search(BoardState board, size_t current_depth, Line * pline);
     void iterative_search(BoardState board);
     void print_line(BoardState board, Line line);
     void print_info(Line pv);
@@ -68,7 +78,7 @@ struct Search {
         BoardState board,
         int alpha, 
         int beta, 
-        size_t depth,
+        size_t current_depth,
         Line * pline
     );
 

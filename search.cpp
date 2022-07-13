@@ -1,5 +1,7 @@
 #include <chrono>
 #include <climits>
+#include <iterator>
+#include <utility>
 
 #include "Generator.h"
 #include "eval.h"
@@ -21,8 +23,9 @@ int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
     Colour us = board.get_side_to_move();
 	int nega = us == White ? 1 : -1;
  	int stand_pat = eval(board) * nega;
-    if( stand_pat >= beta )
+    if( stand_pat >= beta ) 
         return beta;
+    
     if( alpha < stand_pat )
         alpha = stand_pat;
 
@@ -70,7 +73,7 @@ int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
 
             if(score > alpha) {
                 alpha = score;
-                append_line(m, line, pline);
+                // append_line(m, line, pline);
             }
         }
         board.unmake_move(m);
@@ -83,14 +86,17 @@ int Search::alphabeta(
         BoardState board,
         int alpha, 
         int beta, 
-        size_t depth,
+        size_t current_depth,
         Line * pline
 ) 
 {
     if(!searching)
         return 0;
 
-    if(depth == 0)
+    if(board.is_repeat())
+        return 0;
+
+    if(current_depth == 0)
         return quiescence(board, alpha, beta, pline);
 
     nodes_searched++;
@@ -144,7 +150,7 @@ int Search::alphabeta(
 
         board.make_move(m);
         if(!board.in_check(us)) {
-            int score = -alphabeta(board, -beta, -alpha, depth - 1, &line); 
+            int score = -alphabeta(board, -beta, -alpha, current_depth - 1, &line); 
 
             if(score >= beta) 
                 return beta; // fail hard
@@ -172,13 +178,6 @@ void Search::print_line(BoardState board, Line line)
     copy.print_squares();
 }
 
-std::string long_algebraic(BMove m)
-{
-    Square from = get_from(m);
-    Square to = get_to(m);
-    return square_to_str(from) + square_to_str(to);
-}
-
 void Search::print_info(Line pv)
 {
     std::string movestring;
@@ -187,16 +186,23 @@ void Search::print_info(Line pv)
     }
 
     elapsed_time++;
-    std::cout << "info depth " << depth_searched 
-              << " nodes " << nodes_searched
-              << " score " <<  score
-              << " time " << elapsed_time 
-              << " nps " << ( 1000 * ( nodes_searched / elapsed_time))
-              << " pv " << movestring << '\n';
+    std::cout << "info depth " << depth_searched; 
+    std::cout << " nodes " << nodes_searched;
+    std::cout << " score cp " <<  score;
+    std::cout << " time " << elapsed_time;
+    std::cout << " nps " << ( 1000 * ( nodes_searched / elapsed_time));
+    std::cout << " pv " << movestring << std::endl;
 }
 
 void Search::iterative_search(BoardState board)
 {
+    Colour us = board.get_side_to_move();
+    if(wtime && btime) {
+        if(wtime >= 60000 * 5 || btime >= 60000 * 5) 
+            movetime = 15000; 
+        else movetime = 1000;
+    }
+
     search_start = std::chrono::steady_clock::now();
     searching = true;
     for(size_t d = 1; ; ++d) {
@@ -211,21 +217,37 @@ void Search::iterative_search(BoardState board)
         elapsed_time =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - search_start).count();
 
+        if(elapsed_time > 0)
+            d_times.push_back(elapsed_time);
         print_info(pv); 
 
+        double predicted_time = static_cast<double>(elapsed_time) / 2;
+      
+        // Try to fit a y = ax^b curve to the predicted times 
+        if(d > 3)  {
+            double a, b;
+            fit_power(a, b, d_times);
+            predicted_time = a * pow(d + 1, b);
+            // std::cout << "predicting " << predicted_time << "ms" << " a " << a << " b " << b << " ";
+            // for(size_t i = 0; i < d_times.size(); ++i) {
+            //     std::cout << d_times[i] << " ";
+            // }
+            // std::cout << '\n';
+        } 
+
         bool depth_reached = depth && d >= depth;
-        bool movetime_reached = movetime && elapsed_time >= (movetime / 2);
+        bool movetime_reached = movetime && predicted_time >= movetime;
         bool nodes_reached = nodes && nodes_searched >= nodes;
 
         if(!infinite && (depth_reached || movetime_reached || nodes_reached))
             break;
     }
     
-    std::cout << "bestmove " << long_algebraic(best_move) << '\n';  
+    std::cout << "bestmove " << long_algebraic(best_move) << std::endl;  
 }
 
-int Search::search(BoardState board, size_t depth, Line * pline) 
+int Search::search(BoardState board, size_t current_depth, Line * pline) 
 {
-    depth_searched = depth;
-    return alphabeta(board, -999999, 999999, depth, pline); 
+    depth_searched = current_depth;
+    return alphabeta(board, -999999, 999999, current_depth, pline); 
 }

@@ -1,4 +1,6 @@
 #include <cstdint>
+#include <vector>
+
 #include <iostream>
 #include "types.h"
 #include "conversions.h"
@@ -28,6 +30,7 @@ const Direction directions[] = { N, S, E, W, NE, NW, SE, SW };
 void print(Bitboard bb);
 void print16(BMove m);
 Bitboard trace_ray(Square origin, Direction d);
+void fit_power(double &a, double &b, std::vector<size_t> ys);
 
 constexpr Bitboard get_bit(Bitboard bb, int square) 
 { 
