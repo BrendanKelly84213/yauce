@@ -39,9 +39,14 @@ void go(std::istringstream &iss)
     while(iss >> token) {
         if(token == "depth") iss >> s.depth; 
         else if(token == "movetime") iss >> s.movetime;
+        else if(token == "wtime") iss >> s.wtime;
+        else if(token == "btime") iss >> s.btime;
+        else if(token == "winc") iss >> s.btime;
+        else if(token == "binc") iss >> s.btime;
         else if(token == "nodes") iss >> s.nodes;
         else if(token == "infinite") s.infinite = true;
     }
+
 
     std::thread t(search);
     t.detach();
@@ -64,14 +69,34 @@ void set_position(std::istringstream &iss)
     }
 
     while(iss >> token) {
-        if(token == "moves") {
-            // TODO
-        } 
+        if(token == "moves") 
+            continue;     
+        
+        BMove moves[256];
+        size_t num_moves = psuedo_generator(board, moves);
+        for(size_t i = 0; i < num_moves; ++i) {
+            BMove m = moves[i];
+            if(long_algebraic(m) == token.substr(0, 4)) {
+                board.make_move(m);
+                break;
+            }   
+        }
     }
 }
 
 int main( int argc, char *argv[] )
 {
+
+//     std::vector<size_t> ys = { 4 };
+//     double a, b;
+
+//     fit_power(a, b, ys);
+
+
+//     std::cout << "a " << a << " b " << b << '\n';
+        
+
+#if 1
     init_black_tables();
 
     board.init(startpos);
@@ -106,4 +131,5 @@ int main( int argc, char *argv[] )
     }
 
     return 0;
+#endif
 }
