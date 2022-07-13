@@ -80,9 +80,11 @@ int generate_captures(BoardState board, BMove captures[])
     // Get squares attacking opponents pieces
     // Opponents piece bb
     Bitboard op_occ = board.get_op_occ(us);
+
     while(op_occ) {
         Square captured_square = pop_bit(op_occ);
         Bitboard attacks_to_captured_square = board.attacks_to(captured_square) & board.get_friend_occ(us);
+
         while(attacks_to_captured_square) {
             Square attacking_square = pop_bit(attacks_to_captured_square);
 
@@ -168,7 +170,7 @@ int psuedo_generator(BoardState board_state, BMove moves[])
                 } 
 
                 if(board_state.can_castle(us, OOO)) {
-                    Square to = (us == White ? d1 : d8); 
+                    Square to = (us == White ? c1 : c8); 
                     moves[i] = move(kingsq, to, OOO);
                     i++;
                 } 
