@@ -5,7 +5,26 @@ std::string long_algebraic(BMove m)
 {
     Square from = get_from(m);
     Square to = get_to(m);
-    return square_to_str(from) + square_to_str(to);
+    Move flag = get_flag(m);
+    std::string promotion = "";
+    if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
+        switch(flag) {
+            case PROMOTE_QUEEN: 
+                promotion =  "q";
+                break;
+            case PROMOTE_ROOK: 
+                promotion =  "r";
+                break;
+            case PROMOTE_KNIGHT: 
+                promotion =  "n";
+                break;
+            case PROMOTE_BISHOP: 
+                promotion =  "b";
+                break;
+            default: promotion = "";
+        }
+    }
+    return square_to_str(from) + square_to_str(to) + promotion;
 }
 
 Square string_to_square(std::string str)
