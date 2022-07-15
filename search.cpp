@@ -8,30 +8,24 @@
 /* #include "BoardState.h" */
 #include "search.h"
 
-static inline void append_line(BMove chosen_move, Line line, Line * pline)
-{
-    pline->line[0] = chosen_move;
-    memcpy(pline->line + 1, line.line, line.num_moves * sizeof(BMove));
-    pline->num_moves = line.num_moves + 1;
-}
+const int INF = 999999;
 
-int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
+int Search::quiescence(BoardState board, int alpha, int beta)
 {
     if(!searching)
         return 0;
-
-    Colour us = board.get_side_to_move();
-	int nega = us == White ? 1 : -1;
- 	int stand_pat = eval(board) * nega;
-    if( stand_pat >= beta ) 
-        return beta;
     
-    if( alpha < stand_pat )
+    Colour us = board.get_side_to_move();
+    int nega = us == White ? 1 : -1;
+ 	int stand_pat = eval(board) * nega;
+
+    if(stand_pat >= beta) 
+        return beta;
+    if(stand_pat > alpha) 
         alpha = stand_pat;
 
     nodes_searched++;
     
-    Line line;
     BMove captures[256];
     size_t num_captures = generate_captures(board, captures);
 
@@ -60,23 +54,35 @@ int Search::quiescence(BoardState board, int alpha, int beta, Line * pline)
         return a_diff > b_diff;
     });
 
+    size_t num_legal_moves = 0;
     for(size_t i = 0; i < num_captures; ++i) {
         BMove m = captures[i];
 
         board.make_move(m);
 
         if(!board.in_check(us)) {
-            int score = -quiescence(board, -beta, -alpha, &line); 
+            num_legal_moves++;
+            int score = -quiescence(board, -beta, -alpha); 
 
             if(score >= beta) 
                 return beta; // fail hard
 
             if(score > alpha) {
                 alpha = score;
-                // append_line(m, line, pline);
+                if(alpha == (INF - 1))
+                    break;
             }
         }
         board.unmake_move(m);
+    }
+
+    if(num_legal_moves == 0 && num_captures > 0) {
+        if(board.in_check(us)) {
+            // std::cout << "Checkmate (queiscence)!\n";
+            // board.print_squares();
+            return -INF + 1; 
+        }
+        return 0;
     }
 
     return alpha;
@@ -86,26 +92,22 @@ int Search::alphabeta(
         BoardState board,
         int alpha, 
         int beta, 
-        size_t current_depth,
-        Line * pline
+        size_t current_depth
 ) 
 {
     if(!searching)
         return 0;
 
-    if(board.is_repeat())
-        return 0;
+    Colour us = board.get_side_to_move();
+    int nega = us == White ? 1 : -1;
 
     if(current_depth == 0)
-        return quiescence(board, alpha, beta, pline);
+        return quiescence(board, alpha, beta);
 
     nodes_searched++;
 
-    Line line;
-
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
-    Colour us = board.get_side_to_move();
 
     // NOTE: Doing this sort before checking if depth 0 and doing quiescence causes invalid read segfault
     //       No clue as to why, look into later? Seems like the board object is being read but not allocated 
@@ -117,7 +119,7 @@ int Search::alphabeta(
         Piece bcp = board.get_piece(bto);
         int a_captured_weight = piece_weight(piece_to_piecetype(acp));
         int b_captured_weight = piece_weight(piece_to_piecetype(bcp));
-        
+
         // Both are captures
         if(acp != None && bcp != None) {
             Square bfrom = get_from(b);
@@ -139,49 +141,54 @@ int Search::alphabeta(
         return a_captured_weight > b_captured_weight;
     });
 
-
+    size_t num_legal_moves = 0;
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
         
-        if(m == 0) {
-            printf("Null Move (m == 0) \n");
-            return 0;
-        }
-
         board.make_move(m);
         if(!board.in_check(us)) {
-            int score = -alphabeta(board, -beta, -alpha, current_depth - 1, &line); 
+            num_legal_moves++;
+
+            int score = -alphabeta(board, -beta, -alpha, current_depth - 1); 
 
             if(score >= beta) 
                 return beta; // fail hard
 
             if(score > alpha) {
                 alpha = score;
-                append_line(m, line, pline);
+                pv.line[current_depth] = m;
+
+                if(alpha == (INF - 1)) 
+                    break;
             }
         }
         board.unmake_move(m);
     }
 
+    if(num_legal_moves == 0) {
+        if(board.in_check(us)) {
+            pv.is_mating = true;
+            return -INF + 1; 
+        }
+        return 0;
+    }
+
     return alpha;
 }
 
-void Search::print_line(BoardState board, Line line)
+void Search::print_pv()
 {
-    BoardState copy = board;
-    for(size_t i = 0; i < line.num_moves; ++i) {
-        BMove m = line.line[i];
-        std::cout << copy.get_algebraic(m) << " ";
-        copy.make_move(m);
+    for(size_t i = pv.line.size() - 1; i > 0; --i) {
+        BMove m = pv.line[i];
+        std::cout << long_algebraic(m) << " ";
     }
     std::cout << '\n';
-    copy.print_squares();
 }
 
-void Search::print_info(Line pv)
+void Search::print_info()
 {
     std::string movestring;
-    for(size_t i = 0; i < pv.num_moves; ++i) {
+    for(size_t i = pv.line.size() - 1; i > 0; --i) {
         movestring += long_algebraic(pv.line[i]) + " ";
     }
 
@@ -206,20 +213,20 @@ void Search::iterative_search(BoardState board)
     search_start = std::chrono::steady_clock::now();
     searching = true;
     for(size_t d = 1; ; ++d) {
-        Line pv;
-        score = search(board, d, &pv);
+        pv.is_mating = false;
+        score = search(board, d);
 
         if(!searching)
             break;
 
-        best_move = pv.line[0];
+        best_move = pv.line.back();
         
         elapsed_time =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - search_start).count();
 
         if(elapsed_time > 0)
             d_times.push_back(elapsed_time);
-        print_info(pv); 
+        print_info(); 
 
         double predicted_time = static_cast<double>(elapsed_time) / 2;
       
@@ -228,26 +235,22 @@ void Search::iterative_search(BoardState board)
             double a, b;
             fit_power(a, b, d_times);
             predicted_time = a * pow(d + 1, b);
-            // std::cout << "predicting " << predicted_time << "ms" << " a " << a << " b " << b << " ";
-            // for(size_t i = 0; i < d_times.size(); ++i) {
-            //     std::cout << d_times[i] << " ";
-            // }
-            // std::cout << '\n';
         } 
 
         bool depth_reached = depth && d >= depth;
         bool movetime_reached = movetime && predicted_time >= movetime;
         bool nodes_reached = nodes && nodes_searched >= nodes;
 
-        if(!infinite && (depth_reached || movetime_reached || nodes_reached))
+        if(!infinite && (depth_reached || movetime_reached || nodes_reached || pv.is_mating))
             break;
     }
     
     std::cout << "bestmove " << long_algebraic(best_move) << std::endl;  
 }
 
-int Search::search(BoardState board, size_t current_depth, Line * pline) 
+int Search::search(BoardState board, size_t current_depth) 
 {
     depth_searched = current_depth;
-    return alphabeta(board, -999999, 999999, current_depth, pline); 
+    pv.line.resize(depth_searched + 1);
+    return alphabeta(board, -INF, INF, current_depth); 
 }

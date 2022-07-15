@@ -6,20 +6,21 @@
 
 typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
-/* typedef std::vector<MoveInfo> Line; // Refactor */ 
 
+// typedef std::vector<BMove> Line; // Refactor 
+                                 //
+                                 
 struct Line {
-    size_t num_moves;
-    BMove line[16]; 
+    std::vector<BMove> line;
+    bool is_mating;
 
-    Line() : num_moves(0) {}
-};
+    Line() : is_mating(true) {}
+}; 
 
 struct ScoredMove {
     BMove m;
     int score;
 };
-
 
 struct Search {
 
@@ -30,6 +31,8 @@ struct Search {
     size_t nodes_searched;
     size_t elapsed_time;
     std::vector<size_t> d_times; // times per depth
+             
+    Line pv;
     size_t depth;
     size_t movetime;
     size_t wtime;
@@ -56,6 +59,7 @@ struct Search {
         nodes_searched = 0;
         depth = 0;
         d_times = {};
+        pv = {};
         movetime = 0;
         wtime = 0;
         btime = 0;
@@ -65,10 +69,10 @@ struct Search {
         infinite = false;
     }
 
-    int search(BoardState board, size_t current_depth, Line * pline);
+    int search(BoardState board, size_t current_depth);
     void iterative_search(BoardState board);
-    void print_line(BoardState board, Line line);
-    void print_info(Line pv);
+    void print_pv();
+    void print_info();
     void stop_search() { searching = false; }
 
     size_t get_depth_searched() const { return depth_searched; }
@@ -78,11 +82,10 @@ struct Search {
         BoardState board,
         int alpha, 
         int beta, 
-        size_t current_depth,
-        Line * pline
+        size_t current_depth
     );
 
-    int quiescence(BoardState board, int alpha, int beta, Line * pline);
+    int quiescence(BoardState board, int alpha, int beta);
 };
 
 #endif
