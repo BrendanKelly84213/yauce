@@ -6,9 +6,6 @@
 
 typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
-
-// typedef std::vector<BMove> Line; // Refactor 
-                                 //
                                  
 struct Line {
     std::vector<BMove> line;
@@ -69,9 +66,9 @@ struct Search {
         infinite = false;
     }
 
-    int search(BoardState board, size_t current_depth);
+    ScoredMove search(BoardState board, size_t current_depth);
     void iterative_search(BoardState board);
-    void print_pv();
+    void print_pv(Line line);
     void print_info();
     void stop_search() { searching = false; }
 

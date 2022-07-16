@@ -312,7 +312,7 @@ void BoardState::remove_piece(Square sq)
 
 void BoardState::put_piece(Square sq, Piece p)
 {
-    assert(p != None && sq != NullSquare);
+    // assert(p != None && sq != NullSquare);
     Colour pc = get_piece_colour(p);
     squares[sq] = p;
     set_bit(piece_bbs[p], sq); 

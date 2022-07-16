@@ -63,6 +63,7 @@ public:
     void make_move(BMove m);
     void unmake_move(BMove m);
 
+    std::vector<BMove> get_movelist() const { return movelist; }
     Bitboard get_occ() const { return occ; }
     Bitboard get_friend_occ() const;
     Bitboard get_friend_occ(Colour us) const;

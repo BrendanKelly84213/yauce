@@ -77,11 +77,8 @@ int Search::quiescence(BoardState board, int alpha, int beta)
     }
 
     if(num_legal_moves == 0 && num_captures > 0) {
-        if(board.in_check(us)) {
-            // std::cout << "Checkmate (queiscence)!\n";
-            // board.print_squares();
+        if(board.in_check(us)) 
             return -INF + 1; 
-        }
         return 0;
     }
 
@@ -99,10 +96,13 @@ int Search::alphabeta(
         return 0;
 
     Colour us = board.get_side_to_move();
-    int nega = us == White ? 1 : -1;
 
-    if(current_depth == 0)
+    if(current_depth == 0) {
+        // Line line;
+        // line.line = board.get_movelist();
+        // print_pv(line);
         return quiescence(board, alpha, beta);
+    }
 
     nodes_searched++;
 
@@ -156,8 +156,6 @@ int Search::alphabeta(
 
             if(score > alpha) {
                 alpha = score;
-                pv.line[current_depth] = m;
-
                 if(alpha == (INF - 1)) 
                     break;
             }
@@ -176,10 +174,10 @@ int Search::alphabeta(
     return alpha;
 }
 
-void Search::print_pv()
+void Search::print_pv(Line line)
 {
-    for(size_t i = pv.line.size() - 1; i > 0; --i) {
-        BMove m = pv.line[i];
+    for(size_t i = line.line.size() - 1; i > 0; --i) {
+        BMove m = line.line[i];
         std::cout << long_algebraic(m) << " ";
     }
     std::cout << '\n';
@@ -214,18 +212,21 @@ void Search::iterative_search(BoardState board)
     searching = true;
     for(size_t d = 1; ; ++d) {
         pv.is_mating = false;
-        score = search(board, d);
+
+        ScoredMove sm = search(board, d);
 
         if(!searching)
             break;
 
-        best_move = pv.line.back();
+        score = sm.score;
+        best_move = sm.m;
         
         elapsed_time =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - search_start).count();
 
         if(elapsed_time > 0)
             d_times.push_back(elapsed_time);
+
         print_info(); 
 
         double predicted_time = static_cast<double>(elapsed_time) / 2;
@@ -248,9 +249,30 @@ void Search::iterative_search(BoardState board)
     std::cout << "bestmove " << long_algebraic(best_move) << std::endl;  
 }
 
-int Search::search(BoardState board, size_t current_depth) 
+ScoredMove Search::search(BoardState board, size_t current_depth) 
 {
+    Colour us = board.get_side_to_move(); 
     depth_searched = current_depth;
     pv.line.resize(depth_searched + 1);
-    return alphabeta(board, -INF, INF, current_depth); 
+
+    BMove moves[256]; 
+    size_t num_moves = psuedo_generator(board, moves);
+
+    ScoredMove max_sm = { move(a1, a1, QUIET), -INF };
+
+    for(size_t i = 0; i < num_moves; ++i) {
+        BMove m = moves[i];
+
+        board.make_move(m);
+        if(!board.in_check(us)) {
+            int move_score = -alphabeta(board, -INF, INF, current_depth - 1);  
+            if(move_score > max_sm.score) {
+                max_sm.score = move_score;
+                max_sm.m = m;
+            }
+        }
+        board.unmake_move(m);
+    }
+
+    return max_sm;
 }
