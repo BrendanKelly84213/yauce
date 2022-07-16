@@ -77,8 +77,10 @@ int Search::quiescence(BoardState board, int alpha, int beta)
     }
 
     if(num_legal_moves == 0 && num_captures > 0) {
+        // Checkmate
         if(board.in_check(us)) 
             return -INF + 1; 
+        // Stalemate
         return 0;
     }
 
@@ -89,7 +91,8 @@ int Search::alphabeta(
         BoardState board,
         int alpha, 
         int beta, 
-        size_t current_depth
+        size_t current_depth,
+        Line &line
 ) 
 {
     if(!searching)
@@ -97,10 +100,8 @@ int Search::alphabeta(
 
     Colour us = board.get_side_to_move();
 
+    Line node_line(depth_searched); 
     if(current_depth == 0) {
-        // Line line;
-        // line.line = board.get_movelist();
-        // print_pv(line);
         return quiescence(board, alpha, beta);
     }
 
@@ -149,13 +150,15 @@ int Search::alphabeta(
         if(!board.in_check(us)) {
             num_legal_moves++;
 
-            int score = -alphabeta(board, -beta, -alpha, current_depth - 1); 
+            int score = -alphabeta(board, -beta, -alpha, current_depth - 1, node_line); 
 
             if(score >= beta) 
                 return beta; // fail hard
 
             if(score > alpha) {
                 alpha = score;
+                line[0] = m;
+                std::copy(node_line.begin(), node_line.end(), line.begin() + 1);
                 if(alpha == (INF - 1)) 
                     break;
             }
@@ -164,10 +167,11 @@ int Search::alphabeta(
     }
 
     if(num_legal_moves == 0) {
-        if(board.in_check(us)) {
-            pv.is_mating = true;
+        // Checkmate
+        if(board.in_check(us)) 
             return -INF + 1; 
-        }
+        
+        // Stalemate
         return 0;
     }
 
@@ -176,8 +180,8 @@ int Search::alphabeta(
 
 void Search::print_pv(Line line)
 {
-    for(size_t i = line.line.size() - 1; i > 0; --i) {
-        BMove m = line.line[i];
+    for(size_t i = 0; i < line.size(); ++i) {
+        BMove m = line[i];
         std::cout << long_algebraic(m) << " ";
     }
     std::cout << '\n';
@@ -186,8 +190,8 @@ void Search::print_pv(Line line)
 void Search::print_info()
 {
     std::string movestring;
-    for(size_t i = pv.line.size() - 1; i > 0; --i) {
-        movestring += long_algebraic(pv.line[i]) + " ";
+    for(size_t i = 0; i < pv.size(); ++i) {
+        movestring += long_algebraic(pv[i]) + " ";
     }
 
     elapsed_time++;
@@ -211,7 +215,6 @@ void Search::iterative_search(BoardState board)
     search_start = std::chrono::steady_clock::now();
     searching = true;
     for(size_t d = 1; ; ++d) {
-        pv.is_mating = false;
 
         ScoredMove sm = search(board, d);
 
@@ -220,6 +223,7 @@ void Search::iterative_search(BoardState board)
 
         score = sm.score;
         best_move = sm.m;
+        pv = sm.line;
         
         elapsed_time =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - search_start).count();
@@ -242,7 +246,7 @@ void Search::iterative_search(BoardState board)
         bool movetime_reached = movetime && predicted_time >= movetime;
         bool nodes_reached = nodes && nodes_searched >= nodes;
 
-        if(!infinite && (depth_reached || movetime_reached || nodes_reached || pv.is_mating))
+        if(!infinite && (depth_reached || movetime_reached || nodes_reached || score == INF - 1))
             break;
     }
     
@@ -253,22 +257,25 @@ ScoredMove Search::search(BoardState board, size_t current_depth)
 {
     Colour us = board.get_side_to_move(); 
     depth_searched = current_depth;
-    pv.line.resize(depth_searched + 1);
 
     BMove moves[256]; 
     size_t num_moves = psuedo_generator(board, moves);
 
-    ScoredMove max_sm = { move(a1, a1, QUIET), -INF };
+    ScoredMove max_sm = { move(a1, a1, QUIET), -INF, Line(depth_searched) };
 
+    Line line(depth_searched);
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
 
         board.make_move(m);
         if(!board.in_check(us)) {
-            int move_score = -alphabeta(board, -INF, INF, current_depth - 1);  
+            int move_score = -alphabeta(board, -INF, INF, current_depth - 1, line);  
+
             if(move_score > max_sm.score) {
                 max_sm.score = move_score;
                 max_sm.m = m;
+                max_sm.line[0] = m;
+                std::copy(line.begin(), line.end(), max_sm.line.begin() + 1);
             }
         }
         board.unmake_move(m);

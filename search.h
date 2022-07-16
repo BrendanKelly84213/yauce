@@ -7,16 +7,19 @@
 typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
                                  
-struct Line {
-    std::vector<BMove> line;
-    bool is_mating;
+// struct Line {
+//     std::vector<BMove> line;
+//     bool is_mating;
 
-    Line() : is_mating(true) {}
-}; 
+//     Line() : is_mating(true) {}
+// }; 
+
+typedef std::vector<BMove> Line;
 
 struct ScoredMove {
     BMove m;
     int score;
+    Line line;
 };
 
 struct Search {
@@ -79,7 +82,8 @@ struct Search {
         BoardState board,
         int alpha, 
         int beta, 
-        size_t current_depth
+        size_t current_depth,
+        Line &line
     );
 
     int quiescence(BoardState board, int alpha, int beta);
