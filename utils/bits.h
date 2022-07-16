@@ -59,9 +59,6 @@ constexpr void clear_bit(Bitboard &bb, Square square)
 
 constexpr BMove move(Square from, Square to, Move flag)
 {
-    if(from == to)
-        printf("%d %d, %u", from , to, flag);
-
     return static_cast<BMove>((((BMove)from << 10) | ((BMove)to << 4)) | flag);
 }
 
