@@ -101,6 +101,15 @@ int Search::alphabeta(
     Colour us = board.get_side_to_move();
 
     Line node_line(depth_searched); 
+
+    std::vector<Bitboard> history = board.get_history();
+    Bitboard hash = board.get_hash();
+    auto repitition = std::find(history.begin(), history.end() - 1, hash);
+
+    if(repitition != history.end() - 1) {
+        return 0;
+    }
+
     if(current_depth == 0) {
         return quiescence(board, alpha, beta);
     }
@@ -205,7 +214,6 @@ void Search::print_info()
 
 void Search::iterative_search(BoardState board)
 {
-    Colour us = board.get_side_to_move();
     if(wtime && btime) {
         if(wtime >= 60000 * 5 || btime >= 60000 * 5) 
             movetime = 15000; 
@@ -246,7 +254,7 @@ void Search::iterative_search(BoardState board)
         bool movetime_reached = movetime && predicted_time >= movetime;
         bool nodes_reached = nodes && nodes_searched >= nodes;
 
-        if(!infinite && (depth_reached || movetime_reached || nodes_reached || score == INF - 1))
+        if(!infinite && (depth_reached || movetime_reached || nodes_reached))
             break;
     }
     
