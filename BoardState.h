@@ -9,6 +9,7 @@
 #include "utils/types.h"
 #include "utils/conversions.h"
 #include "utils/bits.h"
+#include "zobrist.h"
 
 // TODO: Attacks and related methods really belong in their own class...
 // Sliding piece lookup tables 
@@ -63,6 +64,8 @@ public:
     void make_move(BMove m);
     void unmake_move(BMove m);
 
+    Bitboard get_hash() const { return history.back(); }
+    std::vector<Bitboard> get_history() const { return history; }
     std::vector<BMove> get_movelist() const { return movelist; }
     Bitboard get_occ() const { return occ; }
     Bitboard get_friend_occ() const;
@@ -105,6 +108,8 @@ private:
     State state; 
     State prev_state;
     std::vector<BMove> movelist;
+    std::vector<Bitboard> history;
+    Zobrist z;
     Bitboard piece_bbs[12];
     Piece squares[64]; // Square centric lookup 
     Bitboard occ;

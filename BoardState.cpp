@@ -156,6 +156,9 @@ void BoardState::init(std::string fen)
     init_squares(fen);
     init_bbs(); 
     init_attacks();
+    z.init_table();
+    Bitboard hash = z.compute_hash();
+    history.push_back(hash);
 }
 
 bool BoardState::can_castle(Colour us, Move type) const
@@ -312,7 +315,6 @@ void BoardState::remove_piece(Square sq)
 
 void BoardState::put_piece(Square sq, Piece p)
 {
-    // assert(p != None && sq != NullSquare);
     Colour pc = get_piece_colour(p);
     squares[sq] = p;
     set_bit(piece_bbs[p], sq); 
@@ -404,6 +406,12 @@ void BoardState::make_move(BMove m)
     bool capture = ((cp != None) || (flag == EN_PASSANT));
     Colour us = state.side_to_move;
 
+    // Zobrist hash for the current position
+    Bitboard hash = history.back();
+    hash ^= z.table[p][from];
+    hash ^= z.table[p][to];
+
+
     // save state in prev_state 
     prev_state = state;
 
@@ -433,32 +441,48 @@ void BoardState::make_move(BMove m)
 
         // Capture
         remove_piece(capsq);
+        hash ^= z.table[cp][capsq];
         state.last_captured = cp; 
     } 
 
     // Move the piece
+    Piece rook = us == White ? WR : BR;
     if(flag == OO) {
         castle_kingside();
+        Square rookfsq = us == White ? h1 : h8;
+        Square rooktsq = us == White ? f1 : f8;
+        hash ^= z.table[rook][rookfsq]; 
+        hash ^= z.table[rook][rooktsq]; 
     } else if(flag == OOO) {
         castle_queenside();
+        Square rookfsq = us == White ? a1 : a8;
+        Square rooktsq = us == White ? d1 : d8;
+        hash ^= z.table[rook][rookfsq]; 
+        hash ^= z.table[rook][rooktsq]; 
     } else {
         move_piece(from, to, p); 
     }
 
     // Promotions
     if(pt == Pawn && flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
+
+        hash ^= z.table[p][to];
         switch(flag) {
             case PROMOTE_QUEEN:
                 promote(Queen, to, us);
+                hash ^= z.table[piecetype_to_piece(Queen, us)][to];
                 break;
             case PROMOTE_BISHOP:
                 promote(Bishop, to, us);
+                hash ^= z.table[piecetype_to_piece(Bishop, us)][to];
                 break;
             case PROMOTE_ROOK:
                 promote(Rook, to, us);
+                hash ^= z.table[piecetype_to_piece(Rook, us)][to];
                 break;
             case PROMOTE_KNIGHT:
                 promote(Knight, to, us);
+                hash ^= z.table[piecetype_to_piece(Knight, us)][to];
                 break;
             default: break;
         }
@@ -466,6 +490,9 @@ void BoardState::make_move(BMove m)
 
     // Add move to ongoing movelist
     movelist.push_back(m);
+
+    // Update history 
+    history.push_back(hash); 
 
     // Update board state
     // Is rook or king move 
@@ -545,7 +572,10 @@ void BoardState::unmake_move(BMove m)
         put_piece(capsq, cp);
     } 
 
+    // Update movelist
     movelist.pop_back();
+    // Update history
+    history.pop_back();
 }
 
 // FIXME: Return get_friend_occ(state.side_to_move)
