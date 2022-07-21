@@ -578,6 +578,13 @@ void BoardState::unmake_move(BMove m)
     history.pop_back();
 }
 
+bool BoardState::is_repitition() const 
+{
+    Bitboard hash = get_hash(); 
+    auto repitition = std::find(history.begin(), history.end() - 1, hash);
+    return repitition != history.end() - 1;
+}
+
 // FIXME: Return get_friend_occ(state.side_to_move)
 Bitboard BoardState::get_friend_occ() const
 {

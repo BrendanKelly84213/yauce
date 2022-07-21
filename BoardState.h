@@ -65,7 +65,7 @@ public:
     void unmake_move(BMove m);
 
     Bitboard get_hash() const { return history.back(); }
-    std::vector<Bitboard> get_history() const { return history; }
+    bool is_repitition() const;
     std::vector<BMove> get_movelist() const { return movelist; }
     Bitboard get_occ() const { return occ; }
     Bitboard get_friend_occ() const;
