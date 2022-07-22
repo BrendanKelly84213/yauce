@@ -2,17 +2,11 @@
 #define BOARD_STATE_H
 
 #include <chrono>
+#include "transposition.h"
 #include "BoardState.h"
 
 typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
-                                 
-// struct Line {
-//     std::vector<BMove> line;
-//     bool is_mating;
-
-//     Line() : is_mating(true) {}
-// }; 
 
 typedef std::vector<BMove> Line;
 
@@ -32,6 +26,7 @@ struct Search {
     size_t elapsed_time;
     std::vector<size_t> d_times; // times per depth
              
+    TT tt;
     Line pv;
     size_t depth;
     size_t movetime;

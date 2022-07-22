@@ -2,6 +2,7 @@
 #include <climits>
 #include <iterator>
 #include <utility>
+#include <algorithm>
 
 #include "Generator.h"
 #include "eval.h"
@@ -102,25 +103,41 @@ int Search::alphabeta(
 
     Line node_line(depth_searched); 
 
-    std::vector<Bitboard> history = board.get_history();
-    Bitboard hash = board.get_hash();
-    auto repitition = std::find(history.begin(), history.end() - 1, hash);
-
-    if(repitition != history.end() - 1) {
+    // Assume draw if position repeats so much as once for now
+    if(board.is_repitition()) 
         return 0;
-    }
-
-    if(current_depth == 0) {
+    
+    if(current_depth == 0) 
         return quiescence(board, alpha, beta);
-    }
 
     nodes_searched++;
+
+    TTItem * transposition = tt.get(board.get_hash());
+    if(transposition != NULL && transposition->depth >= current_depth) {
+        int score = transposition->score;
+        switch(transposition->type) {
+            case EXACT: 
+                return score;
+            case UPPER_BOUND: 
+                beta = std::min(beta, score);
+                break;
+            case LOWER_BOUND: 
+                alpha = std::max(alpha, score);
+                break;
+            default: break;          
+        }
+        // if(alpha >= beta)
+        //     return score;
+    }
+    
+    int orig_alpha = alpha;
 
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
 
     // NOTE: Doing this sort before checking if depth 0 and doing quiescence causes invalid read segfault
     //       No clue as to why, look into later? Seems like the board object is being read but not allocated 
+    // NOTE: Only take captures into account for now
     std::sort(std::begin(moves), std::begin(moves) + num_moves, [board](BMove a, BMove b) {
         Square ato = get_to(a);
         Square bto = get_to(b);
@@ -161,8 +178,10 @@ int Search::alphabeta(
 
             int score = -alphabeta(board, -beta, -alpha, current_depth - 1, node_line); 
 
-            if(score >= beta) 
+            if(score >= beta) {
+                tt.insert(board.get_hash(), LOWER_BOUND, score, current_depth);
                 return beta; // fail hard
+            } 
 
             if(score > alpha) {
                 alpha = score;
@@ -174,6 +193,11 @@ int Search::alphabeta(
         }
         board.unmake_move(m);
     }
+
+    if(alpha <= orig_alpha) 
+        tt.insert(board.get_hash(), UPPER_BOUND, alpha, current_depth);
+    else 
+        tt.insert(board.get_hash(), EXACT, alpha, current_depth);
 
     if(num_legal_moves == 0) {
         // Checkmate
@@ -214,10 +238,16 @@ void Search::print_info()
 
 void Search::iterative_search(BoardState board)
 {
+    Colour us = board.get_side_to_move(); 
     if(wtime && btime) {
-        if(wtime >= 60000 * 5 || btime >= 60000 * 5) 
-            movetime = 15000; 
-        else movetime = 1000;
+        size_t inc = us == White ? winc : binc;
+        size_t time = us == White ? wtime : btime;
+        if(time >= 60 * 1000) {
+            if(!inc)
+                movetime = 1000;
+            else movetime = 1000 + inc;
+        } else movetime = 500;
+       
     }
 
     search_start = std::chrono::steady_clock::now();
@@ -251,7 +281,7 @@ void Search::iterative_search(BoardState board)
         } 
 
         bool depth_reached = depth && d >= depth;
-        bool movetime_reached = movetime && predicted_time >= movetime;
+        bool movetime_reached = movetime && (predicted_time >= movetime);
         bool nodes_reached = nodes && nodes_searched >= nodes;
 
         if(!infinite && (depth_reached || movetime_reached || nodes_reached))
