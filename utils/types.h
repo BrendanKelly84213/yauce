@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 
 typedef uint64_t Bitboard;
+typedef uint64_t ZobristKey;
 typedef uint16_t BMove;
 
 enum Piece : int { 
@@ -45,6 +46,13 @@ enum Move : BMove {
     PROMOTE_ROOK, 
     PROMOTE_KNIGHT, 
     PROMOTE_BISHOP 
+};
+
+// Types of nodes used in Transposition Tables  
+enum NodeType {
+    EXACT,
+    UPPER_BOUND,
+    LOWER_BOUND
 };
 
 constexpr Square operator+(Square a, Direction b) { return (Square)( (int)a + (int)b ); }
