@@ -1,5 +1,6 @@
 #include "zobrist.h"
 
+Bitboard table[12][64];
 std::mt19937 mt(01234567);
 
 Bitboard random_num()
@@ -8,7 +9,7 @@ Bitboard random_num()
     return dist(mt); 
 }
 
-void Zobrist::init_table()
+void init_table()
 {
     for(Piece p = BQ; p <= WP; ++p) {
         for(Square s = a1; s <= h8; ++s) {
@@ -17,7 +18,7 @@ void Zobrist::init_table()
     }
 }
 
-Bitboard Zobrist::compute_hash()
+Bitboard compute_hash()
 {
     Bitboard h = 0;
     for(Piece p = BQ; p <= WP; ++p) {
@@ -26,4 +27,9 @@ Bitboard Zobrist::compute_hash()
         }
     }
     return h;
+}
+
+Bitboard updated_hash(Bitboard hash, Piece p, Square s)
+{
+    return hash ^ table[p][s];
 }

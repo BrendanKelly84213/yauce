@@ -3,10 +3,6 @@
 #include <bits/stdc++.h>
 #include "utils/types.h"
 
-
-struct Zobrist {
-    Bitboard table[12][64];
-
-    void init_table();
-    Bitboard compute_hash(); 
-};
+void init_table();
+Bitboard compute_hash(); 
+Bitboard updated_hash(Bitboard hash, Piece p, Square s); 
