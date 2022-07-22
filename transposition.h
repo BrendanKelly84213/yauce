@@ -1,5 +1,8 @@
 #pragma once 
 
+#include <functional>
+#include <optional>
+
 #include "zobrist.h"
 #include "utils/types.h"
 
@@ -13,34 +16,27 @@ struct TTItem {
 };
 
 struct Bucket {
-    TTItem item;
-    bool empty;
-
-    Bucket() : item(), empty(true) {}
-    Bucket(TTItem i) : item(i), empty(false) {}
-
-    void put(TTItem i)
-    {
-        item = i;
-        empty = false;
-    }
+    TTItem *item;
+    bool empty { false };
 };
 
 class TT {
 public:
 
-    std::vector<Bucket> buckets;
-
-    TT() : num_items(0), m_capacity(0) 
+    TT()
     {
+        rehash(256);
     }
    
-    void insert(ZobristKey key, TTItem item);
-    TTItem get(ZobristKey hash);
+    void insert(ZobristKey key, NodeType type, int score);
+    TTItem* get(ZobristKey hash) const;
 
 private:
+    Bucket* buckets { NULL };
     // The number of non empty buckets
-    size_t num_items;
+    size_t num_items { 0 };
     // The number of available spaces for buckets
-    size_t m_capacity;
+    size_t m_capacity { 0 };
+
+    void rehash(size_t new_capacity);
 };
