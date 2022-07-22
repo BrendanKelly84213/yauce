@@ -109,7 +109,6 @@ private:
     State prev_state;
     std::vector<BMove> movelist;
     std::vector<Bitboard> history;
-    Zobrist z;
     Bitboard piece_bbs[12];
     Piece squares[64]; // Square centric lookup 
     Bitboard occ;

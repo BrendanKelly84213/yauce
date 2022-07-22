@@ -156,8 +156,7 @@ void BoardState::init(std::string fen)
     init_squares(fen);
     init_bbs(); 
     init_attacks();
-    z.init_table();
-    Bitboard hash = z.compute_hash();
+    Bitboard hash = compute_hash();
     history.push_back(hash);
 }
 
@@ -408,8 +407,8 @@ void BoardState::make_move(BMove m)
 
     // Zobrist hash for the current position
     Bitboard hash = history.back();
-    hash ^= z.table[p][from];
-    hash ^= z.table[p][to];
+    hash = updated_hash(hash, p, from);
+    hash = updated_hash(hash, p, to);
 
 
     // save state in prev_state 
@@ -441,7 +440,7 @@ void BoardState::make_move(BMove m)
 
         // Capture
         remove_piece(capsq);
-        hash ^= z.table[cp][capsq];
+        hash = updated_hash(hash, cp, capsq);
         state.last_captured = cp; 
     } 
 
@@ -451,14 +450,14 @@ void BoardState::make_move(BMove m)
         castle_kingside();
         Square rookfsq = us == White ? h1 : h8;
         Square rooktsq = us == White ? f1 : f8;
-        hash ^= z.table[rook][rookfsq]; 
-        hash ^= z.table[rook][rooktsq]; 
+        hash = updated_hash(hash, rook, rookfsq); 
+        hash = updated_hash(hash, rook, rooktsq); 
     } else if(flag == OOO) {
         castle_queenside();
         Square rookfsq = us == White ? a1 : a8;
         Square rooktsq = us == White ? d1 : d8;
-        hash ^= z.table[rook][rookfsq]; 
-        hash ^= z.table[rook][rooktsq]; 
+        hash = updated_hash(hash, rook, rookfsq); 
+        hash = updated_hash(hash, rook, rooktsq); 
     } else {
         move_piece(from, to, p); 
     }
@@ -466,23 +465,23 @@ void BoardState::make_move(BMove m)
     // Promotions
     if(pt == Pawn && flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
 
-        hash ^= z.table[p][to];
+        hash = updated_hash(hash, p, to);
         switch(flag) {
             case PROMOTE_QUEEN:
                 promote(Queen, to, us);
-                hash ^= z.table[piecetype_to_piece(Queen, us)][to];
+                hash = updated_hash(hash, piecetype_to_piece(Queen, us), to);
                 break;
             case PROMOTE_BISHOP:
                 promote(Bishop, to, us);
-                hash ^= z.table[piecetype_to_piece(Bishop, us)][to];
+                hash = updated_hash(hash, piecetype_to_piece(Bishop, us), to);
                 break;
             case PROMOTE_ROOK:
                 promote(Rook, to, us);
-                hash ^= z.table[piecetype_to_piece(Rook, us)][to];
+                hash = updated_hash(hash, piecetype_to_piece(Rook, us), to);
                 break;
             case PROMOTE_KNIGHT:
                 promote(Knight, to, us);
-                hash ^= z.table[piecetype_to_piece(Knight, us)][to];
+                hash ^= updated_hash(hash, piecetype_to_piece(Knight, us), to);
                 break;
             default: break;
         }
