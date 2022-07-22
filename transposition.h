@@ -10,14 +10,16 @@ struct TTItem {
     ZobristKey key;
     NodeType type;
     int score;
+    size_t depth;
 
     TTItem() : key(0), type(EXACT), score(0) {}
-    TTItem(ZobristKey k, NodeType t, int s) : key(k), type(t), score(s) {}
+    TTItem(ZobristKey k, NodeType t, int s, size_t d) 
+        : key(k), type(t), score(s), depth(d) {}
 };
 
 struct Bucket {
-    TTItem *item;
-    bool empty { false };
+    TTItem *item { NULL };
+    bool empty { true };
 };
 
 class TT {
@@ -25,10 +27,19 @@ public:
 
     TT()
     {
-        rehash(256);
+        rehash(4096);
+    }
+
+    ~TT()
+    {
+        for(size_t i = 0; i < m_capacity; ++i) {
+            free(buckets[i].item);
+        }
+        free(buckets);
+        buckets = NULL;
     }
    
-    void insert(ZobristKey key, NodeType type, int score);
+    void insert(ZobristKey key, NodeType type, int score, size_t depth);
     TTItem* get(ZobristKey hash) const;
 
 private:
