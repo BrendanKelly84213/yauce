@@ -164,11 +164,47 @@ void print_black_tables()
     print_table(b_queen_table );
 } 
 
+int endgame_weight(BoardState board)
+{
+    // FIXME??
+    size_t num_pieces = board.get_total_piece_count();
+    return 24 - num_pieces;
+}
+
+int op_king_distance_from_center(BoardState board)
+{
+    Colour us = board.get_side_to_move();
+    Square opkingsq = board.get_king_square(!us);
+    Square friendkingsq = board.get_king_square(us);
+    Square center_square;
+    int king_rank = rank(opkingsq);
+    int king_file = file(opkingsq);
+    // Refactor
+    if(king_rank >= 4 && king_file >= 4) {
+        // King is in top right quadrant
+        center_square = e5;
+    } else if(king_rank >= 4 && king_file < 4) {
+        // King is in top left quadrant
+        center_square = d5;
+    } else if(king_rank < 4 && king_file >=4) {
+        // King is in bottom right quadrant
+        center_square = e4;
+    } else {
+        center_square = d4;
+    }
+
+    int opking_dist_from_center = distance(opkingsq, center_square); 
+
+    int distance_between_kings = 6 - distance(opkingsq, friendkingsq);
+    
+    return (opking_dist_from_center + distance_between_kings) * endgame_weight(board);
+}
+
 #if 1
 int piece_weight(BoardState board, Piece p)
 {
     int weight = 0;
-    bool endgame = board.in_endgame();
+    bool endgame = endgame_weight(board) >= 16;
     Bitboard piecebb = board.get_piece_bb(p);
     PieceType pt = piece_to_piecetype(p);
     Colour piece_colour = piece_to_colour(p);
@@ -177,17 +213,14 @@ int piece_weight(BoardState board, Piece p)
     while(piecebb) {
         Square s = pop_bit(piecebb);
 
-        // std::string pts = piecetype_to_str(pt);
-        // std::string ss = square_to_str(s);
-
-        // printf("endgame: %d, piece_weights[%s]: %d, white_eg_tables[%s][%s]: %d, white_mg_tables[%s][%s]: %d, black_eg_tables[%s][%s]: %d, black_mg_tables[%s][%s]: %d\n", endgame, pts.c_str(), piece_weights[pt], pts.c_str(), ss.c_str(), white_eg_tables[pt][s], pts.c_str(), ss.c_str(), white_mg_tables[pt][s], pts.c_str(), ss.c_str(), black_eg_tables[pt][s],  pts.c_str(), ss.c_str(), black_mg_tables[pt][s]);
-
         if(piece_colour == White) {
             weight += (piece_weights[pt] + (endgame ? white_eg_tables[pt][s] : white_mg_tables[pt][s])); 
         } else  {
             weight += (piece_weights[pt] + (endgame ? black_eg_tables[pt][s] : black_mg_tables[pt][s])); 
         }
     }
+
+    weight += op_king_distance_from_center(board);
     
     return weight;
 }
