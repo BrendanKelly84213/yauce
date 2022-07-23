@@ -6,3 +6,4 @@
 void init_table();
 Bitboard compute_hash(); 
 Bitboard updated_hash(Bitboard hash, Piece p, Square s); 
+Bitboard new_hash_colour(Bitboard hash);

@@ -490,6 +490,8 @@ void BoardState::make_move(BMove m)
     // Add move to ongoing movelist
     movelist.push_back(m);
 
+    hash = new_hash_colour(hash);
+
     // Update history 
     history.push_back(hash); 
 
