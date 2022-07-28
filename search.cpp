@@ -78,61 +78,9 @@ int Search::quiescence(BoardState board, int alpha, int beta)
     return alpha;
 }
 
-bool is_worth_looking_at(TTItem * transposition, size_t current_depth) {
+bool is_worth_looking_at(const TTItem * transposition, size_t current_depth) {
    return transposition != NULL && transposition->depth >= current_depth;
 };
-
-void Search::sort_moves(BMove moves[], size_t num_moves, BoardState board, size_t current_depth)
-{
-    std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
-        ZobristKey azkey = board.generate_key_after_move(a);
-        ZobristKey bzkey = board.generate_key_after_move(b);
-        
-        TTItem * aitem = tt.get(azkey);
-        TTItem * bitem = tt.get(bzkey);
-
-        bool a_worth = is_worth_looking_at(aitem, current_depth);
-        bool b_worth = is_worth_looking_at(bitem, current_depth);
-
-        if(a_worth && b_worth) {
-            if(aitem->type == EXACT && bitem->type == EXACT)
-                return aitem->score > bitem->score;    
-        } else if(a_worth && !b_worth) {
-            return true;
-        } else if(!a_worth && b_worth) {
-            return false;
-        }
-         
-        Square ato = get_to(a);
-        Square bto = get_to(b);
-
-        Piece acp = board.get_piece(ato);
-        Piece bcp = board.get_piece(bto);
-        int a_captured_weight = piece_weight(piece_to_piecetype(acp));
-        int b_captured_weight = piece_weight(piece_to_piecetype(bcp));
-
-        // Both are captures
-        if(acp != None && bcp != None) {
-            Square bfrom = get_from(b);
-            Square afrom = get_from(a);
-            Piece bp = board.get_piece(bfrom);
-            Piece ap = board.get_piece(afrom);
-
-            int a_capturing_weight = piece_weight(piece_to_piecetype(ap));
-
-            int b_capturing_weight = piece_weight(piece_to_piecetype(bp));
-
-            int a_diff = a_captured_weight - a_capturing_weight; 
-            int b_diff = b_captured_weight - b_capturing_weight;  
-
-            return a_diff > b_diff;
-        }
-        
-        // Only one is a capture
-        return a_captured_weight > b_captured_weight;
-    });
-
-}
 
 int Search::alphabeta(
         BoardState board,
@@ -157,7 +105,7 @@ int Search::alphabeta(
 
     int orig_alpha = alpha;
     ZobristKey key = board.get_hash();
-    TTItem * transposition = tt.get(key);
+    const TTItem * transposition = tt.get(key);
 #if 1
     if(is_worth_looking_at(transposition, current_depth)) {
         int score = transposition->score;
@@ -178,8 +126,6 @@ int Search::alphabeta(
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
 
-    // NOTE: Doing this sort before checking if depth 0 and doing quiescence causes invalid read segfault
-    //       No clue as to why, look into later? Seems like the board object is being read but not allocated 
 
 #if 1
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
@@ -187,8 +133,8 @@ int Search::alphabeta(
         ZobristKey azkey = board.generate_key_after_move(a);
         ZobristKey bzkey = board.generate_key_after_move(b);
         
-        TTItem * aitem = tt.get(azkey);
-        TTItem * bitem = tt.get(bzkey);
+        const TTItem * aitem = tt.get(azkey);
+        const TTItem * bitem = tt.get(bzkey);
 
         bool a_worth = is_worth_looking_at(aitem, current_depth);
         bool b_worth = is_worth_looking_at(bitem, current_depth);
@@ -196,6 +142,8 @@ int Search::alphabeta(
         return a_worth > b_worth;
     });
 #endif
+    // NOTE: Doing this sort before checking if depth 0 and doing quiescence causes invalid read segfault
+    //       No clue as to why, look into later? Seems like the board object is being read but not allocated 
 
 #if 1
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
@@ -250,10 +198,6 @@ int Search::alphabeta(
             if(score > alpha) {
                 alpha = score;
                 nodes_best_move = m;
-
-                if(alpha == (INF - 1)) 
-                    break;
-                
             } 
         }
         board.unmake_move(m);
@@ -292,6 +236,7 @@ void Search::print_pv(Line line)
 void Search::print_info(BoardState board)
 {
     std::string movestring;
+#if 0
     pv.clear();
     pv.push_back(best_move);
     board.make_move(best_move);
@@ -318,6 +263,7 @@ void Search::print_info(BoardState board)
     for(size_t i = 0; i < pv.size(); ++i) {
         movestring += long_algebraic(pv[i]) + " ";
     }
+#endif
 
     elapsed_time++;
     std::cout << "info depth " << depth_searched; 
@@ -347,7 +293,6 @@ void Search::iterative_search(BoardState board)
 
         ScoredMove sm = search(board, d);
 
-
         if(!searching)
             break;
 
@@ -362,23 +307,12 @@ void Search::iterative_search(BoardState board)
 
         print_info(board); 
 
-        if(sm.score == INF - 1) {
-            std::cout << "Mate in " << d << '\n';
+        if(sm.score == INF - 1) 
             break;
-        }
 
         // std::cout << "num transpositions " << tt.num_items << '\n';
 
         double predicted_time = static_cast<double>(elapsed_time) * 4;
-
-        // std::cout << "predicting next iteration will take " << predicted_time << " movetime " << movetime << '\n';
-      
-        // Try to fit a y = ax^b curve to the predicted times 
-        // if(d > 3)  {
-        //     double a, b;
-        //     fit_power(a, b, d_times);
-        //     predicted_time = a * pow(d + 1, b);
-        // } 
 
         bool depth_reached = depth && d >= depth;
         bool movetime_reached = movetime && (predicted_time >= movetime);
@@ -417,7 +351,7 @@ ScoredMove Search::search(BoardState board, size_t current_depth)
         board.unmake_move(m);
     }
 
-    // tt.insert(key, EXACT, max_sm.score, current_depth, best_move);
+    tt.insert(key, EXACT, max_sm.score, current_depth, best_move);
 
     return max_sm;
 }

@@ -1,7 +1,5 @@
 #pragma once 
-
-#include <functional>
-#include <optional>
+#include <unordered_map>
 
 #include "zobrist.h"
 #include "utils/types.h"
@@ -11,10 +9,11 @@ struct TTItem {
     NodeType type;
     int score;
     size_t depth;
+    BMove move;
 
     TTItem() : key(0), type(EXACT), score(0) {}
-    TTItem(ZobristKey k, NodeType t, int s, size_t d) 
-        : key(k), type(t), score(s), depth(d) {}
+    TTItem(ZobristKey k, NodeType t, int s, size_t d, BMove m) 
+        : key(k), type(t), score(s), depth(d), move(m) {}
 };
 
 struct Bucket {
@@ -24,30 +23,12 @@ struct Bucket {
 
 class TT {
 public:
-
-    TT()
-    {
-        rehash(4096);
-    }
-
-    ~TT()
-    {
-        for(size_t i = 0; i < m_capacity; ++i) {
-            free(buckets[i].item);
-        }
-        free(buckets);
-        buckets = NULL;
-    }
    
-    void insert(ZobristKey key, NodeType type, int score, size_t depth);
-    TTItem* get(ZobristKey hash) const;
-
-private:
-    Bucket* buckets { NULL };
-    // The number of non empty buckets
+    void insert(ZobristKey key, NodeType type, int score, size_t depth, BMove m);
+    const TTItem* get(ZobristKey hash) const;
     size_t num_items { 0 };
-    // The number of available spaces for buckets
-    size_t m_capacity { 0 };
 
-    void rehash(size_t new_capacity);
+    void reset();
+private:
+    std::unordered_map<ZobristKey, TTItem> buckets;
 };
