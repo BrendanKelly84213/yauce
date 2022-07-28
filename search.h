@@ -8,12 +8,9 @@
 typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
 
-typedef std::vector<BMove> Line;
-
 struct ScoredMove {
     BMove m;
     int score;
-    Line line;
 };
 
 struct Search {
@@ -67,18 +64,19 @@ struct Search {
     ScoredMove search(BoardState board, size_t current_depth);
     void iterative_search(BoardState board);
     void print_pv(Line line);
-    void print_info();
+    void print_info(BoardState board);
     void stop_search() { searching = false; }
 
     size_t get_depth_searched() const { return depth_searched; }
     size_t get_nodes_searched() const { return nodes_searched; }
 
+    void sort_moves(BMove moves[], size_t num_moves, BoardState board, size_t current_depth);
+
     int alphabeta(
         BoardState board,
         int alpha, 
         int beta, 
-        size_t current_depth,
-        Line &line
+        size_t current_depth
     );
 
     int quiescence(BoardState board, int alpha, int beta);
