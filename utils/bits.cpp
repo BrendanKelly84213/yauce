@@ -28,6 +28,7 @@ void print16(BMove m)
     std::cout << '\n';
 }
 
+#if 0
 void fit_power(double &a, double &b, std::vector<size_t> ys)
 {
     double sumx = 0, sumx2, sumy = 0, sumxy = 0;
@@ -44,3 +45,4 @@ void fit_power(double &a, double &b, std::vector<size_t> ys)
     b = ( (n * sumxy) - (sumx * sumy) ) / ( (n * sumx2) - (sumx * sumx));
     a = exp( (sumy - b * sumx) / n );
 }
+#endif

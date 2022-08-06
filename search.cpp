@@ -105,8 +105,8 @@ int Search::alphabeta(
 
     int orig_alpha = alpha;
     ZobristKey key = board.get_hash();
-    const TTItem * transposition = tt.get(key);
 #if 1
+    const TTItem * transposition = tt.get(key);
     if(is_worth_looking_at(transposition, current_depth)) {
         int score = transposition->score;
         switch(transposition->type) {
@@ -125,7 +125,6 @@ int Search::alphabeta(
 
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
-
 
 #if 1
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
@@ -236,14 +235,14 @@ void Search::print_pv(Line line)
 void Search::print_info(BoardState board)
 {
     std::string movestring;
-#if 0
+#if 1
     pv.clear();
     pv.push_back(best_move);
     board.make_move(best_move);
     size_t d = 0;
     while(d < depth_searched) {
         ZobristKey key = board.get_hash();
-        TTItem * item = tt.get(key);
+        const TTItem * item = tt.get(key);
         if(item != NULL && item->key == key) {
             BMove depth_best_move = item->move;
             pv.push_back(depth_best_move);
@@ -254,7 +253,7 @@ void Search::print_info(BoardState board)
 
     while(d > 0) {
         ZobristKey key = board.get_hash();
-        TTItem * item = tt.get(key);
+        const TTItem * item = tt.get(key);
         if(item != NULL && item->key == key)
             board.unmake_move(item->move);
         d--;
@@ -278,12 +277,11 @@ void Search::iterative_search(BoardState board)
 {
     Colour us = board.get_side_to_move(); 
 
-    size_t inc = us == White ? winc : binc;
+    // size_t inc = us == White ? winc : binc;
     size_t time = us == White ? wtime : btime;
-    if(time) {
+    if(time) 
         movetime = 5000;
-    }
-
+    
     std::cout << "movetime " << movetime << " time " << time << '\n';
 
     search_start = std::chrono::steady_clock::now();

@@ -156,6 +156,7 @@ void BoardState::init(std::string fen)
     init_squares(fen);
     init_bbs(); 
     init_attacks();
+    history.clear();
     Bitboard hash = compute_hash();
     history.push_back(hash);
 }
@@ -406,7 +407,7 @@ void BoardState::make_move(BMove m)
     Colour us = state.side_to_move;
 
     // Zobrist hash for the current position
-    Bitboard hash = history.back();
+    ZobristKey hash = get_hash();
     hash = updated_hash(hash, p, from);
     hash = updated_hash(hash, p, to);
 
@@ -577,6 +578,60 @@ void BoardState::unmake_move(BMove m)
     movelist.pop_back();
     // Update history
     history.pop_back();
+}
+
+// TODO: refactorable, identical to make_move in a lot of ways
+ZobristKey BoardState::generate_key_after_move(BMove m) const
+{ 
+    // TODO: In the future just make the move on the hash...
+    // For now make and unmake move
+    //
+    Colour us = get_side_to_move(); 
+    Square from = get_from(m);
+    Square to = get_to(m);
+    Move flag = get_flag(m);
+    Piece p = get_piece(from);
+    PieceType pt = piece_to_piecetype(p);
+    Piece cp = get_piece(to);
+    bool capture = ((cp != None) || (flag == EN_PASSANT));
+    
+    ZobristKey hash = history.back();
+    hash = updated_hash(hash, p, from);
+    hash = updated_hash(hash, p, to);
+
+    Square capsq = NullSquare;
+    if(capture) { 
+         capsq = to;
+        // En Passant
+        if(flag == EN_PASSANT) {
+            capsq = to + (us == White ? S : N);
+            cp = us == White ? BP : WP;
+        } 
+
+        hash = updated_hash(hash, cp, capsq);
+    } 
+
+    Piece rook = us == White ? WR : BR;
+    if(flag == OO) {
+        Square rookfsq = us == White ? h1 : h8;
+        Square rooktsq = us == White ? f1 : f8;
+        hash = updated_hash(hash, rook, rookfsq); 
+        hash = updated_hash(hash, rook, rooktsq); 
+    } else if(flag == OOO) {
+        Square rookfsq = us == White ? a1 : a8;
+        Square rooktsq = us == White ? d1 : d8;
+        hash = updated_hash(hash, rook, rookfsq); 
+        hash = updated_hash(hash, rook, rooktsq); 
+    } 
+    if(pt == Pawn && flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
+        hash = updated_hash(hash, p, to);
+        PieceType promoted_pt = promotion_to_piecetype(flag);
+        hash = updated_hash(hash, piecetype_to_piece(promoted_pt, us), to);
+    } 
+
+    hash = new_hash_colour(hash);
+
+    return hash;
 }
 
 bool BoardState::is_repitition() const 

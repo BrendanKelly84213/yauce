@@ -2,10 +2,13 @@
 #define TYPES_H
 
 #include <SDL2/SDL.h>
+#include <vector>
 
 typedef uint64_t Bitboard;
 typedef uint64_t ZobristKey;
 typedef uint16_t BMove;
+
+typedef std::vector<BMove> Line;
 
 enum Piece : int { 
     BQ, BK, BR, BN, BB, BP, 

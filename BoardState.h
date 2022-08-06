@@ -64,9 +64,9 @@ public:
     void make_move(BMove m);
     void unmake_move(BMove m);
 
-    Bitboard get_hash() const { return history.back(); }
+    ZobristKey get_hash() const { return history.back(); }
+    ZobristKey generate_key_after_move(BMove m) const;
     bool is_repitition() const;
-    std::vector<BMove> get_movelist() const { return movelist; }
     Bitboard get_occ() const { return occ; }
     Bitboard get_friend_occ() const;
     Bitboard get_friend_occ(Colour us) const;
@@ -124,7 +124,7 @@ private:
     State state; 
     State prev_state;
     std::vector<BMove> movelist;
-    std::vector<Bitboard> history;
+    std::vector<ZobristKey> history;
     Bitboard piece_bbs[12];
     Piece squares[64]; // Square centric lookup 
     Bitboard occ;
