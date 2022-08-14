@@ -72,7 +72,7 @@ int in_check_generator(BoardState board_state, BMove moves[])
     return i;
 }
 
-int generate_captures(BoardState board, BMove captures[])
+int generate_captures(const BoardState &board, BMove captures[])
 {
     int i = 0;
     Colour us = board.get_side_to_move(); 
@@ -96,7 +96,7 @@ int generate_captures(BoardState board, BMove captures[])
 }
 
 // Generate psuedo legal moves, return number of nodes 
-int psuedo_generator(BoardState board_state, BMove moves[]) 
+int psuedo_generator(const BoardState & board_state, BMove moves[]) 
 {   
     int i = 0; 
     Colour us = board_state.get_side_to_move();

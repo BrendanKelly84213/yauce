@@ -583,9 +583,6 @@ void BoardState::unmake_move(BMove m)
 // TODO: refactorable, identical to make_move in a lot of ways
 ZobristKey BoardState::generate_key_after_move(BMove m) const
 { 
-    // TODO: In the future just make the move on the hash...
-    // For now make and unmake move
-    //
     Colour us = get_side_to_move(); 
     Square from = get_from(m);
     Square to = get_to(m);

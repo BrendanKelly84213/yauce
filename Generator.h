@@ -7,7 +7,7 @@
 #include "utils/types.h"
 
 int in_check_generator(BoardState board_state, BMove moves[]);
-int psuedo_generator(BoardState board_state, BMove moves[]);
-int generate_captures(BoardState board, BMove captures[]);
+int psuedo_generator(const BoardState &board_state, BMove moves[]);
+int generate_captures(const BoardState &board, BMove captures[]);
 
 #endif
