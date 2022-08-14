@@ -164,14 +164,47 @@ void print_black_tables()
     print_table(b_queen_table );
 } 
 
-int endgame_weight(BoardState board)
+enum PiecePhase {
+    NullPhase = -1, // Standin for King
+    PawnPhase,
+    BishopPhase = 1,
+    KnightPhase = 1,
+    RookPhase = 2,
+    QueenPhase = 4
+};
+
+constexpr int TotalPhase = PawnPhase * 16 + KnightPhase * 4 + BishopPhase * 4 + RookPhase * 4 + QueenPhase * 2; 
+
+    // Queen, King, Rook, Knight, Bishop, Pawn, Null=-1
+const PiecePhase phase_table[] = {
+    QueenPhase,
+    NullPhase,
+    RookPhase,
+    KnightPhase,
+    BishopPhase,
+    PawnPhase 
+};
+
+int phase_weight(const BoardState &board)
 {
-    // FIXME??
+    int phase = TotalPhase;
+    for(PieceType pt = Queen; pt <= Pawn; ++pt) {
+        if(pt != King) {
+            size_t num_pieces = board.get_num_piecetype(pt);
+            phase -= num_pieces * phase_table[pt];       
+        }
+    }     
+    phase = (phase * 256 + (TotalPhase / 2)) / TotalPhase;
+    return phase;
+}
+
+int endgame_weight(const BoardState &board)
+{
     size_t num_pieces = board.get_total_piece_count();
     return 24 - num_pieces;
 }
 
-int op_king_distance_from_center(BoardState board)
+int op_king_distance_from_center(const BoardState &board)
 {
     Colour us = board.get_side_to_move();
     Square opkingsq = board.get_king_square(!us);
@@ -197,11 +230,50 @@ int op_king_distance_from_center(BoardState board)
 
     int distance_between_kings = 6 - distance(opkingsq, friendkingsq);
     
-    return (opking_dist_from_center + distance_between_kings) * endgame_weight(board);
+    return (opking_dist_from_center + distance_between_kings) * phase_weight(board);
 }
 
-#if 1
-int piece_weight(BoardState board, Piece p)
+int mg_piece_weight(const BoardState &board, Piece p)
+{
+    int weight = 0;
+    Bitboard piecebb = board.get_piece_bb(p);
+    PieceType pt = piece_to_piecetype(p);
+    Colour piece_colour = piece_to_colour(p);
+
+    while(piecebb) {
+        Square s = pop_bit(piecebb);
+
+        if(piece_colour == White) {
+            weight += piece_weights[pt] + white_mg_tables[pt][s]; 
+        } else  {
+            weight += piece_weights[pt] + black_mg_tables[pt][s]; 
+        }
+    }
+    return weight;
+}
+
+int eg_piece_weight(const BoardState &board, Piece p)
+{
+    int weight = 0;
+    Bitboard piecebb = board.get_piece_bb(p);
+    PieceType pt = piece_to_piecetype(p);
+    Colour piece_colour = piece_to_colour(p);
+
+    while(piecebb) {
+        Square s = pop_bit(piecebb);
+
+        if(piece_colour == White) {
+            weight += piece_weights[pt] + white_eg_tables[pt][s]; 
+        } else  {
+            weight += piece_weights[pt] + black_eg_tables[pt][s]; 
+        }
+    }
+
+    weight += op_king_distance_from_center(board);
+    return weight;
+}
+
+int piece_weight(const BoardState &board, Piece p)
 {
     int weight = 0;
     bool endgame = endgame_weight(board) >= 16;
@@ -221,28 +293,41 @@ int piece_weight(BoardState board, Piece p)
     }
 
     weight += op_king_distance_from_center(board);
-    
     return weight;
 }
-#endif 
 
-#if 0
-int piece_weight(BoardState board, Piece p)
+int eg_eval(const BoardState &board)
 {
-    PieceType pt = piece_to_piecetype(p);
+    int eval = 0;
+    for(Piece p = WQ; p <= WP; ++p) {
+        eval += eg_piece_weight(board, p);
+    }
 
-    return piece_weight(pt) * board.get_num_piece(p);
+    for(Piece p = BQ; p <= BP; ++p) {
+        eval -= eg_piece_weight(board, p);
+    }
+    return eval;
 }
-#endif
 
-int eval(BoardState board)
+int mg_eval(const BoardState &board)
 {
-    return (
-     (piece_weight(board, WP) - piece_weight(board, BP))
-    + (piece_weight(board, WB) - piece_weight(board, BB))
-    + (piece_weight(board, WR) - piece_weight(board, BR))
-    + (piece_weight(board, WQ) - piece_weight(board, BQ))
-    + (piece_weight(board, WN) - piece_weight(board, BN))
-    + (piece_weight(board, WK) - piece_weight(board, BK))
-    );
+    int eval = 0;
+    for(Piece p = WQ; p <= WP; ++p) {
+        eval += mg_piece_weight(board, p);
+    }
+
+    for(Piece p = BQ; p <= BP; ++p) {
+        eval -= mg_piece_weight(board, p);
+    }
+
+
+    return eval;
+}
+
+int eval(const BoardState &board)
+{
+    int mg = mg_eval(board);
+    int eg = eg_eval(board);
+    int phase = phase_weight(board);
+    return ((mg * (256 - phase)) + (eg * phase)) / 256;
 }

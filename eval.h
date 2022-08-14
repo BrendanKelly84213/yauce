@@ -4,7 +4,7 @@
 #include "BoardState.h"
 
 int piece_weight(PieceType pt);
-int eval(BoardState board);
+int eval(const BoardState &board);
 void init_black_tables();
 void print_black_tables();
 
