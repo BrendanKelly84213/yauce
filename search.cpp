@@ -96,7 +96,7 @@ int Search::quiescence(BoardState board, int alpha, int beta, size_t qdepth)
 {
     if(!searching)
         return 0;
-    
+
     Colour us = board.get_side_to_move();
     int nega = us == White ? 1 : -1;
  	int stand_pat = eval(board) * nega;
@@ -143,15 +143,6 @@ int Search::quiescence(BoardState board, int alpha, int beta, size_t qdepth)
         board.unmake_move(m);
     }
 
-    if(num_legal_moves == 0 && depth_searched > 1) {
-        // Checkmate
-        if(board.in_check(us)) 
-            return -INF + 1; 
-        
-        // Stalemate
-        return 0;
-    }
-
     return alpha;
 }
 
@@ -179,7 +170,6 @@ int Search::alphabeta(
 
     int orig_alpha = alpha;
     ZobristKey key = board.get_hash();
-#if 1
     const TTItem * transposition = tt.get(key);
     if(is_worth_looking_at(transposition, current_depth)) {
         num_transpositions++;
@@ -199,7 +189,6 @@ int Search::alphabeta(
         if(alpha >= beta)
             return score;
     }
-#endif
 
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
@@ -318,7 +307,6 @@ void Search::iterative_search(BoardState board)
 
     search_start = std::chrono::steady_clock::now();
     searching = true;
-    // tt.reset();
     for(size_t d = 1; ; ++d) {
 
         ScoredMove sm = search(board, d);
@@ -337,16 +325,10 @@ void Search::iterative_search(BoardState board)
 
         print_info(board); 
 
-        std::cout << "generated " << tt.size(); 
-        std::cout << " hits " << num_transpositions << std::endl;
-        // std::cout << " max transpositions " << tt.max_size() << std::endl;
-
         if(std::abs(sm.score) == INF - 1) 
             break;
 
-        // std::cout << "num transpositions " << tt.num_items << '\n';
-
-        double predicted_time = static_cast<double>(elapsed_time) * 4;
+        double predicted_time = static_cast<double>(elapsed_time) * 3;
 
         bool depth_reached = depth && d >= depth;
         bool movetime_reached = movetime && (predicted_time >= movetime);

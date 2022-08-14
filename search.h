@@ -17,7 +17,7 @@ enum SearchVal {
     PV=-902,
     Hash=-901,
     KillerMove=901,
-    NonCapture=902,
+    NonCapture=902
 };
 
 struct Search {
