@@ -87,6 +87,13 @@ public:
     int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
 
     size_t get_num_piece(Piece p) const { return popcount(piece_bbs[p]); } 
+    size_t get_num_piecetype(PieceType pt) const 
+    { 
+        Piece wp = piecetype_to_piece(pt, White);
+        Piece bp = piecetype_to_piece(pt, Black);
+        return get_num_piece(wp) + get_num_piece(bp);
+    } 
+
     size_t get_total_piece_count(Colour us) const 
     {
         size_t count = 0;
