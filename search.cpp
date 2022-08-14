@@ -11,7 +11,88 @@
 
 const int INF = 999999;
 
-int Search::quiescence(BoardState board, int alpha, int beta)
+bool is_worth_looking_at(const TTItem * transposition, size_t current_depth) 
+{
+   return transposition != NULL && transposition->depth >= current_depth;
+};
+
+int Search::q_relative_value(BMove m, const BoardState & board) const 
+{
+    Square from = get_from(m);
+    Square to = get_to(m);
+    Piece p = board.get_piece(from);
+    Piece cp = board.get_piece(to);
+
+    int capturing_weight = piece_weight(piece_to_piecetype(p));
+    int captured_weight = piece_weight(piece_to_piecetype(cp));
+
+    return capturing_weight - captured_weight;
+}
+
+int Search::relative_value(BMove m, const BoardState & board, size_t current_depth) const 
+{
+    ZobristKey key = board.get_hash();
+    const TTItem * transposition = tt.get(key); 
+
+    Square from = get_from(m);
+    Square to = get_to(m);
+    Piece p = board.get_piece(from);
+    Piece cp = board.get_piece(to);
+
+    // FIXME
+    bool is_killer = false;
+
+    if(transposition && m == transposition->move) {
+        if(transposition->type == EXACT) 
+            return PV;
+        return Hash;
+    } else if(cp != None) {
+        int capturing_weight = piece_weight(piece_to_piecetype(p));
+        int captured_weight = piece_weight(piece_to_piecetype(cp));
+
+        return capturing_weight - captured_weight;
+    } else if(is_killer) {
+        return KillerMove;
+    } else {
+        return NonCapture;
+    } 
+}
+
+// Basic selection sort 
+void Search::sort_moves(BMove moves[], size_t num_moves, const BoardState & board, size_t current_depth)
+{
+    for(size_t i = 0; i < num_moves; ++i) {
+        size_t min_idx = i;
+        for(size_t j = i + 1; j < num_moves; ++j) {
+            int min_val = relative_value(moves[min_idx], board, current_depth);
+            int jval = relative_value(moves[j], board, current_depth);
+            if(jval < min_val) {
+                min_idx = j;
+            }
+        }
+
+        if(min_idx != i) 
+            std::swap(moves[i], moves[min_idx]);
+    }
+}
+
+void Search::print_movelist_vals(BMove moves[], size_t num_moves, const BoardState & board, size_t current_depth) const
+{
+    for(size_t i = 0; i < num_moves; ++i) {
+        std::cout << relative_value(moves[i], board, current_depth) << " ";
+    }
+    std::cout << '\n';
+}
+
+void print_movelist(BMove moves[], size_t num_moves)
+{
+    for(size_t i = 0; i < num_moves; ++i) {
+        std::cout << long_algebraic(moves[i]) << " ";
+    }
+    std::cout << '\n';
+}
+
+int Search::quiescence(BoardState board, int alpha, int beta, size_t qdepth)
 {
     if(!searching)
         return 0;
@@ -22,37 +103,24 @@ int Search::quiescence(BoardState board, int alpha, int beta)
 
     if(stand_pat >= beta) 
         return beta;
+
+    int delta = piece_weight(Queen);
+    if(stand_pat < alpha - delta)
+        return alpha;  
+
     if(stand_pat > alpha) 
         alpha = stand_pat;
-
-    nodes_searched++;
     
     BMove captures[256];
     size_t num_captures = generate_captures(board, captures);
 
-    // Just sort by captures for now
+    if(num_captures == 0)
+        return stand_pat;
+
+    nodes_searched++;
+
     std::sort(captures, captures + num_captures, [&](BMove a, BMove b) {
-        Square ato = get_to(a);
-        Square afrom = get_from(a);
-        Square bto = get_to(b);
-        Square bfrom = get_from(b);
-
-        Piece acp = board.get_piece(ato);
-        Piece bcp = board.get_piece(bto);
-
-        Piece bp = board.get_piece(bfrom);
-        Piece ap = board.get_piece(afrom);
-
-		int a_capturing_weight = piece_weight(piece_to_piecetype(ap));
-		int a_captured_weight = piece_weight(piece_to_piecetype(acp));
-
-		int b_capturing_weight = piece_weight(piece_to_piecetype(bp));
-		int b_captured_weight = piece_weight(piece_to_piecetype(bcp));
-
-        int a_diff = a_captured_weight - a_capturing_weight; 
-        int b_diff = b_captured_weight - b_capturing_weight;  
-
-        return a_diff > b_diff;
+       return q_relative_value(a, board) < q_relative_value(b, board); 
     });
 
     size_t num_legal_moves = 0;
@@ -63,7 +131,7 @@ int Search::quiescence(BoardState board, int alpha, int beta)
 
         if(!board.in_check(us)) {
             num_legal_moves++;
-            int score = -quiescence(board, -beta, -alpha); 
+            int score = -quiescence(board, -beta, -alpha, qdepth - 1); 
 
             if(score >= beta) 
                 return beta; // fail hard
@@ -75,12 +143,17 @@ int Search::quiescence(BoardState board, int alpha, int beta)
         board.unmake_move(m);
     }
 
+    if(num_legal_moves == 0 && depth_searched > 1) {
+        // Checkmate
+        if(board.in_check(us)) 
+            return -INF + 1; 
+        
+        // Stalemate
+        return 0;
+    }
+
     return alpha;
 }
-
-bool is_worth_looking_at(const TTItem * transposition, size_t current_depth) {
-   return transposition != NULL && transposition->depth >= current_depth;
-};
 
 int Search::alphabeta(
         BoardState board,
@@ -100,14 +173,16 @@ int Search::alphabeta(
     if(board.is_repitition()) 
         return 0;
     
-    if(current_depth == 0) 
-        return quiescence(board, alpha, beta);
+    if(current_depth == 0) {
+        return quiescence(board, alpha, beta, 4);
+    }
 
     int orig_alpha = alpha;
     ZobristKey key = board.get_hash();
 #if 1
     const TTItem * transposition = tt.get(key);
     if(is_worth_looking_at(transposition, current_depth)) {
+        num_transpositions++;
         int score = transposition->score;
         switch(transposition->type) {
             case EXACT: 
@@ -120,62 +195,21 @@ int Search::alphabeta(
                 break;
             default: break;          
         }
+
+        if(alpha >= beta)
+            return score;
     }
 #endif
 
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
 
-#if 1
-    std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
-
-        ZobristKey azkey = board.generate_key_after_move(a);
-        ZobristKey bzkey = board.generate_key_after_move(b);
-        
-        const TTItem * aitem = tt.get(azkey);
-        const TTItem * bitem = tt.get(bzkey);
-
-        bool a_worth = is_worth_looking_at(aitem, current_depth);
-        bool b_worth = is_worth_looking_at(bitem, current_depth);
-
-        return a_worth > b_worth;
-    });
-#endif
     // NOTE: Doing this sort before checking if depth 0 and doing quiescence causes invalid read segfault
     //       No clue as to why, look into later? Seems like the board object is being read but not allocated 
-
-#if 1
+    
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
-         
-        Square ato = get_to(a);
-        Square bto = get_to(b);
-
-        Piece acp = board.get_piece(ato);
-        Piece bcp = board.get_piece(bto);
-        int a_captured_weight = piece_weight(piece_to_piecetype(acp));
-        int b_captured_weight = piece_weight(piece_to_piecetype(bcp));
-
-        // Both are captures
-        if(acp != None && bcp != None) {
-            Square bfrom = get_from(b);
-            Square afrom = get_from(a);
-            Piece bp = board.get_piece(bfrom);
-            Piece ap = board.get_piece(afrom);
-
-            int a_capturing_weight = piece_weight(piece_to_piecetype(ap));
-
-            int b_capturing_weight = piece_weight(piece_to_piecetype(bp));
-
-            int a_diff = a_captured_weight - a_capturing_weight; 
-            int b_diff = b_captured_weight - b_capturing_weight;  
-
-            return a_diff > b_diff;
-        }
-        
-        // Only one is a capture
-        return a_captured_weight > b_captured_weight;
+       return relative_value(a, board, current_depth) < relative_value(b, board, current_depth); 
     });
-#endif
 
     size_t num_legal_moves = 0;
     BMove nodes_best_move = moves[0];
@@ -203,13 +237,11 @@ int Search::alphabeta(
 
     }
 
-    if(nodes_best_move != 0) {
-        // Alpha never raised 
-        if(alpha <= orig_alpha)
-            tt.insert(key, UPPER_BOUND, alpha, current_depth, nodes_best_move);
-        else 
-            tt.insert(key, EXACT, alpha, current_depth, nodes_best_move);
-    }
+    // Alpha never raised 
+    if(alpha <= orig_alpha)
+        tt.insert(key, UPPER_BOUND, alpha, current_depth, nodes_best_move);
+    else 
+        tt.insert(key, EXACT, alpha, current_depth, nodes_best_move);
 
     if(num_legal_moves == 0 && depth_searched > 1) {
         // Checkmate
@@ -286,7 +318,7 @@ void Search::iterative_search(BoardState board)
 
     search_start = std::chrono::steady_clock::now();
     searching = true;
-    tt.reset();
+    // tt.reset();
     for(size_t d = 1; ; ++d) {
 
         ScoredMove sm = search(board, d);
@@ -305,7 +337,11 @@ void Search::iterative_search(BoardState board)
 
         print_info(board); 
 
-        if(sm.score == INF - 1) 
+        std::cout << "generated " << tt.size(); 
+        std::cout << " hits " << num_transpositions << std::endl;
+        // std::cout << " max transpositions " << tt.max_size() << std::endl;
+
+        if(std::abs(sm.score) == INF - 1) 
             break;
 
         // std::cout << "num transpositions " << tt.num_items << '\n';

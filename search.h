@@ -13,6 +13,13 @@ struct ScoredMove {
     int score;
 };
 
+enum SearchVal {
+    PV=-902,
+    Hash=-901,
+    KillerMove=901,
+    NonCapture=902,
+};
+
 struct Search {
 
     TimePoint search_start;
@@ -20,6 +27,7 @@ struct Search {
     bool ready;
     size_t depth_searched;
     size_t nodes_searched;
+    size_t num_transpositions;
     size_t elapsed_time;
     std::vector<size_t> d_times; // times per depth
              
@@ -47,6 +55,7 @@ struct Search {
 
     void reset() 
     {
+        num_transpositions = 0;
         depth_searched = 0;
         nodes_searched = 0;
         depth = 0;
@@ -70,7 +79,12 @@ struct Search {
     size_t get_depth_searched() const { return depth_searched; }
     size_t get_nodes_searched() const { return nodes_searched; }
 
-    void sort_moves(BMove moves[], size_t num_moves, BoardState board, size_t current_depth);
+    int q_relative_value(BMove m, const BoardState & board) const;
+
+    int relative_value(BMove move, const BoardState & board, size_t current_depth) const;
+    void sort_moves(BMove moves[], size_t num_moves, const BoardState & board, size_t current_depth);
+
+    void print_movelist_vals(BMove moves[], size_t num_moves, const BoardState & board, size_t current_depth) const;
 
     int alphabeta(
         BoardState board,
@@ -79,7 +93,7 @@ struct Search {
         size_t current_depth
     );
 
-    int quiescence(BoardState board, int alpha, int beta);
+    int quiescence(BoardState board, int alpha, int beta, size_t qdepth);
 };
 
 #endif
