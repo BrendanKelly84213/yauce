@@ -465,26 +465,14 @@ void BoardState::make_move(BMove m)
 
     // Promotions
     if(pt == Pawn && flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
-
-        hash = updated_hash(hash, p, to);
-        switch(flag) {
-            case PROMOTE_QUEEN:
-                promote(Queen, to, us);
-                hash = updated_hash(hash, piecetype_to_piece(Queen, us), to);
-                break;
-            case PROMOTE_BISHOP:
-                promote(Bishop, to, us);
-                hash = updated_hash(hash, piecetype_to_piece(Bishop, us), to);
-                break;
-            case PROMOTE_ROOK:
-                promote(Rook, to, us);
-                hash = updated_hash(hash, piecetype_to_piece(Rook, us), to);
-                break;
-            case PROMOTE_KNIGHT:
-                promote(Knight, to, us);
-                hash ^= updated_hash(hash, piecetype_to_piece(Knight, us), to);
-                break;
-            default: break;
+        PieceType promoting_pt = promotion_to_piecetype(flag);
+        Piece promoting_p = piecetype_to_piece(promoting_pt, us);
+        // Paranioa 
+        if(promoting_pt != Null) {
+            promote(promoting_pt, to, us);
+            hash = updated_hash(hash, promoting_p, to);
+        } else {
+            std::cout << "bad promotion\n";
         }
     }
 
@@ -553,11 +541,8 @@ void BoardState::unmake_move(BMove m)
     // Unpromote
     if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
         remove_piece(to);
-        put_piece(to, piecetype_to_piece(Pawn, us));
-    }
-
-    // Uncastle
-    if(flag == OO) {
+        put_piece(from, piecetype_to_piece(Pawn, us));
+    } else if(flag == OO) {
         uncastle_kingside(); 
     } else if(flag == OOO) {
         uncastle_queenside();
