@@ -14,10 +14,11 @@ struct ScoredMove {
 };
 
 enum SearchVal {
-    PV=-902,
-    Hash=-901,
-    KillerMove=901,
-    NonCapture=902
+    PV = -903,
+    Hash = -902,
+    Promotion = -901,
+    KillerMove = 901,
+    NonCapture = 902
 };
 
 struct Search {
@@ -29,6 +30,7 @@ struct Search {
     size_t nodes_searched;
     size_t num_transpositions;
     size_t elapsed_time;
+    size_t movesleft;
     std::vector<size_t> d_times; // times per depth
              
     TT tt;
@@ -44,6 +46,8 @@ struct Search {
 
     BMove best_move;
     int score;
+
+    Search() : movesleft(60) {}
 
     void init(size_t d, size_t mt, size_t ns, bool inf)
     {
