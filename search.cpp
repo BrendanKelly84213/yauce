@@ -38,6 +38,7 @@ int Search::relative_value(BMove m, const BoardState & board, size_t current_dep
     Square to = get_to(m);
     Piece p = board.get_piece(from);
     Piece cp = board.get_piece(to);
+    Move flag = get_flag(m);
 
     // FIXME
     bool is_killer = false;
@@ -46,6 +47,8 @@ int Search::relative_value(BMove m, const BoardState & board, size_t current_dep
         if(transposition->type == EXACT) 
             return PV;
         return Hash;
+    } else if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
+        return Promotion;
     } else if(cp != None) {
         int capturing_weight = piece_weight(piece_to_piecetype(p));
         int captured_weight = piece_weight(piece_to_piecetype(cp));
@@ -104,18 +107,11 @@ int Search::quiescence(BoardState board, int alpha, int beta, size_t qdepth)
     if(stand_pat >= beta) 
         return beta;
 
-    int delta = piece_weight(Queen);
-    if(stand_pat < alpha - delta)
-        return alpha;  
-
     if(stand_pat > alpha) 
         alpha = stand_pat;
     
     BMove captures[256];
     size_t num_captures = generate_captures(board, captures);
-
-    if(num_captures == 0)
-        return stand_pat;
 
     nodes_searched++;
 
@@ -132,7 +128,7 @@ int Search::quiescence(BoardState board, int alpha, int beta, size_t qdepth)
         if(!board.in_check(us)) {
             num_legal_moves++;
             int score = -quiescence(board, -beta, -alpha, qdepth - 1); 
-
+            
             if(score >= beta) 
                 return beta; // fail hard
 
@@ -204,7 +200,7 @@ int Search::alphabeta(
     BMove nodes_best_move = moves[0];
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
-        
+
         board.make_move(m);
         if(!board.in_check(us)) {
             num_legal_moves++;
@@ -223,7 +219,15 @@ int Search::alphabeta(
             } 
         }
         board.unmake_move(m);
+    }
 
+    if(num_legal_moves == 0) {
+        // Checkmate
+        if(board.in_check(us)) 
+            return -INF + 1; 
+        
+        // Stalemate
+        return 0;
     }
 
     // Alpha never raised 
@@ -232,14 +236,10 @@ int Search::alphabeta(
     else 
         tt.insert(key, EXACT, alpha, current_depth, nodes_best_move);
 
-    if(num_legal_moves == 0 && depth_searched > 1) {
-        // Checkmate
-        if(board.in_check(us)) 
-            return -INF + 1; 
-        
-        // Stalemate
-        return 0;
-    }
+
+    // if(alpha <= orig_alpha && std::abs(orig_alpha) == INF) {
+    //     std::cout << "hello\n";
+    // }
 
     return alpha;
 }
@@ -298,12 +298,17 @@ void Search::iterative_search(BoardState board)
 {
     Colour us = board.get_side_to_move(); 
 
-    // size_t inc = us == White ? winc : binc;
+    size_t inc = us == White ? winc : binc;
     size_t time = us == White ? wtime : btime;
-    if(time) 
-        movetime = 5000;
-    
-    std::cout << "movetime " << movetime << " time " << time << '\n';
+    if(movesleft > 2)
+        movesleft--;
+    else 
+        movesleft = 10;
+    if(time) {
+        movetime = std::round(1.3 * time / (movesleft + 2.9)) + inc;
+    }
+
+    std::cout << "movesleft: " << movesleft << " movetime: " << movetime << " time: " << time << '\n';
 
     search_start = std::chrono::steady_clock::now();
     searching = true;
@@ -325,7 +330,7 @@ void Search::iterative_search(BoardState board)
 
         print_info(board); 
 
-        if(std::abs(sm.score) == INF - 1) 
+        if(std::abs(sm.score) >= INF - 1) 
             break;
 
         double predicted_time = static_cast<double>(elapsed_time) * 3;
