@@ -227,10 +227,9 @@ int op_king_distance_from_center(const BoardState &board)
     }
 
     int opking_dist_from_center = distance(opkingsq, center_square); 
-
     int distance_between_kings = 6 - distance(opkingsq, friendkingsq);
     
-    return (opking_dist_from_center + distance_between_kings) * phase_weight(board);
+    return (opking_dist_from_center + distance_between_kings);
 }
 
 int mg_piece_weight(const BoardState &board, Piece p)
@@ -298,30 +297,32 @@ int piece_weight(const BoardState &board, Piece p)
 
 int eg_eval(const BoardState &board)
 {
-    int eval = 0;
+    int score = 0;
     for(Piece p = WQ; p <= WP; ++p) {
-        eval += eg_piece_weight(board, p);
+        score += eg_piece_weight(board, p);
     }
 
     for(Piece p = BQ; p <= BP; ++p) {
-        eval -= eg_piece_weight(board, p);
+        score -= eg_piece_weight(board, p);
     }
-    return eval;
+
+    score += op_king_distance_from_center(board) * endgame_weight(board);
+
+    return score;
 }
 
 int mg_eval(const BoardState &board)
 {
-    int eval = 0;
+    int score = 0;
     for(Piece p = WQ; p <= WP; ++p) {
-        eval += mg_piece_weight(board, p);
+        score += mg_piece_weight(board, p);
     }
 
     for(Piece p = BQ; p <= BP; ++p) {
-        eval -= mg_piece_weight(board, p);
+        score -= mg_piece_weight(board, p);
     }
 
-
-    return eval;
+    return score;
 }
 
 int eval(const BoardState &board)
@@ -329,5 +330,7 @@ int eval(const BoardState &board)
     int mg = mg_eval(board);
     int eg = eg_eval(board);
     int phase = phase_weight(board);
-    return ((mg * (256 - phase)) + (eg * phase)) / 256;
+    int score = ((mg * (256 - phase)) + (eg * phase)) / 256;
+    // std::cout << "Eval: " << score << '\n';
+    return score;
 }
