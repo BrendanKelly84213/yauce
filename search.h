@@ -17,11 +17,14 @@ enum SearchVal {
     PV = -903,
     Hash = -902,
     Promotion = -901,
-    KillerMove = 901,
-    NonCapture = 902
+    KillerMove1 = 902,
+    KillerMove2 = 903,
+    NonCapture = 904
 };
 
 struct Search {
+
+
 
     TimePoint search_start;
     bool searching;
@@ -32,6 +35,7 @@ struct Search {
     size_t elapsed_time;
     size_t movesleft;
     std::vector<size_t> d_times; // times per depth
+    BMove killers[64][2];
              
     TT tt;
     Line pv;
@@ -48,6 +52,12 @@ struct Search {
     int score;
 
     Search() : movesleft(60) {}
+
+    void update_killers(BMove m, size_t ply)
+    {
+        killers[ply][1] = killers[ply][0];
+        killers[ply][0] = m;
+    }
 
     void init(size_t d, size_t mt, size_t ns, bool inf)
     {

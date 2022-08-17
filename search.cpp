@@ -40,9 +40,6 @@ int Search::relative_value(BMove m, const BoardState & board, size_t current_dep
     Piece cp = board.get_piece(to);
     Move flag = get_flag(m);
 
-    // FIXME
-    bool is_killer = false;
-
     if(transposition && m == transposition->move) {
         if(transposition->type == EXACT) 
             return PV;
@@ -54,8 +51,10 @@ int Search::relative_value(BMove m, const BoardState & board, size_t current_dep
         int captured_weight = piece_weight(piece_to_piecetype(cp));
 
         return capturing_weight - captured_weight;
-    } else if(is_killer) {
-        return KillerMove;
+    } else if(m == killers[current_depth][0]) {
+            return KillerMove1;
+    } else if(m == killers[current_depth][1]) {
+        return KillerMove2;
     } else {
         return NonCapture;
     } 
@@ -206,11 +205,12 @@ int Search::alphabeta(
        return relative_value(a, board, current_depth) < relative_value(b, board, current_depth); 
     });
 
-
     size_t num_legal_moves = 0;
     BMove nodes_best_move = moves[0];
     for(size_t i = 0; i < num_moves; ++i) {
         BMove m = moves[i];
+        Square to = get_to(m);
+        bool is_capture = (board.get_piece(to) != None);
 
         board.make_move(m);
         if(!board.in_check(us)) {
@@ -219,9 +219,14 @@ int Search::alphabeta(
             int score = -alphabeta(board, -beta, -alpha, current_depth - 1); 
 
             if(score >= beta) {
-                // Score is too good, don't bother looking for more
+                if(!is_capture) {
+                    update_killers(m, current_depth);
+                }
+
                 tt.insert(key, LOWER_BOUND, score, current_depth, m);
-                return beta; // fail hard
+
+                // Score is too good, don't bother looking for more
+                return beta; 
             } 
 
             if(score > alpha) {
