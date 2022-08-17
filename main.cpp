@@ -42,8 +42,8 @@ void go(std::istringstream &iss)
         else if(token == "movetime") iss >> s.movetime;
         else if(token == "wtime") iss >> s.wtime;
         else if(token == "btime") iss >> s.btime;
-        else if(token == "winc") iss >> s.btime;
-        else if(token == "binc") iss >> s.btime;
+        else if(token == "winc") iss >> s.winc;
+        else if(token == "binc") iss >> s.binc;
         else if(token == "nodes") iss >> s.nodes;
         else if(token == "infinite") s.infinite = true;
     }
