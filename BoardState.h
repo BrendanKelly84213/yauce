@@ -64,6 +64,9 @@ public:
     void make_move(BMove m);
     void unmake_move(BMove m);
 
+    void make_null_move();
+    void unmake_null_move();
+
     ZobristKey get_hash() const { return history.back(); }
     ZobristKey generate_key_after_move(BMove m) const;
     bool is_repitition() const;

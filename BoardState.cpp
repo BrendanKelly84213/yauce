@@ -393,6 +393,31 @@ void BoardState::print_context(BMove m, bool capture, Move flag) const
     std::cout << "\n----------------------------------\n"; 
 }
 
+void BoardState::make_null_move()
+{
+    ZobristKey hash = get_hash();
+
+    // save state in prev_state 
+    prev_state = state;
+
+    // Add move to ongoing movelist
+    movelist.push_back(0);
+
+    // Update history 
+    hash = new_hash_colour(hash);
+    history.push_back(hash); 
+
+    state.side_to_move = !state.side_to_move; 
+}
+
+void BoardState::unmake_null_move()
+{
+    state = prev_state;
+    // Update movelist
+    movelist.pop_back();
+    // Update history
+    history.pop_back();
+}
 
 // Assume legal
 void BoardState::make_move(BMove m) 
