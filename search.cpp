@@ -109,7 +109,7 @@ int Search::quiescence(BoardState board, int alpha, int beta, size_t qdepth)
 
     if(stand_pat > alpha) 
         alpha = stand_pat;
-    
+
     BMove captures[256];
     size_t num_captures = generate_captures(board, captures);
 
@@ -186,6 +186,16 @@ int Search::alphabeta(
             return score;
     }
 
+    // Null move pruning
+    if(!board.in_check(us) && current_depth > 2) {
+        board.make_null_move();
+        int score = -alphabeta(board, -beta, -beta + 1, current_depth - 1 - 2);
+        board.unmake_null_move();
+        if(score >= beta)
+            return beta;
+    }
+
+
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
 
@@ -195,6 +205,7 @@ int Search::alphabeta(
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
        return relative_value(a, board, current_depth) < relative_value(b, board, current_depth); 
     });
+
 
     size_t num_legal_moves = 0;
     BMove nodes_best_move = moves[0];
