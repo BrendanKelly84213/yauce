@@ -306,7 +306,7 @@ int eg_eval(const BoardState &board)
         score -= eg_piece_weight(board, p);
     }
 
-    score += op_king_distance_from_center(board) * endgame_weight(board);
+    score += op_king_distance_from_center(board);
 
     return score;
 }
@@ -331,6 +331,5 @@ int eval(const BoardState &board)
     int eg = eg_eval(board);
     int phase = phase_weight(board);
     int score = ((mg * (256 - phase)) + (eg * phase)) / 256;
-    // std::cout << "Eval: " << score << '\n';
     return score;
 }
