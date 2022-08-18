@@ -4,6 +4,7 @@
 #include <chrono>
 #include "transposition.h"
 #include "BoardState.h"
+#include "eval.h"
 
 typedef std::chrono::duration<double> Duration;
 typedef std::chrono::time_point<std::chrono::steady_clock> TimePoint;
@@ -14,17 +15,54 @@ struct ScoredMove {
 };
 
 enum SearchVal {
-    PV = -903,
-    Hash = -902,
-    Promotion = -901,
-    KillerMove1 = 902,
-    KillerMove2 = 903,
-    NonCapture = 904
+    PV = 35,
+    Hash = 34,
+    Promotion = 33,
+    // Captures 3 ... 32
+    KillerMove1 = 2,
+    KillerMove2 = 1,
+    NonCapture = 0
+};
+
+// Pieces in order of value
+enum PieceOrder {
+    OPawn,
+    OKnight,
+    OBishop,
+    ORook,
+    OQueen,
+    OKing 
+};
+
+constexpr void operator++(PieceOrder& po)
+{
+    po = (PieceOrder)(static_cast<int>(po) + 1);
+}
+
+constexpr void operator--(PieceOrder& po)
+{
+    po = (PieceOrder)(static_cast<int>(po) - 1);
+}
+
+const std::string temp_debug_table[6] = {
+    "Pawn",
+    "Knight",
+    "Bishop",
+    "Rook",
+    "Queen",
+    "King"
+};
+
+const PieceOrder ordering_table[6] {
+    OQueen,
+    OKing,
+    ORook,
+    OKnight,
+    OBishop,
+    OPawn
 };
 
 struct Search {
-
-
 
     TimePoint search_start;
     bool searching;
@@ -36,6 +74,15 @@ struct Search {
     size_t movesleft;
     std::vector<size_t> d_times; // times per depth
     BMove killers[64][2];
+    int mvvlva_table[6][6];
+    int piece_vals[6]; 
+    // Queen 
+    // King
+    // Rook
+    // Knight
+    // Bishop
+    // Pawn
+    
              
     TT tt;
     Line pv;
@@ -57,6 +104,18 @@ struct Search {
     {
         killers[ply][1] = killers[ply][0];
         killers[ply][0] = m;
+    }
+
+    void init_mvvlva()
+    {
+        int val = 3;
+        for(PieceOrder v = OPawn; v <= OQueen; ++v) {
+            if(v != OKing) {
+                for(PieceOrder a = OKing; a >= OPawn; --a) {
+                    mvvlva_table[v][a] = val++; 
+                }
+            }
+        }
     }
 
     void init(size_t d, size_t mt, size_t ns, bool inf)

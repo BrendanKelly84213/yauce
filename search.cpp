@@ -5,7 +5,6 @@
 #include <algorithm>
 
 #include "Generator.h"
-#include "eval.h"
 /* #include "BoardState.h" */
 #include "search.h"
 
@@ -22,11 +21,12 @@ int Search::q_relative_value(BMove m, const BoardState & board) const
     Square to = get_to(m);
     Piece p = board.get_piece(from);
     Piece cp = board.get_piece(to);
+    PieceType apt = piece_to_piecetype(p);
+    PieceType vpt = piece_to_piecetype(cp);
+    PieceOrder v = ordering_table[vpt];
+    PieceOrder a = ordering_table[apt];
 
-    int capturing_weight = piece_weight(piece_to_piecetype(p));
-    int captured_weight = piece_weight(piece_to_piecetype(cp));
-
-    return capturing_weight - captured_weight;
+    return mvvlva_table[v][a]; 
 }
 
 int Search::relative_value(BMove m, const BoardState & board, size_t current_depth) const 
@@ -47,10 +47,11 @@ int Search::relative_value(BMove m, const BoardState & board, size_t current_dep
     } else if(flag >= PROMOTE_QUEEN && flag <= PROMOTE_BISHOP) {
         return Promotion;
     } else if(cp != None) {
-        int capturing_weight = piece_weight(piece_to_piecetype(p));
-        int captured_weight = piece_weight(piece_to_piecetype(cp));
-
-        return capturing_weight - captured_weight;
+        PieceType apt = piece_to_piecetype(p);
+        PieceType vpt = piece_to_piecetype(cp);
+        PieceOrder v = ordering_table[vpt];
+        PieceOrder a = ordering_table[apt];
+        return mvvlva_table[v][a]; 
     } else if(m == killers[current_depth][0]) {
             return KillerMove1;
     } else if(m == killers[current_depth][1]) {
@@ -115,7 +116,7 @@ int Search::quiescence(BoardState board, int alpha, int beta, size_t qdepth)
     nodes_searched++;
 
     std::sort(captures, captures + num_captures, [&](BMove a, BMove b) {
-       return q_relative_value(a, board) < q_relative_value(b, board); 
+       return q_relative_value(a, board) > q_relative_value(b, board); 
     });
 
     size_t num_legal_moves = 0;
@@ -202,7 +203,7 @@ int Search::alphabeta(
     //       No clue as to why, look into later? Seems like the board object is being read but not allocated 
     
     std::sort(moves, moves + num_moves, [&](BMove a, BMove b) {
-       return relative_value(a, board, current_depth) < relative_value(b, board, current_depth); 
+       return relative_value(a, board, current_depth) > relative_value(b, board, current_depth); 
     });
 
     size_t num_legal_moves = 0;
