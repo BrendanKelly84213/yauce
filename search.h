@@ -76,12 +76,6 @@ struct Search {
     BMove killers[64][2];
     int mvvlva_table[6][6];
     int piece_vals[6]; 
-    // Queen 
-    // King
-    // Rook
-    // Knight
-    // Bishop
-    // Pawn
     
              
     TT tt;

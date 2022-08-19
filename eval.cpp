@@ -124,6 +124,8 @@ int piece_weights[] = {
     P_weight
 };
 
+Bitboard pawn_chain_table[64]; 
+
 int piece_weight(PieceType pt)
 {
     if(pt == Null)
@@ -139,6 +141,13 @@ void init_black_tables()
             black_mg_tables[pt][s] = white_mg_tables[pt][(s ^ 56)];
             black_eg_tables[pt][s] = white_eg_tables[pt][(s ^ 56)];
         }
+    }
+}
+
+void init_pawn_chain_table()
+{
+    for(Square s = a1; s <= h8; ++s) {
+        
     }
 }
 
@@ -232,6 +241,32 @@ int op_king_distance_from_center(const BoardState &board)
     return (opking_dist_from_center + distance_between_kings);
 }
 
+size_t connected_pawns(Bitboard pawns, Square origin, Direction d)
+{
+    Square to = origin + d;
+    size_t num_connected_pawns = 0;
+    while(bit(to) & pawns) {
+       num_connected_pawns++;  
+       to = to + d; 
+    }
+    return num_connected_pawns;
+}
+
+int pawn_chain(const BoardState &board) 
+{
+    Bitboard our_pawns = board.get_friend_piece_bb(Pawn);
+    int bonus = 0; 
+    while(our_pawns) {
+        Square s = pop_bit(our_pawns);
+        bonus += connected_pawns(our_pawns, s, NE);
+        bonus += connected_pawns(our_pawns, s, NW);
+        bonus += connected_pawns(our_pawns, s, SE);
+        bonus += connected_pawns(our_pawns, s, SW);
+    }
+
+    return bonus;
+}
+
 int mg_piece_weight(const BoardState &board, Piece p)
 {
     int weight = 0;
@@ -268,7 +303,6 @@ int eg_piece_weight(const BoardState &board, Piece p)
         }
     }
 
-    weight += op_king_distance_from_center(board);
     return weight;
 }
 
@@ -306,8 +340,8 @@ int eg_eval(const BoardState &board)
         score -= eg_piece_weight(board, p);
     }
 
-    score += op_king_distance_from_center(board);
-
+    score += op_king_distance_from_center(board) * endgame_weight(board);
+    score += pawn_chain(board) * 10;
     return score;
 }
 
@@ -322,6 +356,7 @@ int mg_eval(const BoardState &board)
         score -= mg_piece_weight(board, p);
     }
 
+    score += pawn_chain(board) * 5;
     return score;
 }
 
