@@ -208,8 +208,14 @@ int endgame_weight(const BoardState &board)
 
 int relative_piece_count(const BoardState &board, Colour us)
 {
-    size_t our_pieces = board.get_total_piece_count(us);
-    return our_pieces;
+    int piece_count = 0;
+    for(Piece p = (us == White ? WQ : BQ); p <= (us == White ? WP : BP); ++p) {
+        if(p != WK && p != BK) {
+            size_t num_pieces = board.get_num_piece(p);
+            piece_count += num_pieces * phase_table[piece_to_piecetype(p)];       
+        }
+    }     
+    return piece_count;
 }
 
 int king_distance(const BoardState &board)
@@ -386,12 +392,22 @@ int eg_eval(const BoardState &board)
         score -= eg_piece_weight(board, p);
     }
 
+    // Late endgame (King and rook, King and Queen, King and Bishop etc...
     if(board.get_num_piecetype(Pawn) == 0) {
         int dist_between_kings = king_distance(board);
-        score += king_distance_from_center(board, Black) * 1000;
-        score -= king_distance_from_center(board, White) * 1000;
-        // score +=  dist_between_kings * relative_piece_count(board, Black);
-        // score -=  dist_between_kings * relative_piece_count(board, White);
+        int wcount = relative_piece_count(board, White);
+        int bcount = relative_piece_count(board, Black);
+        int bking_distance_from_center = king_distance_from_center(board, Black) * 20;
+        int wking_distance_from_center = king_distance_from_center(board, White) * 20;
+        int king_distance_score = (7 - dist_between_kings) * 10;
+
+        if(wcount > bcount) {
+            score += bking_distance_from_center; 
+            score += king_distance_score;
+        } else if(wcount < bcount) {
+            score -= wking_distance_from_center;
+            score -= king_distance_score; 
+        }
     }
 
     // score += op_king_distance_from_center(board);
