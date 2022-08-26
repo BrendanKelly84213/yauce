@@ -144,13 +144,6 @@ void init_black_tables()
     }
 }
 
-void init_pawn_chain_table()
-{
-    for(Square s = a1; s <= h8; ++s) {
-        
-    }
-}
-
 void print_table(int table[])
 {
     for(Square s = a1; s <= h8; s = s + E) {
@@ -213,11 +206,48 @@ int endgame_weight(const BoardState &board)
     return 24 - num_pieces;
 }
 
+int relative_piece_count(const BoardState &board, Colour us)
+{
+    size_t our_pieces = board.get_total_piece_count(us);
+    return our_pieces;
+}
+
+int king_distance(const BoardState &board)
+{
+    Square wking_square = board.get_king_square(White);
+    Square bking_square = board.get_king_square(Black);
+    return distance(wking_square, bking_square); 
+}
+
+int king_distance_from_center(const BoardState &board, Colour us)
+{
+    Square kingsq = board.get_king_square(us);
+    Square center_square;
+    int king_rank = rank(kingsq);
+    int king_file = file(kingsq);
+    // Refactor
+    if(king_rank >= 4 && king_file >= 4) {
+        // King is in top right quadrant
+        center_square = e5;
+    } else if(king_rank >= 4 && king_file < 4) {
+        // King is in top left quadrant
+        center_square = d5;
+    } else if(king_rank < 4 && king_file >=4) {
+        // King is in bottom right quadrant
+        center_square = e4;
+    } else {
+        center_square = d4;
+    }
+
+    int king_dist_from_center = distance(kingsq, center_square); 
+    
+    return king_dist_from_center;
+}
+
 int op_king_distance_from_center(const BoardState &board)
 {
     Colour us = board.get_side_to_move();
     Square opkingsq = board.get_king_square(!us);
-    Square friendkingsq = board.get_king_square(us);
     Square center_square;
     int king_rank = rank(opkingsq);
     int king_file = file(opkingsq);
@@ -236,9 +266,8 @@ int op_king_distance_from_center(const BoardState &board)
     }
 
     int opking_dist_from_center = distance(opkingsq, center_square); 
-    int distance_between_kings = 6 - distance(opkingsq, friendkingsq);
     
-    return (opking_dist_from_center + distance_between_kings);
+    return opking_dist_from_center;
 }
 
 size_t connected_pawns(Bitboard pawns, Square origin, Direction d)
@@ -264,6 +293,23 @@ int pawn_chain(const BoardState &board)
         bonus += connected_pawns(our_pawns, s, SW);
     }
 
+    return bonus;
+}
+
+int passed_pawn(const BoardState &board)
+{
+    int bonus = 0;
+    Bitboard our_pawns = board.get_friend_piece_bb(Pawn);
+    Bitboard their_pawns = board.get_op_piece_bb(Pawn);
+    while(our_pawns) {
+       Square s = pop_bit(our_pawns);     
+       Bitboard left_file = filebb(s + W);
+       Bitboard right_file = filebb(s + E);
+       Bitboard pawns_file = filebb(s);
+       Bitboard defending_pawns = (pawns_file | left_file | right_file) & their_pawns;
+       bonus += !(bool)defending_pawns; 
+    }
+    
     return bonus;
 }
 
@@ -340,8 +386,23 @@ int eg_eval(const BoardState &board)
         score -= eg_piece_weight(board, p);
     }
 
-    score += op_king_distance_from_center(board) * endgame_weight(board);
-    score += pawn_chain(board) * 10;
+    if(board.get_num_piecetype(Pawn) == 0) {
+        int dist_between_kings = king_distance(board);
+        score += king_distance_from_center(board, Black) * 1000;
+        score -= king_distance_from_center(board, White) * 1000;
+        // score +=  dist_between_kings * relative_piece_count(board, Black);
+        // score -=  dist_between_kings * relative_piece_count(board, White);
+    }
+
+    // score += op_king_distance_from_center(board);
+
+    // White king being far from the center is better for black
+    // score -= king_distance_from_center(board, White) * endgame_weight(board);
+    // Black king being far from the center is better for white
+    // score += king_distance_from_center(board, Black) * endgame_weight(board);
+    // Kings being closer together is better for the player with more material
+    // score += pawn_chain(board) * 10;
+    // score += passed_pawn(board) * 20;
     return score;
 }
 
@@ -356,7 +417,6 @@ int mg_eval(const BoardState &board)
         score -= mg_piece_weight(board, p);
     }
 
-    score += pawn_chain(board) * 5;
     return score;
 }
 
