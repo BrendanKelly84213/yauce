@@ -124,8 +124,6 @@ int piece_weights[] = {
     P_weight
 };
 
-Bitboard pawn_chain_table[64]; 
-
 int piece_weight(PieceType pt)
 {
     if(pt == Null)
@@ -287,9 +285,9 @@ size_t connected_pawns(Bitboard pawns, Square origin, Direction d)
     return num_connected_pawns;
 }
 
-int pawn_chain(const BoardState &board) 
+int pawn_chain(const BoardState &board, Colour us) 
 {
-    Bitboard our_pawns = board.get_friend_piece_bb(Pawn);
+    Bitboard our_pawns = board.get_piece_bb(Pawn, us);
     int bonus = 0; 
     while(our_pawns) {
         Square s = pop_bit(our_pawns);
@@ -302,11 +300,11 @@ int pawn_chain(const BoardState &board)
     return bonus;
 }
 
-int passed_pawn(const BoardState &board)
+int passed_pawn(const BoardState &board, Colour us)
 {
     int bonus = 0;
-    Bitboard our_pawns = board.get_friend_piece_bb(Pawn);
-    Bitboard their_pawns = board.get_op_piece_bb(Pawn);
+    Bitboard our_pawns = board.get_piece_bb(Pawn, us);
+    Bitboard their_pawns = board.get_piece_bb(Pawn, us);
     while(our_pawns) {
        Square s = pop_bit(our_pawns);     
        Bitboard left_file = filebb(s + W);
@@ -410,15 +408,10 @@ int eg_eval(const BoardState &board)
         }
     }
 
-    // score += op_king_distance_from_center(board);
-
-    // White king being far from the center is better for black
-    // score -= king_distance_from_center(board, White) * endgame_weight(board);
-    // Black king being far from the center is better for white
-    // score += king_distance_from_center(board, Black) * endgame_weight(board);
-    // Kings being closer together is better for the player with more material
-    // score += pawn_chain(board) * 10;
-    // score += passed_pawn(board) * 20;
+    score += pawn_chain(board, White);
+    score -= pawn_chain(board, Black);
+    score += passed_pawn(board, White);
+    score -= passed_pawn(board, Black);
     return score;
 }
 
