@@ -195,7 +195,6 @@ int Search::alphabeta(
             return beta;
     }
 
-
     BMove moves[256];
     size_t num_moves = psuedo_generator(board, moves);
 
@@ -219,14 +218,13 @@ int Search::alphabeta(
 
             int score = -alphabeta(board, -beta, -alpha, current_depth - 1); 
 
+            // Score is too good, don't bother looking for more
             if(score >= beta) {
-                if(!is_capture) {
+                if(!is_capture) 
                     update_killers(m, current_depth);
-                }
 
                 tt.insert(key, LOWER_BOUND, score, current_depth, m);
 
-                // Score is too good, don't bother looking for more
                 return beta; 
             } 
 
@@ -252,11 +250,6 @@ int Search::alphabeta(
         tt.insert(key, UPPER_BOUND, alpha, current_depth, nodes_best_move);
     else 
         tt.insert(key, EXACT, alpha, current_depth, nodes_best_move);
-
-
-    // if(alpha <= orig_alpha && std::abs(orig_alpha) == INF) {
-    //     std::cout << "hello\n";
-    // }
 
     return alpha;
 }
@@ -329,6 +322,7 @@ void Search::iterative_search(BoardState board)
 
     search_start = std::chrono::steady_clock::now();
     searching = true;
+    tt.reset();
     for(size_t d = 1; ; ++d) {
 
         ScoredMove sm = search(board, d);
