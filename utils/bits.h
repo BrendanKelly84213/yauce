@@ -100,7 +100,7 @@ constexpr size_t popcount(Bitboard bb)
 }
 
 // FIXME: return unsigned, take Square, Square 
-constexpr int distance(int origin, int dest)
+constexpr size_t distance(Square origin, Square dest)
 {
     int r2 = dest >> 3;
     int r1 = origin >> 3;
@@ -112,9 +112,9 @@ constexpr int distance(int origin, int dest)
     return std::max(f1f2, r1r2);
 }
 
-constexpr bool in_bounds(int s, Direction d)
+constexpr bool in_bounds(Square s, Direction d)
 {
-     return s >= a1 && s <= h8 && distance(s, s-d) == 1;
+     return s >= a1 && s <= h8 && distance(s, s - d) == 1;
 }
 
 constexpr Bitboard king_mask(Square origin)
@@ -174,48 +174,13 @@ constexpr int file(Square s)
     return s % 8;
 }
 
+constexpr Bitboard filebb(Square s)
+{
+    return FileABB << file(s); 
+}
+
 constexpr bool on_opposite_rank(Square s, Colour c)
 {
     return (c == White && rank(s) == 7) || (c == Black && rank(s) == 0);
-}
-
-// NOTE: These functions are only relevant to the GUI,
-// Could not figure out linker errors, so I'm copping out
-
-inline int square_to_x(Square s, int square_w, Colour bottom_colour) 
-{
-    size_t f = file(s);
-    if(bottom_colour == White)
-        return f * square_w;
-    return (7 - f) * square_w;
-}
-
-inline int square_to_y(Square s, int square_w, Colour bottom_colour) 
-{
-
-    size_t r = rank(s);
-    if(bottom_colour == White)
-        return (7 - r) * square_w;
-    return r * square_w; 
-}
-
-inline size_t x_to_file(int x, int square_w, Colour bottom_colour) 
-{ 
-    if(bottom_colour == White)
-        return floor(x / square_w); 
-    return 7 - floor(x / square_w);
-}
-inline size_t y_to_rank(int y, int square_w, Colour bottom_colour) 
-{ 
-    if(bottom_colour == White)
-        return 7 - floor(y / square_w); 
-    return floor(y / square_w);
-}
-
-inline Square xy_to_square(int x, int y, int square_w, Colour bottom_colour)
-{
-    size_t rank = y_to_rank(y, square_w, bottom_colour);
-    size_t file = x_to_file(x, square_w, bottom_colour);
-    return square(rank, file);
 }
 
