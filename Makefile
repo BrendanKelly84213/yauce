@@ -6,7 +6,7 @@ COMPILER_FLAGS = -g -Wall -O3
 
 LINKER_FLAGS = -pthread -lpthread
 
-OBJ_NAME = run 
+OBJ_NAME = connect-n 
 
 all : $(OBJS)
 	$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
