@@ -33,7 +33,7 @@ void search()
     s.iterative_search(board); 
 }
 
-void go(std::istringstream &iss)
+void go(std::istringstream & iss)
 {
     s.reset();
     std::string token;
@@ -48,19 +48,16 @@ void go(std::istringstream &iss)
         else if(token == "infinite") s.infinite = true;
     }
 
-    // search();
-
     std::thread t(search);
     t.detach();
 }
 
-void set_position(std::istringstream &iss)
+void set_position(std::istringstream & iss)
 {
     std::string token;
     iss >> token;
 
     if(token == "fen") { 
-        // TODO
         std::string fen; 
         while(iss >> token && token != "moves") {
            fen += token + " ";            
@@ -86,9 +83,26 @@ void set_position(std::istringstream &iss)
     }
 }
 
+void do_perft(std::istringstream & iss)
+{
+
+    std::string token;
+    int depth = 0;
+    while(iss >> token) {
+        if(token == "depth") 
+            iss >> depth;
+    }
+
+    auto p = [&]() {
+        print_perft(depth, board);  
+    };
+    
+    std::thread t(p);
+    t.detach();
+}
+
 int main( int argc, char *argv[] )
 {
-#if 1
     init_black_tables();
     init_table();
     s.init_mvvlva();
@@ -118,16 +132,12 @@ int main( int argc, char *argv[] )
             std::cout << "to be implemented\n"; 
         } else if (token == "printboard"){
             board.print_squares();
+        } else if (token == "perft") {
+            do_perft(iss);
         } else {
             std::cout << "I don't know that one.\n";
         }
     }
 
     return 0;
-#else 
-
-    s.init_mvvlva();
-
-
-#endif
 }
