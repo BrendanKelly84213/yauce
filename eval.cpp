@@ -142,28 +142,6 @@ void init_black_tables()
     }
 }
 
-void print_table(int table[])
-{
-    for(Square s = a1; s <= h8; s = s + E) {
-        if(!(s % 8))
-            std::cout << '\n';
-        std::cout << table[s] << " "; 
-    }
-}
-void print_black_tables()
-{
-    std::cout << "black pawn" << '\n';
-    print_table(b_pawn_table );
-    std::cout << "\nblack knight" << '\n';
-    print_table(b_knight_table );
-    std::cout << "\nblack bishop" << '\n';
-    print_table(b_bishop_table );
-    std::cout << "\nblack rook" << '\n';
-    print_table(b_rook_table );
-    std::cout << "\nblack queen" << '\n';
-    print_table(b_queen_table );
-} 
-
 enum PiecePhase {
     NullPhase = -1, // Standin for King
     PawnPhase,
@@ -248,32 +226,6 @@ int king_distance_from_center(const BoardState &board, Colour us)
     return king_dist_from_center;
 }
 
-int op_king_distance_from_center(const BoardState &board)
-{
-    Colour us = board.get_side_to_move();
-    Square opkingsq = board.get_king_square(!us);
-    Square center_square;
-    int king_rank = rank(opkingsq);
-    int king_file = file(opkingsq);
-    // Refactor
-    if(king_rank >= 4 && king_file >= 4) {
-        // King is in top right quadrant
-        center_square = e5;
-    } else if(king_rank >= 4 && king_file < 4) {
-        // King is in top left quadrant
-        center_square = d5;
-    } else if(king_rank < 4 && king_file >=4) {
-        // King is in bottom right quadrant
-        center_square = e4;
-    } else {
-        center_square = d4;
-    }
-
-    int opking_dist_from_center = distance(opkingsq, center_square); 
-    
-    return opking_dist_from_center;
-}
-
 size_t connected_pawns(Bitboard pawns, Square origin, Direction d)
 {
     Square to = origin + d;
@@ -353,29 +305,6 @@ int eg_piece_weight(const BoardState &board, Piece p)
         }
     }
 
-    return weight;
-}
-
-int piece_weight(const BoardState &board, Piece p)
-{
-    int weight = 0;
-    bool endgame = endgame_weight(board) >= 16;
-    Bitboard piecebb = board.get_piece_bb(p);
-    PieceType pt = piece_to_piecetype(p);
-    Colour piece_colour = piece_to_colour(p);
-
-
-    while(piecebb) {
-        Square s = pop_bit(piecebb);
-
-        if(piece_colour == White) {
-            weight += (piece_weights[pt] + (endgame ? white_eg_tables[pt][s] : white_mg_tables[pt][s])); 
-        } else  {
-            weight += (piece_weights[pt] + (endgame ? black_eg_tables[pt][s] : black_mg_tables[pt][s])); 
-        }
-    }
-
-    weight += op_king_distance_from_center(board);
     return weight;
 }
 

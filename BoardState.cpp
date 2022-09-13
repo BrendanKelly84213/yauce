@@ -547,7 +547,7 @@ void BoardState::make_move(BMove m)
         state.last_irreversable = state.ply_count;
     }
 
-    state.side_to_move = static_cast<Colour>(!(bool)state.side_to_move); 
+    state.side_to_move = !state.side_to_move; 
 }
 
 void BoardState::unmake_move(BMove m)

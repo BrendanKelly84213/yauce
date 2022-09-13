@@ -61,24 +61,6 @@ int Search::relative_value(BMove m, const BoardState & board, size_t current_dep
     } 
 }
 
-// Basic selection sort 
-void Search::sort_moves(BMove moves[], size_t num_moves, const BoardState & board, size_t current_depth)
-{
-    for(size_t i = 0; i < num_moves; ++i) {
-        size_t min_idx = i;
-        for(size_t j = i + 1; j < num_moves; ++j) {
-            int min_val = relative_value(moves[min_idx], board, current_depth);
-            int jval = relative_value(moves[j], board, current_depth);
-            if(jval < min_val) {
-                min_idx = j;
-            }
-        }
-
-        if(min_idx != i) 
-            std::swap(moves[i], moves[min_idx]);
-    }
-}
-
 void Search::print_movelist_vals(BMove moves[], size_t num_moves, const BoardState & board, size_t current_depth) const
 {
     for(size_t i = 0; i < num_moves; ++i) {
@@ -266,7 +248,6 @@ void Search::print_pv(Line line)
 void Search::print_info(BoardState board)
 {
     std::string movestring;
-#if 1
     pv.clear();
     pv.push_back(best_move);
     board.make_move(best_move);
@@ -293,7 +274,6 @@ void Search::print_info(BoardState board)
     for(size_t i = 0; i < pv.size(); ++i) {
         movestring += long_algebraic(pv[i]) + " ";
     }
-#endif
 
     elapsed_time++;
     std::cout << "info depth " << depth_searched; 
@@ -318,10 +298,12 @@ void Search::iterative_search(BoardState board)
         movetime = std::round(1.3 * time / (movesleft + 2.9)) + inc;
     }
 
-    std::cout << "movesleft: " << movesleft << " movetime: " << movetime << " time: " << time << '\n';
-
     search_start = std::chrono::steady_clock::now();
     searching = true;
+    // NOTE: resetting the transposition every search is a dumb hack workaround to an unknown bug (probably) in the transposition table
+    //          (where if not reset, engine makes horrible moves at random, queen sacrifices, losing mate in 3, etc...
+    //          coincides with very short pv's, possibly bug in transposition table).
+    //       It doesn't have that big of an effect on depth searched per move in the middlegame, endgame seems to suffer more
     tt.reset();
     for(size_t d = 1; ; ++d) {
 
