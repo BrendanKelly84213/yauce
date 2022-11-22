@@ -17,7 +17,6 @@ Yet Another [UCI](https://www.chessprogramming.org/UCI) Chess Engine.
     - Piece square tables
     - King tropism
     - Tapered eval 
-    - Huge reward for forming a pawn chain
 
 ## Build on *nix
 
