@@ -65,6 +65,8 @@ void set_position(std::istringstream & iss)
         board.init(fen);
     } else if(token == "startpos") {
         board.init(startpos); 
+    } else if(token == "kiwipete") {
+        board.init(kiwipete);
     }
 
     while(iss >> token) {
