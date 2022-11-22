@@ -1,6 +1,6 @@
-# Connect N Chess Bot
+# YAUCE
 
-A UCI chess engine.
+Yet Another UCI Chess Engine.
 
 ## Features
 
