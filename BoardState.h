@@ -88,10 +88,10 @@ public:
     Square get_ep_square() const;
     Square get_king_square(Colour us) const;
     Piece get_piece(Square s) const;
-    int get_opposite_end(Colour us) const { return us == White ? 7 : 0; }
+    static int get_opposite_end(Colour us) { return us == White ? 7 : 0; }
 
     size_t get_num_piece(Piece p) const { return popcount(piece_bbs[p]); } 
-    size_t get_num_piecetype(PieceType pt) const 
+    size_t get_num_piecetype(PieceType pt) const
     { 
         Piece wp = piecetype_to_piece(pt, White);
         Piece bp = piecetype_to_piece(pt, Black);
@@ -113,7 +113,7 @@ public:
         return get_total_piece_count(White) + get_total_piece_count(Black);
     }
 
-    size_t get_ply_count() const { return state.ply_count; } 
+    size_t get_ply_count() const { return state.ply_count; }
     std::string get_algebraic(BMove m) const;
     Bitboard attacks_to(Square sq) const;
     bool is_repeat() const { return state.repitition; }

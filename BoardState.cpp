@@ -834,12 +834,12 @@ Bitboard BoardState::attacks_to(Square sq) const
 bool BoardState::attacked(Square sq, Colour by) const
 {
     Bitboard kings = get_side_piece_bb(King, by);
-    Bitboard king_attacks = piece_attacks[King][sq];
-    if(king_attacks & kings) 
+    Bitboard king_attacks = piece_attacks[King][sq] & king_mask(sq);
+    if(king_attacks & kings)
         return true;
 
     Bitboard knights = get_side_piece_bb(Knight, by);
-    Bitboard knight_attacks = piece_attacks[Knight][sq];
+    Bitboard knight_attacks = piece_attacks[Knight][sq] & knight_mask(sq);
     if(knight_attacks & knights) 
         return true;
 
@@ -884,8 +884,8 @@ Bitboard BoardState::checkers(Colour us) const
 bool BoardState::in_check(Colour us) const
 {
     const Square kingsq = get_king_square(us);
-    const bool king_attacked = attacked(kingsq, !us); 
-    return king_attacked; 
+    const bool king_attacked = attacked(kingsq, !us);
+    return king_attacked;
 }
 
 // FIXME
@@ -903,7 +903,7 @@ Piece BoardState::get_piece(Square s) const
     return squares[s];
 }
 
-std::string BoardState::get_algebraic(BMove m) const 
+std::string BoardState::get_algebraic(BMove m) const
 {
     if(m == 0) return "";
 
