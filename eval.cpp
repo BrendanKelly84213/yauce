@@ -337,10 +337,10 @@ int eg_eval(const BoardState &board)
         }
     }
 
-    score += pawn_chain(board, White) * 100;
-    score -= pawn_chain(board, Black) * 100;
-    score += passed_pawn(board, White);
-    score -= passed_pawn(board, Black);
+    // score += pawn_chain(board, White) * 100;
+    // score -= pawn_chain(board, Black) * 100;
+    // score += passed_pawn(board, White);
+    // score -= passed_pawn(board, Black);
     return score;
 }
 
