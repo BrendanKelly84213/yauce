@@ -1,6 +1,6 @@
 # YAUCE
 
-Yet Another (UCI)[https://www.chessprogramming.org/UCI] Chess Engine.
+Yet Another [UCI](https://www.chessprogramming.org/UCI) Chess Engine.
 
 ## Features
 
