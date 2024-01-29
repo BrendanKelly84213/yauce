@@ -169,13 +169,12 @@ bool BoardState::can_castle(Colour us, Move type) const
         if(type == OO) {
             if(us == White) return state.w_castle_ks;
             return state.b_castle_ks;
-        } else {
-            if(us == White) return state.w_castle_qs;
-            return state.b_castle_qs;
         }
+        if(us == White) return state.w_castle_qs;
+        return state.b_castle_qs;
     })();
 
-    if(!has_right) 
+    if(!has_right)
         return false;
 
     if(in_check(us)) 
@@ -186,10 +185,9 @@ bool BoardState::can_castle(Colour us, Move type) const
         if(type == OO) {
             if(us == White) return bit(f1) | bit(g1);
             return bit(f8) | bit(g8);
-        } else {
-            if(us == White) return bit(d1) | bit(c1);
-            return bit(d8) | bit(c8);
         }
+        if(us == White) return bit(d1) | bit(c1);
+        return bit(d8) | bit(c8);
     })();
 
     while(in_between) {
@@ -199,14 +197,13 @@ bool BoardState::can_castle(Colour us, Move type) const
     }
 
     // If there are any pieces in between the rook and king
-    Square rooksq = ([&]() -> Square { 
+    Square rooksq = ([&]() -> Square {
         if(type == OO) {
             if(us == White) return h1;
             return h8;
-        } else {
-            if(us == White) return a1;
-            return a8;
-        } 
+        }
+        if(us == White) return a1;
+        return a8;
     })();
 
     Square kingsq = get_king_square(us);
@@ -436,8 +433,7 @@ void BoardState::make_move(BMove m)
     hash = updated_hash(hash, p, from);
     hash = updated_hash(hash, p, to);
 
-
-    // save state in prev_state 
+    // save state in prev_state
     prev_state = state;
 
     state.last_captured = cp;  // ??
@@ -675,10 +671,8 @@ Bitboard BoardState::get_side_piece_bb(int pt, Colour side) const
     int p = side == White ? pt + 6 : pt;
     if(p >= 0 && p < 12)
         return piece_bbs[p];
-    else {
-        std::cerr << "----> get_friend_piece_bb(), Invalid piece input: " << p << '\n';
-        return 0ULL;
-    }
+    std::cerr << "----> get_friend_piece_bb(), Invalid piece input: " << p << '\n';
+    return 0ULL;
 }
 
 Bitboard BoardState::get_friend_piece_bb(int pt) const 
@@ -686,10 +680,8 @@ Bitboard BoardState::get_friend_piece_bb(int pt) const
     int p = state.side_to_move == White ? pt + 6 : pt;
     if(p >= 0 && p < 12)
         return piece_bbs[p];
-    else {
-        std::cerr << "----> get_friend_piece_bb(), Invalid piece input: " << p << '\n';
-        return 0ULL;
-    }
+    std::cerr << "----> get_friend_piece_bb(), Invalid piece input: " << p << '\n';
+    return 0ULL;
 }
 
 Bitboard BoardState::get_op_piece_bb(int pt) const
@@ -697,10 +689,8 @@ Bitboard BoardState::get_op_piece_bb(int pt) const
     int p = state.side_to_move == White ? pt : pt + 6 ;
     if(p >= 0 && p < 12)
         return piece_bbs[p];
-    else {
-        std::cerr << "----> get_op_piece_bb(), Invalid piece input: " << p << '\n';
-        return 0ULL;
-    }
+    std::cerr << "----> get_op_piece_bb(), Invalid piece input: " << p << '\n';
+    return 0ULL;
 }
 
 Colour BoardState::get_piece_colour(Piece p) const
