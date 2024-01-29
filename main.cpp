@@ -117,7 +117,7 @@ int main( int argc, char *argv[] )
         iss >> token;
 
         if (token == "uci") {
-            std::cout << "id name H80000000-1\nid author Brendan\nuciok\n";
+            std::cout << "id name yauce\nid author Brendan\nuciok\n";
         } else if (token == "ucinewgame") {
             board.init(startpos);
         } else if (token == "isready") {
