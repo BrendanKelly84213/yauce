@@ -1,7 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <SDL2/SDL.h>
 #include <vector>
 
 typedef uint64_t Bitboard;
