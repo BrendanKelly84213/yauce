@@ -1,4 +1,3 @@
-run
 engine-interface.txt
 tt
 test.cpp
@@ -8,4 +7,6 @@ a.out
 lichess-bot-oauth.txt
 search_data.txt
 connect-n
+.idea/
+yauce
 
