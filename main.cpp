@@ -103,12 +103,33 @@ void do_perft(std::istringstream & iss)
     t.detach();
 }
 
+void help()
+{
+    std::cout << "YAU (Chess Engine) by Brendan\n";
+    std::cout << "Supported (UCI) commands:\n";
+    std::cout << "  uci          - Initialize UCI protocol\n";
+    std::cout << "  ucinewgame   - Start a new game\n";
+    std::cout << "  isready      - Check if the engine is ready\n";
+    std::cout << "  stop         - Stop the current search\n";
+    std::cout << "  go           - Start a search for the best move\n";
+    std::cout << "  quit         - Exit the program\n";
+    std::cout << "  position     - Set up a board position with a fen\n";
+    std::cout << "  setoption    - Set an engine option (not implemented yet)\n";
+    std::cout << "  perft        - Perform a perft test\n";
+    
+    std::cout << "Non UCI commands: \n";
+    std::cout << "  printboard   - Print the current board\n";
+    std::cout << "  help         - Print this message\n";
+}
+
 int main( int argc, char *argv[] )
 {
     init_black_tables();
     init_table();
     s.init_mvvlva();
     board.init(startpos);
+
+    help();
 
     std::string line;
     std::string token;
@@ -136,6 +157,8 @@ int main( int argc, char *argv[] )
             board.print_squares();
         } else if (token == "perft") {
             do_perft(iss);
+        } else if (token == "help") {
+            help();    
         } else {
             std::cout << "I don't know that one.\n";
         }
