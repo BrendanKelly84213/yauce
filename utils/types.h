@@ -2,6 +2,7 @@
 #define TYPES_H
 
 #include <vector>
+#include <cstdint>
 
 typedef uint64_t Bitboard;
 typedef uint64_t ZobristKey;
