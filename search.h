@@ -138,7 +138,7 @@ struct Search {
     }
 
     ScoredMove search(BoardState board, size_t current_depth);
-    void iterative_search(BoardState board);
+    void iterative_search(const BoardState& board);
     void print_pv(Line line);
     void print_info(BoardState board);
     void stop_search() { searching = false; }

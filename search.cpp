@@ -284,7 +284,7 @@ void Search::print_info(BoardState board)
     std::cout << " pv " << movestring << std::endl;
 }
 
-void Search::iterative_search(BoardState board)
+void Search::iterative_search(const BoardState& board)
 {
     Colour us = board.get_side_to_move(); 
 
